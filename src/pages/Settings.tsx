@@ -77,6 +77,18 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
         }
 
         setUploadingImage(true)
+        const simulateUpload = (file: File) => new Promise<string>((resolve) => {
+          let pct = 0
+          const id = setInterval(() => {
+            pct += Math.floor(Math.random() * 25) + 10
+            if (pct >= 100) pct = 100
+            setImageUploadProgress(pct)
+            if (pct === 100) {
+              clearInterval(id)
+              resolve(DEFAULT_PROFILE_PLACEHOLDER)
+            }
+          }, 200)
+        })
         const uploadSingle = (file: File) => new Promise<string>((resolve, reject) => {
           const xhr = new XMLHttpRequest()
           xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`)
