@@ -70,7 +70,12 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
       if (profileImageFile) {
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
         const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-        const useMock = !cloudName || !uploadPreset
+        const isCloudinaryConfigured = Boolean(cloudName && uploadPreset)
+
+        if (!isCloudinaryConfigured && !import.meta.env.DEV) {
+          throw new Error('Cloudinary upload is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET in your deployment environment.')
+        }
+
         setUploadingImage(true)
         const simulateUpload = (file: File) => new Promise<string>((resolve) => {
           let pct = 0
@@ -85,7 +90,7 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
           }, 200)
         })
         const uploadSingle = (file: File) => new Promise<string>((resolve, reject) => {
-          if (useMock) {
+          if (!isCloudinaryConfigured) {
             simulateUpload(file).then(resolve).catch(reject)
             return
           }
@@ -94,7 +99,9 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
           xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) {
               try { resolve(JSON.parse(xhr.responseText).secure_url) } catch (e) { reject(e) }
-            } else { reject(xhr.responseText) }
+            } else {
+              reject(xhr.responseText)
+            }
           }
           xhr.onerror = () => reject('Network error')
           xhr.upload.onprogress = (e) => {
@@ -102,7 +109,7 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
               setImageUploadProgress(Math.round((e.loaded / e.total) * 100))
             }
           }
-          const form = new FormData();
+          const form = new FormData()
           form.append('file', file)
           form.append('upload_preset', uploadPreset)
           const folder = getCloudinaryFolder(file)

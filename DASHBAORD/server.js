@@ -38,9 +38,62 @@ const serveFile = async (filePath, res) => {
   }
 }
 
+async function readRequestBody(stream) {
+  const chunks = []
+  for await (const chunk of stream) {
+    chunks.push(chunk)
+  }
+  return Buffer.concat(chunks)
+}
+
+const backendBaseUrl = process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || process.env.VITE_BACKEND_URL || ''
+const shouldProxyApi = backendBaseUrl.trim() !== ''
+
 createServer(async (req, res) => {
   const requestPath = new URL(req.url, `http://localhost:${port}`).pathname
   let filePath = path.join(distDir, requestPath)
+
+  if (shouldProxyApi && requestPath.startsWith('/api')) {
+    try {
+      const requestUrl = new URL(req.url, `http://localhost:${port}`)
+      const proxyUrl = new URL(requestUrl.pathname + requestUrl.search, backendBaseUrl.trim()).toString()
+      const headers = new Headers()
+
+      for (const [name, value] of Object.entries(req.headers)) {
+        if (value !== undefined) {
+          const headerValue = Array.isArray(value) ? value.join(', ') : String(value)
+          headers.set(name, headerValue)
+        }
+      }
+      headers.delete('host')
+
+      const body = ['GET', 'HEAD'].includes(req.method || 'GET') ? undefined : await readRequestBody(req)
+      const backendResponse = await fetch(proxyUrl, {
+        method: req.method || 'GET',
+        headers,
+        body,
+        redirect: 'manual',
+      })
+
+      const responseHeaders = {}
+      backendResponse.headers.forEach((value, name) => {
+        if (['content-encoding', 'content-length', 'transfer-encoding'].includes(name.toLowerCase())) {
+          return
+        }
+        responseHeaders[name] = value
+      })
+
+      const responseBuffer = Buffer.from(await backendResponse.arrayBuffer())
+      res.writeHead(backendResponse.status, responseHeaders)
+      res.end(responseBuffer)
+      return
+    } catch (error) {
+      console.error('API proxy failed:', backendBaseUrl, req.url, error)
+      res.writeHead(502, { 'Content-Type': 'text/plain' })
+      res.end(`Bad gateway: unable to proxy request to backend (${error instanceof Error ? error.message : String(error)})`)
+      return
+    }
+  }
 
   if (requestPath === '/' || requestPath === '') {
     filePath = path.join(distDir, 'index.html')
@@ -57,5 +110,9 @@ createServer(async (req, res) => {
   }
 }).listen(port, () => {
   // eslint-disable-next-line no-console
-  console.log(`Server listening on port ${port}`)
+  if (shouldProxyApi) {
+    console.log(`Server listening on port ${port} and proxying /api to ${backendBaseUrl}`)
+  } else {
+    console.log(`Server listening on port ${port}`)
+  }
 })

@@ -42,6 +42,10 @@ export class CloudinaryService {
     file: File,
     folder: string = 'seller-admin'
   ): Promise<CloudinaryUploadResponse> {
+    if (!this.cloudName || !this.uploadPreset) {
+      throw new Error('Cloudinary upload is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.')
+    }
+
     const formData = new FormData()
     formData.append('file', file)
     formData.append('upload_preset', this.uploadPreset)
