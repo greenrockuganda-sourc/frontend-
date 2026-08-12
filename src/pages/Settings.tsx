@@ -26,6 +26,8 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imageUploadProgress, setImageUploadProgress] = useState(0)
 
+  const DEFAULT_PROFILE_PLACEHOLDER = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="%23EDF2F7"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="40" fill="%236B7280">Profile</text></svg>'
+
   useEffect(() => {
     if (!user) {
       return
@@ -70,41 +72,41 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
       if (profileImageFile) {
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
         const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-        const useMock = !cloudName || !uploadPreset
+        if (!cloudName || !uploadPreset) {
+          throw new Error('Cloudinary upload is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.')
+        }
+
         setUploadingImage(true)
-        const simulateUpload = (file: File) => new Promise<string>((resolve) => {
-          let pct = 0
-          const id = setInterval(() => {
-            pct += Math.floor(Math.random() * 25) + 10
-            if (pct >= 100) pct = 100
-            setImageUploadProgress(pct)
-            if (pct === 100) {
-              clearInterval(id)
-              resolve(`https://via.placeholder.com/400.png?text=${encodeURIComponent(file.name)}`)
-            }
-          }, 200)
-        })
         const uploadSingle = (file: File) => new Promise<string>((resolve, reject) => {
-          if (useMock) {
-            simulateUpload(file).then(resolve).catch(reject)
-            return
-          }
           const xhr = new XMLHttpRequest()
-          xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/upload`)
+          xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`)
           xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-              try { resolve(JSON.parse(xhr.responseText).secure_url) } catch (e) { reject(e) }
-            } else { reject(xhr.responseText) }
+              try {
+                const responseBody = JSON.parse(xhr.responseText)
+                resolve(responseBody.secure_url || responseBody.url)
+              } catch (e) {
+                reject(new Error('Unexpected Cloudinary response'))
+              }
+            } else {
+              try {
+                const responseBody = JSON.parse(xhr.responseText)
+                reject(new Error(responseBody?.error?.message || `Cloudinary upload failed with status ${xhr.status}`))
+              } catch {
+                reject(new Error(`Cloudinary upload failed with status ${xhr.status}`))
+              }
+            }
           }
-          xhr.onerror = () => reject('Network error')
+          xhr.onerror = () => reject(new Error('Network error while uploading image to Cloudinary'))
           xhr.upload.onprogress = (e) => {
             if (e.lengthComputable) {
               setImageUploadProgress(Math.round((e.loaded / e.total) * 100))
             }
           }
-          const form = new FormData();
+          const form = new FormData()
           form.append('file', file)
           form.append('upload_preset', uploadPreset)
+          form.append('resource_type', 'auto')
           const folder = getCloudinaryFolder(file)
           if (folder) {
             form.append('folder', folder)
@@ -216,7 +218,15 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
               <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div>
-                  <img src={profileImagePreview || settings.profileImage || '/favicon.ico'} alt="avatar" className="w-20 h-20 rounded-full object-cover border" />
+                  <img
+                    src={profileImagePreview || settings.profileImage || DEFAULT_PROFILE_PLACEHOLDER}
+                    alt="avatar"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null
+                      event.currentTarget.src = DEFAULT_PROFILE_PLACEHOLDER
+                    }}
+                    className="w-20 h-20 rounded-full object-cover border"
+                  />
                 </div>
                 <div className="flex-1">
                   <input

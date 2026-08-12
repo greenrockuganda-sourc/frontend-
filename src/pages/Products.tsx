@@ -200,20 +200,25 @@ export default function Products({ token }: ProductsProps) {
 
   const uploadToCloudinaryXHR = (file: File, index: number, cloudName: string, uploadPreset: string) => new Promise<string>((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/upload`)
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`)
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const data = JSON.parse(xhr.responseText)
           resolve(data.secure_url || data.url)
         } catch (e) {
-          reject(e)
+          reject(new Error('Unexpected Cloudinary response'))
         }
       } else {
-        reject(xhr.responseText)
+        try {
+          const data = JSON.parse(xhr.responseText)
+          reject(new Error(data?.error?.message || `Cloudinary upload failed with status ${xhr.status}`))
+        } catch {
+          reject(new Error(`Cloudinary upload failed with status ${xhr.status}`))
+        }
       }
     }
-    xhr.onerror = () => reject('Network error')
+    xhr.onerror = () => reject(new Error('Network error while uploading image to Cloudinary'))
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
         const pct = Math.round((e.loaded / e.total) * 100)
@@ -227,6 +232,7 @@ export default function Products({ token }: ProductsProps) {
     const form = new FormData()
     form.append('file', file)
     form.append('upload_preset', uploadPreset)
+    form.append('resource_type', 'auto')
     const folder = getCloudinaryFolder(file)
     if (folder) {
       form.append('folder', folder)
@@ -245,7 +251,9 @@ export default function Products({ token }: ProductsProps) {
         setUploadingImages(true)
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
         const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-        const useMock = !cloudName || !uploadPreset
+        if (!cloudName || !uploadPreset) {
+          throw new Error('Cloudinary upload is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.')
+        }
         const filesToUpload = formImageFiles.slice(0, 4)
         setImageUploadProgress(new Array(filesToUpload.length).fill(0))
         setImageUploadErrors(new Array(filesToUpload.length).fill(''))
@@ -253,7 +261,7 @@ export default function Products({ token }: ProductsProps) {
         for (let i = 0; i < filesToUpload.length; i++) {
           try {
             // eslint-disable-next-line no-await-in-loop
-            const url = useMock ? await simulateUpload(filesToUpload[i], i) : await uploadToCloudinaryXHR(filesToUpload[i], i, cloudName, uploadPreset)
+            const url = await uploadToCloudinaryXHR(filesToUpload[i], i, cloudName, uploadPreset)
             results[i] = url
             setImageUploadErrors((prev) => {
               const next = prev.slice()
@@ -266,7 +274,6 @@ export default function Products({ token }: ProductsProps) {
               next[i] = String(e)
               return next
             })
-            // show a global toast for this failure
             notifyError(`Image ${i + 1} failed to upload: ${String(e)}`)
           }
         }
@@ -342,6 +349,8 @@ export default function Products({ token }: ProductsProps) {
       setEditingProductId(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save product.')
+    } finally {
+      setUploadingImages(false)
     }
   }
 
