@@ -75,17 +75,17 @@ export default function Login({ onLogin }: LoginProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-6">
-      <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/80 p-6 sm:p-8 shadow-2xl shadow-black/40 slide-up">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="rounded-xl bg-blue-600 p-3">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white/80 p-8 shadow-[0_18px_40px_-22px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+        <div className="mb-8 flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-500 shadow-[0_12px_24px_-8px_rgba(99,102,241,0.18)]">
             <ShieldCheck className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-white">
-              {isRegistering ? 'Create your account' : 'Seller Dashboard'}
+            <h1 className="text-2xl font-semibold text-slate-900">
+              {isRegistering ? 'Create your account' : 'Seller Admin'}
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-500">
               {isRegistering ? 'Sign up to manage your store' : 'Sign in to manage your store'}
             </p>
           </div>
@@ -99,7 +99,7 @@ export default function Login({ onLogin }: LoginProps) {
                 <input
                   value={firstName}
                   onChange={(event) => setFirstName(event.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-3 text-sm text-white outline-none"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
                   placeholder="First name"
                   autoComplete="given-name"
                 />
@@ -110,7 +110,7 @@ export default function Login({ onLogin }: LoginProps) {
                 <input
                   value={lastName}
                   onChange={(event) => setLastName(event.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-3 text-sm text-white outline-none"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
                   placeholder="Last name"
                   autoComplete="family-name"
                 />
@@ -122,12 +122,12 @@ export default function Login({ onLogin }: LoginProps) {
             <label className="mb-2 block text-sm font-medium text-slate-300">
               {isRegistering ? 'Email address' : 'Email or phone'}
             </label>
-            <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800 px-3">
+            <div className="flex items-center rounded-lg border border-slate-200 bg-white px-3">
               <Mail className="mr-2 h-4 w-4 text-slate-400" />
               <input
                 value={identifier}
                 onChange={(event) => setIdentifier(event.target.value)}
-                className="w-full bg-transparent py-3 text-sm text-white outline-none"
+                className="w-full bg-transparent py-3 text-sm text-slate-900 outline-none"
                 placeholder={isRegistering ? 'Enter your email' : 'Enter your email or phone'}
                 autoComplete={isRegistering ? 'email' : 'email'}
               />
@@ -137,11 +137,11 @@ export default function Login({ onLogin }: LoginProps) {
           {isRegistering && (
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-300">Phone number</label>
-              <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800 px-3">
+              <div className="flex items-center rounded-lg border border-slate-200 bg-white px-3">
                 <input
                   value={phoneNumber}
                   onChange={(event) => setPhoneNumber(event.target.value)}
-                  className="w-full bg-transparent py-3 text-sm text-white outline-none"
+                  className="w-full bg-transparent py-3 text-sm text-slate-900 outline-none"
                   placeholder="Enter your phone number"
                   autoComplete="tel"
                 />
@@ -151,13 +151,13 @@ export default function Login({ onLogin }: LoginProps) {
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-300">Password</label>
-            <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800 px-3">
+            <div className="flex items-center rounded-lg border border-slate-200 bg-white px-3">
               <Lock className="mr-2 h-4 w-4 text-slate-400" />
               <input
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 type="password"
-                className="w-full bg-transparent py-3 text-sm text-white outline-none"
+                className="w-full bg-transparent py-3 text-sm text-slate-900 outline-none"
                 placeholder="Enter your password"
                 autoComplete={isRegistering ? 'new-password' : 'current-password'}
               />
@@ -165,13 +165,13 @@ export default function Login({ onLogin }: LoginProps) {
           </div>
 
           {error && (
-            <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-sm text-blue-300">
+            <div className="rounded-lg border border-rose-500/10 bg-rose-50 px-3 py-2 text-sm text-rose-600">
               {error}
             </div>
           )}
 
           {successMessage && (
-            <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+            <div className="rounded-lg border border-emerald-500/10 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
               {successMessage}
             </div>
           )}
@@ -179,7 +179,7 @@ export default function Login({ onLogin }: LoginProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? (isRegistering ? 'Creating account...' : 'Signing in...') : (isRegistering ? 'Create account' : 'Sign in')}
           </button>
@@ -189,14 +189,14 @@ export default function Login({ onLogin }: LoginProps) {
           {isRegistering ? (
             <>
               Already have an account?{' '}
-              <button type="button" onClick={toggleMode} className="text-blue-400 hover:text-blue-300 underline">
+              <button type="button" onClick={toggleMode} className="text-indigo-600 hover:text-violet-600 underline">
                 Sign in
               </button>
             </>
           ) : (
             <>
               Don't have an account?{' '}
-              <button type="button" onClick={toggleMode} className="text-blue-400 hover:text-blue-300 underline">
+              <button type="button" onClick={toggleMode} className="text-indigo-600 hover:text-violet-600 underline">
                 Sign up
               </button>
             </>

@@ -93,6 +93,8 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
           const xhr = new XMLHttpRequest()
           xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`)
           xhr.onload = () => {
+            // Log status and response for easier debugging
+            try { console.debug('[Cloudinary] upload response status:', xhr.status); console.debug('[Cloudinary] responseText:', xhr.responseText); } catch {}
             if (xhr.status >= 200 && xhr.status < 300) {
               try {
                 const responseBody = JSON.parse(xhr.responseText)
@@ -103,7 +105,8 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
             } else {
               try {
                 const responseBody = JSON.parse(xhr.responseText)
-                reject(new Error(responseBody?.error?.message || `Cloudinary upload failed with status ${xhr.status}`))
+                const message = responseBody?.error?.message || `Cloudinary upload failed with status ${xhr.status}`
+                reject(new Error(message))
               } catch {
                 reject(new Error(`Cloudinary upload failed with status ${xhr.status}`))
               }
@@ -128,7 +131,8 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
         try {
           profileImageUrl = await uploadSingle(profileImageFile)
         } catch (err) {
-          notifyError('Profile image upload failed')
+          const msg = err instanceof Error ? err.message : String(err)
+          notifyError(`Profile image upload failed: ${msg}`)
           throw err
         } finally {
           setUploadingImage(false)
@@ -171,10 +175,11 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
   }
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8">
+    <div className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h2>
-        <p className="text-gray-500 mt-1">Manage your account and profile settings</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Account</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Settings</h2>
+        <p className="mt-1 text-slate-500">Manage your account and profile settings</p>
       </div>
 
       {error && (
@@ -188,42 +193,42 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
           <h3 className="text-lg font-bold text-gray-900">Profile Information</h3>
         </div>
 
-        <form className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form className="space-y-6 p-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">First Name</label>
               <input
                 type="text"
                 value={settings.firstName}
                 onChange={(event) => setSettings({ ...settings, firstName: event.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Last Name</label>
               <input
                 type="text"
                 value={settings.lastName}
                 onChange={(event) => setSettings({ ...settings, lastName: event.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
               <input
                 type="email"
                 value={settings.email}
                 readOnly
-                className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2"
+                className="w-full rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-slate-600"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Phone Number</label>
               <input
                 type="tel"
                 value={settings.phoneNumber}
                 onChange={(event) => setSettings({ ...settings, phoneNumber: event.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div className="md:col-span-2">

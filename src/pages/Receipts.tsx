@@ -108,33 +108,34 @@ export default function Receipts({ token }: ReceiptsProps) {
   }
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8">
+    <div className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Receipts</h2>
-        <p className="text-gray-500 mt-1">Manage and download receipts</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Billing</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Receipts</h2>
+        <p className="mt-1 text-slate-500">Manage and download receipts</p>
       </div>
 
       {error && <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">{error}</div>}
       {actionMessage && <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">{actionMessage}</div>}
       {actionError && <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">{actionError}</div>}
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_18px_32px_-22px_rgba(15,23,42,0.35)] backdrop-blur-sm">
         <div className="overflow-x-auto">
           <table className="responsive-table w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="border-b border-slate-200 bg-slate-50/80">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Receipt</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Items</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Qty</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Cost Each</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Receipt</th>
+                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Order</th>
+                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Customer</th>
+                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Items</th>
+                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Qty</th>
+                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Cost Each</th>
+                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Total</th>
+                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Date</th>
+                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-200">
               {loading ? (
                 <tr>
                   <td colSpan={9}>
@@ -155,56 +156,56 @@ export default function Receipts({ token }: ReceiptsProps) {
                 </tr>
               ) : (
                 receipts.map((receipt) => (
-                  <tr key={receipt.id} className="hover:bg-gray-50 transition-colors">
-                    <td data-label="Receipt" className="px-6 py-4 text-sm font-medium text-blue-600">{receipt.receiptNumber}</td>
-                    <td data-label="Order" className="px-6 py-4 text-sm text-gray-900">{receipt.orderNumber}</td>
-                    <td data-label="Customer" className="px-6 py-4 text-sm text-gray-900">{receipt.customer}</td>
-                    <td data-label="Items" className="px-6 py-4 text-sm text-gray-900">
+                  <tr key={receipt.id} className="transition-colors hover:bg-indigo-50/50">
+                    <td data-label="Receipt" className="px-6 py-4 text-sm font-semibold text-indigo-600">{receipt.receiptNumber}</td>
+                    <td data-label="Order" className="px-6 py-4 text-sm text-slate-800">{receipt.orderNumber}</td>
+                    <td data-label="Customer" className="px-6 py-4 text-sm text-slate-800">{receipt.customer}</td>
+                    <td data-label="Items" className="px-6 py-4 text-sm text-slate-800">
                       <div className="space-y-1">
                         {Array.isArray(receipt.items) && receipt.items.length > 0 ? receipt.items.map((item, index) => (
                           <div key={`${receipt.id}-${index}`} className="font-medium">{item.product_name}</div>
-                        )) : <span className="text-gray-400">No items</span>}
+                        )) : <span className="text-slate-400">No items</span>}
                       </div>
                     </td>
-                    <td data-label="Qty" className="px-6 py-4 text-sm text-gray-900">
+                    <td data-label="Qty" className="px-6 py-4 text-sm text-slate-800">
                       <div className="space-y-1">
                         {Array.isArray(receipt.items) && receipt.items.length > 0 ? receipt.items.map((item, index) => (
                           <div key={`${receipt.id}-qty-${index}`}>{item.quantity}</div>
-                        )) : <span className="text-gray-400">—</span>}
+                        )) : <span className="text-slate-400">—</span>}
                       </div>
                     </td>
-                    <td data-label="Cost Each" className="px-6 py-4 text-sm text-gray-900">
+                    <td data-label="Cost Each" className="px-6 py-4 text-sm text-slate-800">
                       <div className="space-y-1">
                         {Array.isArray(receipt.items) && receipt.items.length > 0 ? receipt.items.map((item, index) => (
                           <div key={`${receipt.id}-price-${index}`}>{formatCurrency(item.unit_price)}</div>
-                        )) : <span className="text-gray-400">—</span>}
+                        )) : <span className="text-slate-400">—</span>}
                       </div>
                     </td>
-                    <td data-label="Total" className="px-6 py-4 text-sm font-medium text-gray-900">
+                    <td data-label="Total" className="px-6 py-4 text-sm font-semibold text-slate-900">
                       <div className="space-y-1">
                         {Array.isArray(receipt.items) && receipt.items.length > 0 ? receipt.items.map((item, index) => (
                           <div key={`${receipt.id}-sub-${index}`}>{formatCurrency(item.subtotal)}</div>
-                        )) : <span className="text-gray-400">—</span>}
+                        )) : <span className="text-slate-400">—</span>}
                       </div>
-                      <div className="mt-2 border-t border-gray-200 pt-2">{formatCurrency(receipt.amount)}</div>
+                      <div className="mt-2 border-t border-slate-200 pt-2">{formatCurrency(receipt.amount)}</div>
                     </td>
-                    <td data-label="Date" className="px-6 py-4 text-sm text-gray-500">{receipt.date}</td>
+                    <td data-label="Date" className="px-6 py-4 text-sm text-slate-500">{receipt.date}</td>
                     <td data-label="Actions" className="px-6 py-4 text-sm">
                       <div className="flex flex-wrap items-center gap-2">
                         <button
                           onClick={() => setSelectedReceipt(receipt)}
-                          className="inline-flex items-center gap-1 rounded border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                          className="inline-flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-700 transition-colors hover:bg-indigo-100"
                           title="Preview"
                         >
                           <Eye size={14} />
                           <span>Preview</span>
                         </button>
-                        <button onClick={() => handlePrint()} className="text-blue-600 hover:text-blue-800 p-2" title="Print">
+                        <button onClick={() => handlePrint()} className="rounded-xl p-2 text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700" title="Print">
                           <Printer size={18} />
                         </button>
                         <button
                           onClick={() => handleDownload(receipt.id, receipt.receiptNumber)}
-                          className="text-blue-600 hover:text-blue-800 p-2"
+                          className="rounded-xl p-2 text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700"
                           title="Download"
                           disabled={busyReceipt === receipt.id}
                         >
@@ -212,7 +213,7 @@ export default function Receipts({ token }: ReceiptsProps) {
                         </button>
                         <button
                           onClick={() => handleEmail(receipt.id)}
-                          className="text-blue-600 hover:text-blue-800 p-2"
+                          className="rounded-xl p-2 text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700"
                           title="Email"
                           disabled={busyReceipt === receipt.id}
                         >

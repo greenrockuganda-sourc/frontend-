@@ -1,16 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
-import { Product } from '@/lib/types'
-import { productsApi } from '@/lib/api'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
+import { DashboardLayout } from '../../components/layout/dashboard-layout'
+import { Product } from '../../lib/types'
+import { productsApi } from '../../lib/api'
+import { Button } from '../../components/ui/button'
+import { Skeleton } from '../../components/ui/skeleton'
+import { Badge } from '../../components/ui/badge'
 import { Plus, Edit, Trash2, AlertTriangle, TrendingDown, TrendingUp, Package } from 'lucide-react'
-import { InventoryForm } from '@/components/inventory/inventory-form'
-import { InventoryStatsGrid } from '@/components/inventory/inventory-stats-grid'
-import { InventoryAlerts } from '@/components/inventory/inventory-alerts'
+import { InventoryForm } from '../../components/inventory/inventory-form'
+import { InventoryStatsGrid } from '../../components/inventory/inventory-stats-grid'
+import { InventoryAlerts } from '../../components/inventory/inventory-alerts'
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -74,22 +74,23 @@ export default function InventoryPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        {/* Page Header */}
-        <div className="border-b border-border pb-6">
-          <div className="flex items-center justify-between">
+      <div className="space-y-6">
+        <div className="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_18px_40px_-25px_rgba(15,23,42,0.35)] backdrop-blur-xl sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-foreground tracking-tight">Inventory Management</h1>
-              <p className="text-muted-foreground mt-2">Track and manage your product inventory</p>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-indigo-100 px-3 py-1.5 text-xs font-medium text-indigo-700">
+                Inventory overview
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Inventory Management</h1>
+              <p className="mt-2 text-sm text-slate-500">Track and manage your product stock levels</p>
             </div>
-            <Button onClick={() => { setEditingProduct(null); setShowForm(true) }} className="gap-2">
+            <Button onClick={() => { setEditingProduct(null); setShowForm(true) }} className="gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:opacity-95">
               <Plus className="h-4 w-4" />
               Add Product
             </Button>
           </div>
         </div>
 
-        {/* Stats Grid */}
         <InventoryStatsGrid
           totalProducts={products.length}
           totalValue={totalInventoryValue}
@@ -97,7 +98,6 @@ export default function InventoryPage() {
           outOfStockItems={outOfStockItems}
         />
 
-        {/* Alerts */}
         {(lowStockItems > 0 || outOfStockItems > 0) && (
           <InventoryAlerts
             lowStockItems={lowStockItems}
@@ -105,7 +105,6 @@ export default function InventoryPage() {
           />
         )}
 
-        {/* Form Modal */}
         {showForm && (
           <InventoryForm
             product={editingProduct}
@@ -114,14 +113,13 @@ export default function InventoryPage() {
           />
         )}
 
-        {/* Filters & Controls */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-card rounded-lg border border-border">
+        <div className="flex flex-col items-start justify-between gap-4 rounded-[24px] border border-slate-200/80 bg-white/80 p-4 shadow-[0_18px_40px_-25px_rgba(15,23,42,0.35)] sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-foreground">Sort by:</label>
+            <label className="text-sm font-medium text-slate-700">Sort by:</label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 rounded-lg border border-border bg-card text-sm"
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-300"
             >
               <option value="name">Name</option>
               <option value="stock">Stock Level</option>
@@ -141,36 +139,35 @@ export default function InventoryPage() {
           </div>
         </div>
 
-        {/* Inventory Table */}
-        <div className="bg-card rounded-lg border border-border overflow-hidden">
+        <div className="overflow-hidden rounded-[26px] border border-slate-200/80 bg-white/80 shadow-[0_18px_40px_-25px_rgba(15,23,42,0.35)] backdrop-blur-xl">
           {loading ? (
-            <div className="p-6 space-y-3">
+            <div className="space-y-3 p-6">
               {[...Array(5)].map((_, i) => (
                 <Skeleton key={i} className="h-16" />
               ))}
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="p-12 text-center">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
+              <Package className="mx-auto mb-4 h-12 w-12 text-slate-400" />
+              <p className="text-slate-500">
                 {filterLowStock ? 'No low stock items' : 'No products yet'}
               </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b border-border bg-muted/50">
+                <thead className="border-b border-slate-200 bg-slate-50/80 text-xs uppercase tracking-[0.12em] text-slate-500">
                   <tr>
-                    <th className="px-6 py-4 text-left font-semibold">Product</th>
-                    <th className="px-6 py-4 text-left font-semibold">SKU</th>
-                    <th className="px-6 py-4 text-right font-semibold">Price</th>
-                    <th className="px-6 py-4 text-right font-semibold">Stock</th>
-                    <th className="px-6 py-4 text-right font-semibold">Value</th>
-                    <th className="px-6 py-4 text-center font-semibold">Status</th>
-                    <th className="px-6 py-4 text-center font-semibold">Actions</th>
+                    <th className="px-6 py-4 text-left font-medium">Product</th>
+                    <th className="px-6 py-4 text-left font-medium">SKU</th>
+                    <th className="px-6 py-4 text-right font-medium">Price</th>
+                    <th className="px-6 py-4 text-right font-medium">Stock</th>
+                    <th className="px-6 py-4 text-right font-medium">Value</th>
+                    <th className="px-6 py-4 text-center font-medium">Status</th>
+                    <th className="px-6 py-4 text-center font-medium">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-slate-200">
                   {filteredProducts.map((product) => {
                     const status = getStockStatus(product.quantity)
                     const inventoryValue = product.price * product.quantity
@@ -180,34 +177,30 @@ export default function InventoryPage() {
                     return (
                       <tr
                         key={product.id}
-                        className={`hover:bg-muted/30 transition-colors ${
-                          isCritical ? 'bg-destructive/5' : isLow ? 'bg-yellow-500/5' : ''
+                        className={`transition-colors hover:bg-slate-50/80 ${
+                          isCritical ? 'bg-red-50/60' : isLow ? 'bg-amber-50/60' : ''
                         }`}
                       >
                         <td className="px-6 py-4">
                           <div>
-                            <p className="font-semibold text-foreground">{product.name}</p>
+                            <p className="font-semibold text-slate-900">{product.name}</p>
                             {product.description && (
-                              <p className="text-xs text-muted-foreground mt-1">{product.description}</p>
+                              <p className="mt-1 text-xs text-slate-500">{product.description}</p>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-muted-foreground font-mono text-xs">
-                          {product.sku}
-                        </td>
-                        <td className="px-6 py-4 text-right font-medium">
-                          ${product.price.toFixed(2)}
-                        </td>
+                        <td className="px-6 py-4 font-mono text-xs text-slate-500">{product.sku}</td>
+                        <td className="px-6 py-4 text-right font-medium text-slate-900">${product.price.toFixed(2)}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <span className={`font-bold ${
                               product.quantity === 0
-                                ? 'text-destructive'
+                                ? 'text-red-600'
                                 : product.quantity < 10
-                                ? 'text-orange-600'
-                                : product.quantity < 20
-                                ? 'text-yellow-600'
-                                : 'text-green-600'
+                                  ? 'text-orange-600'
+                                  : product.quantity < 20
+                                    ? 'text-yellow-600'
+                                    : 'text-emerald-600'
                             }`}>
                               {product.quantity}
                             </span>
@@ -216,13 +209,9 @@ export default function InventoryPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right font-semibold">
-                          ${inventoryValue.toFixed(2)}
-                        </td>
+                        <td className="px-6 py-4 text-right font-semibold text-slate-900">${inventoryValue.toFixed(2)}</td>
                         <td className="px-6 py-4 text-center">
-                          <Badge className={status.color}>
-                            {status.label}
-                          </Badge>
+                          <Badge className={status.color}>{status.label}</Badge>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex items-center justify-center gap-2">
@@ -230,13 +219,14 @@ export default function InventoryPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => { setEditingProduct(product); setShowForm(true) }}
+                              className="text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-destructive"
+                              className="text-red-600 hover:bg-red-50 hover:text-red-700"
                               onClick={() => handleDelete(product.id)}
                             >
                               <Trash2 className="h-4 w-4" />

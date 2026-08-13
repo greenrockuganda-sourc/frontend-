@@ -20,44 +20,45 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
 
   return (
     <>
-      {/* Mobile overlay */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden fade-in"
+        <div
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar */}
       <aside className={`
-        fixed lg:relative top-0 left-0 h-full w-[85vw] max-w-xs sm:w-72 bg-white border-r border-gray-200
-        transform transition-transform duration-300 ease-in-out z-40 lg:z-0
+        fixed left-0 top-0 z-40 flex h-full w-[85vw] max-w-xs flex-col border-r border-slate-200/80 bg-white/80 backdrop-blur-xl shadow-2xl transition-transform duration-200 ease-out lg:relative lg:z-0 lg:w-72 lg:translate-x-0 lg:shadow-none
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        flex flex-col shadow-2xl lg:shadow-none
       `}>
-        {/* Header */}
-        <div className="p-4 sm:p-6 border-b border-gray-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
-              <span className="text-white font-bold text-base sm:text-lg">SD</span>
+        <div className="flex items-center justify-between border-b border-slate-200/80 p-5 sm:p-6">
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-100 via-white to-violet-100 shadow-[0_0_28px_rgba(99,102,241,0.62),0_0_54px_rgba(168,85,247,0.28)]">
+              <img
+                src="https://res.cloudinary.com/h78tlu47/image/upload/v1784708343/icon_sotujz.jpg"
+                alt="Seller Admin logo"
+                className="h-full w-full object-cover"
+              />
+              <span className="absolute inset-0 rounded-2xl ring-2 ring-indigo-200/80 ring-offset-2 ring-offset-white" />
             </div>
-            <div className="min-w-0">
-              <span className="font-bold text-gray-900 hidden sm:inline text-lg">Seller</span>
-              <span className="font-bold text-gray-900 sm:hidden">Seller</span>
-              <p className="text-xs text-gray-500 hidden sm:block">Dashboard</p>
+            <div>
+              <h1 className="text-base font-bold tracking-tight text-slate-900">Seller Admin</h1>
+              <p className="text-xs text-slate-500">Management</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
-            className="lg:hidden text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 lg:hidden"
             aria-label="Close menu"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Menu Items */}
-        <nav className="flex-1 px-3 sm:px-4 py-4 sm:py-6 space-y-1 overflow-y-auto">
+        <nav className="flex-1 space-y-1.5 overflow-y-auto px-3 py-4 sm:px-4">
+          <div className="mb-2 px-2">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Workspace</p>
+          </div>
           {menuItems.map((item) => {
             const Icon = item.icon
             const isActive = currentPage === item.id
@@ -69,12 +70,10 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
                   onClose()
                 }}
                 className={`
-                  w-full flex items-center gap-3 px-3 sm:px-4 py-3 rounded-xl font-medium
-                  transition-all duration-200 text-sm sm:text-base
-                  ${isActive 
-                    ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 shadow-sm' 
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }
+                  flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium transition-all duration-200
+                  ${isActive
+                    ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-[0_18px_30px_-18px_rgba(99,102,241,0.9)]'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
                 `}
               >
                 <Icon size={20} className="flex-shrink-0" />
@@ -84,11 +83,10 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <div className="text-center">
-            <p className="text-xs text-gray-500">Seller Dashboard</p>
-            <p className="text-xs text-gray-400">v1.0.0</p>
+        <div className="border-t border-slate-200/80 p-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Status</p>
+            <p className="mt-2 text-sm font-medium text-slate-700">All systems online</p>
           </div>
         </div>
       </aside>

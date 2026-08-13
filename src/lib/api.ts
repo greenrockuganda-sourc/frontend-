@@ -1,4 +1,14 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (typeof window !== 'undefined' ? window.location.origin : '')
+
+if (!API_BASE_URL) {
+  // Helpful developer warning when no API base is configured
+  // Ensure you set `VITE_API_BASE_URL` to your Railway (or other) backend URL.
+  // Example: https://my-app.up.railway.app
+  // In production, set the env var in your Railway project settings.
+  // This check runs at import-time in the client bundle.
+  // eslint-disable-next-line no-console
+  console.warn('VITE_API_BASE_URL is not set — requests will use an empty base URL. Set VITE_API_BASE_URL to your Railway backend URL.')
+}
 
 let authTokenUpdater: ((token: string | null) => void) | null = null
 

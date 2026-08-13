@@ -30,7 +30,7 @@ export class CloudinaryService {
     this.uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || ''
 
     if (!this.cloudName || !this.uploadPreset) {
-      console.warn('[Cloudinary] Missing environment variables for Cloudinary upload')
+      console.warn('[Cloudinary] Missing environment variables for Cloudinary upload. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET in your .env')
     }
   }
 
@@ -42,6 +42,9 @@ export class CloudinaryService {
     file: File,
     folder: string = 'seller-admin'
   ): Promise<CloudinaryUploadResponse> {
+    if (!this.cloudName || !this.uploadPreset) {
+      throw new Error('Cloudinary not configured: missing VITE_CLOUDINARY_CLOUD_NAME or VITE_CLOUDINARY_UPLOAD_PRESET')
+    }
     const formData = new FormData()
     formData.append('file', file)
     formData.append('upload_preset', this.uploadPreset)
@@ -59,7 +62,7 @@ export class CloudinaryService {
 
       if (!response.ok) {
         const error: CloudinaryError = await response.json()
-        throw new Error(error.error.message || 'Cloudinary upload failed')
+        throw new Error(error?.error?.message || `Cloudinary upload failed with status ${response.status}`)
       }
 
       const data: CloudinaryUploadResponse = await response.json()
@@ -68,7 +71,7 @@ export class CloudinaryService {
       return data
     } catch (error) {
       console.error('[Cloudinary] Upload failed:', error)
-      throw error
+      throw new Error(error instanceof Error ? error.message : String(error))
     }
   }
 
