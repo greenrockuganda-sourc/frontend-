@@ -29,8 +29,42 @@ export class CloudinaryService {
     this.cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || ''
     this.uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || ''
 
-    if (!this.cloudName || !this.uploadPreset) {
-      console.warn('[Cloudinary] Missing environment variables for Cloudinary upload. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET in your .env')
+    this.notifyIfConfigMissing()
+  }
+
+  private getMissingConfig(): string[] {
+    const missing: string[] = []
+
+    if (!this.cloudName) {
+      missing.push('VITE_CLOUDINARY_CLOUD_NAME')
+    }
+
+    if (!this.uploadPreset) {
+      missing.push('VITE_CLOUDINARY_UPLOAD_PRESET')
+    }
+
+    return missing
+  }
+
+  private notifyIfConfigMissing() {
+    const missing = this.getMissingConfig()
+
+    if (!missing.length) {
+      return
+    }
+
+    const message = `Cloudinary is not configured. Add ${missing.join(' and ')} in your Railway environment variables.`
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cloudinary-config-error', { detail: { message } }))
+    }
+
+    console.warn(`[Cloudinary] Missing environment variables for Cloudinary upload. ${message}`)
+  }
+
+  private ensureConfigured() {
+    const missing = this.getMissingConfig()
+    if (missing.length > 0) {
+      throw new Error(`Cloudinary not configured: missing ${missing.join(' and ')}`)
     }
   }
 
@@ -42,9 +76,7 @@ export class CloudinaryService {
     file: File,
     folder: string = 'seller-admin'
   ): Promise<CloudinaryUploadResponse> {
-    if (!this.cloudName || !this.uploadPreset) {
-      throw new Error('Cloudinary not configured: missing VITE_CLOUDINARY_CLOUD_NAME or VITE_CLOUDINARY_UPLOAD_PRESET')
-    }
+    this.ensureConfigured()
     const formData = new FormData()
     formData.append('file', file)
     formData.append('upload_preset', this.uploadPreset)

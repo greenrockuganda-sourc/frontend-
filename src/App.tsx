@@ -10,7 +10,7 @@ import Reports from '@/pages/Reports'
 import Settings from '@/pages/Settings'
 import Login from '@/pages/Login'
 import { fetchProfile, registerAuthTokenUpdater } from '@/lib/api'
-import { ToastContainer } from 'react-toastify'
+import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { UserProfile } from '@/types'
 import NotificationSystem, { useNotifications } from '@/components/NotificationSystem'
@@ -33,6 +33,20 @@ export default function App() {
     registerAuthTokenUpdater((token) => {
       setAccessToken(token)
     })
+  }, [])
+
+  useEffect(() => {
+    const handleCloudinaryConfigError = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message?: string }>
+      const message = customEvent.detail?.message || 'Cloudinary uploads are not configured in the current environment.'
+      toast.error(message)
+    }
+
+    window.addEventListener('cloudinary-config-error', handleCloudinaryConfigError)
+
+    return () => {
+      window.removeEventListener('cloudinary-config-error', handleCloudinaryConfigError)
+    }
   }, [])
 
   const clearAuthSession = () => {
