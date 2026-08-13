@@ -68,136 +68,167 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto print:shadow-none print:rounded-none print:max-w-none print:max-h-none print:p-0">
-        {/* Top bar */}
-        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-100 p-4 flex items-center justify-between gap-4 no-print">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Receipt Preview</h2>
-            <p className="text-xs text-slate-500">{receipt.customerName} · {receipt.customerEmail}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleDownloadPDF} className="gap-2">
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
-            <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
-              <Printer className="h-4 w-4" />
-              Print
-            </Button>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto print:shadow-none print:rounded-none print:max-w-none print:max-h-none print:p-0">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-border flex items-center justify-between p-6 no-print">
+          <h2 className="text-xl font-bold text-foreground">Receipt Preview</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
-        <div ref={receiptRef} className="receipt-container p-8 print:p-6">
-          {/* Main layout */}
-          <div className="grid grid-cols-12 gap-6">
-            <div className="col-span-12 lg:col-span-8">
-              {/* Brand / Recipient */}
-              <div className="flex items-start gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-white text-lg font-bold shadow-md">
-                  SA
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Seller Admin</h3>
-                  <p className="text-sm text-slate-500">Official Receipt</p>
-                  <p className="mt-2 text-sm text-slate-600">{receipt.customerName}</p>
-                  <p className="text-xs text-slate-400">{receipt.customerEmail} • {receipt.customerPhone}</p>
-                </div>
-              </div>
+        {/* Actions */}
+        <div className="bg-muted/50 p-4 flex gap-2 no-print">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleDownloadPDF}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Download PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            className="gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            Print
+          </Button>
+        </div>
 
-              {/* Items */}
-              <div className="mt-6 bg-slate-50 rounded-xl p-4">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-slate-500 uppercase tracking-wider">
-                      <th className="py-3">Item</th>
-                      <th className="py-3 text-center w-16">Qty</th>
-                      <th className="py-3 text-right w-28">Unit</th>
-                      <th className="py-3 text-right w-28">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {receipt.items.map((item, i) => (
-                      <tr key={i} className={`${i % 2 === 0 ? 'bg-white' : 'bg-white/60'}`}>
-                        <td className="py-3 align-top">
-                          <div className="font-medium text-slate-900">{item.productName}</div>
-                          {item.description && <div className="text-xs text-slate-400 mt-1">{item.description}</div>}
-                        </td>
-                        <td className="py-3 text-center align-top">{item.quantity}</td>
-                        <td className="py-3 text-right align-top">${item.price.toFixed(2)}</td>
-                        <td className="py-3 text-right align-top font-semibold">${item.total.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        {/* Receipt Content */}
+        <div ref={receiptRef} className="receipt-container p-8 bg-white">
+          {/* Company Header */}
+          <div className="text-center mb-10 pb-8 border-b-2 border-foreground/20">
+            <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-primary/10 rounded-lg border border-primary/30">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-sm">SA</span>
               </div>
-
-              {/* Notes */}
-              {receipt.notes && (
-                <div className="mt-4 text-sm text-slate-600">
-                  <strong>Notes:</strong> {receipt.notes}
-                </div>
-              )}
+              <h1 className="text-2xl font-bold text-foreground">Seller Admin</h1>
             </div>
+            <p className="text-sm text-muted-foreground font-semibold uppercase tracking-wide mb-4">
+              Official Receipt
+            </p>
+            <p className="text-lg font-bold text-foreground mb-1">
+              {receipt.receiptNumber}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Issued: {formatDate(receipt.issuedAt)}
+            </p>
+          </div>
 
-            <aside className="col-span-12 lg:col-span-4">
-              <div className="rounded-xl border border-slate-100 p-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-slate-500 uppercase">Receipt</div>
-                    <div className="font-bold text-slate-900 text-lg">{receipt.receiptNumber}</div>
-                  </div>
-                  <div className="text-right text-xs text-slate-500">
-                    <div>{formatDate(receipt.issuedAt)}</div>
-                    <div className="mt-1">Order: <span className="font-mono text-slate-700">{receipt.orderId}</span></div>
-                  </div>
+          {/* Customer Information */}
+          <div className="grid grid-cols-2 gap-8 mb-8 pb-8 border-b border-border/30">
+            <div className="bg-muted/20 p-4 rounded-lg">
+              <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wide">
+                Bill To
+              </h3>
+              <p className="font-bold text-foreground text-base mb-2">{receipt.customerName}</p>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <p className="break-all">{receipt.customerEmail}</p>
+                <p>{receipt.customerPhone}</p>
+              </div>
+            </div>
+            <div className="bg-muted/20 p-4 rounded-lg">
+              <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wide">
+                Transaction Details
+              </h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-semibold text-foreground">Order ID:</span>
+                  <span className="text-foreground font-mono">{receipt.orderId}</span>
                 </div>
-                <div className="mt-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Payment</span>
-                    <span className="font-medium text-slate-900">{receipt.paymentMethod}</span>
-                  </div>
-                  <div className="flex justify-between mt-2">
-                    <span className="text-slate-500">Subtotal</span>
-                    <span className="font-medium text-slate-900">${receipt.subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <span className="text-slate-500">Tax</span>
-                    <span className="font-medium text-slate-900">${receipt.tax.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <span className="text-slate-500">Shipping</span>
-                    <span className="font-medium text-slate-900">${receipt.shipping.toFixed(2)}</span>
-                  </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold text-foreground">Payment:</span>
+                  <span className="text-foreground">{receipt.paymentMethod}</span>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white p-4 text-center">
-                <div className="text-sm uppercase tracking-wider opacity-90">Total</div>
-                <div className="mt-2 text-2xl font-bold">${receipt.total.toFixed(2)}</div>
-              </div>
+          {/* Items Table */}
+          <div className="mb-10">
+            <h3 className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-wide">
+              Items Purchased
+            </h3>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-t-2 border-b-2 border-foreground/30 bg-muted/30">
+                  <th className="text-left py-4 font-bold text-foreground">Description</th>
+                  <th className="text-center py-4 font-bold text-foreground w-16">Qty</th>
+                  <th className="text-right py-4 font-bold text-foreground w-28">Unit Price</th>
+                  <th className="text-right py-4 font-bold text-foreground w-28">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {receipt.items.map((item, index) => (
+                  <tr key={index} className="border-b border-border/20 hover:bg-muted/10">
+                    <td className="py-4 text-foreground font-medium">{item.productName}</td>
+                    <td className="text-center py-4 text-foreground">{item.quantity}</td>
+                    <td className="text-right py-4 text-foreground">
+                      ${item.price.toFixed(2)}
+                    </td>
+                    <td className="text-right py-4 text-foreground font-bold">
+                      ${item.total.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-              <div className="mt-4 text-xs text-slate-500">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-slate-400" />
-                  <span>support@selleradmin.example</span>
+          {/* Totals */}
+          <div className="flex justify-end mb-10 pb-10 border-b border-border/30">
+            <div className="w-72">
+              <div className="space-y-3 mb-4 p-4 bg-muted/20 rounded-lg">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal:</span>
+                  <span className="text-foreground font-semibold">${receipt.subtotal.toFixed(2)}</span>
                 </div>
-                <p className="mt-3">Receipt ID: <span className="font-mono text-slate-600">{receipt.receiptNumber}</span></p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Tax (included):</span>
+                  <span className="text-foreground font-semibold">${receipt.tax.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Shipping:</span>
+                  <span className="text-foreground font-semibold">${receipt.shipping.toFixed(2)}</span>
+                </div>
+                <div className="border-t border-border/30 pt-3 flex justify-between text-base font-bold">
+                  <span className="text-foreground">Total Amount:</span>
+                  <span className="text-primary text-lg">${receipt.total.toFixed(2)}</span>
+                </div>
               </div>
-            </aside>
+            </div>
           </div>
 
           {/* Footer */}
-          <div className="mt-8 text-center text-sm text-slate-500 print:text-xs">
-            <p>Thank you for your purchase — please keep this receipt for your records.</p>
-            <p className="mt-2">Issued by: {receipt.issuedBy ?? 'Seller Admin'}</p>
+          <div className="text-center space-y-4">
+            <div className="pt-4 pb-6 border-t border-dashed border-border/30">
+              <p className="text-sm font-semibold text-foreground mb-3">
+                Thank you for your purchase!
+              </p>
+              <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+                This is an official receipt. Please keep it for your records.
+                For inquiries, please contact customer service.
+              </p>
+              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-4 border-t border-dashed border-border/30">
+                <span>Receipt ID: {receipt.receiptNumber}</span>
+                <span>•</span>
+                <span>{receipt.issuedBy ? `Issued by: ${receipt.issuedBy}` : 'Seller Dashboard'}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Print-only timestamp */}
-          <div className="hidden print:block text-center text-xs text-slate-400 mt-6">
+          {/* Print-only footer */}
+          <div className="hidden print:block text-center text-xs text-muted-foreground mt-8 pt-6 border-t border-foreground/10">
             <p>Printed on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</p>
           </div>
         </div>

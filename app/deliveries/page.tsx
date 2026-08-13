@@ -1,14 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { DashboardLayout } from '../../components/layout/dashboard-layout'
-import { Delivery } from '../../lib/types'
-import { deliveriesApi } from '../../lib/api'
-import { Button } from '../../components/ui/button'
-import { Skeleton } from '../../components/ui/skeleton'
-import { Badge } from '../../components/ui/badge'
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
+import { Delivery } from '@/lib/types'
+import { deliveriesApi } from '@/lib/api'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import { Plus, CheckCircle2 } from 'lucide-react'
-import { DeliveryForm } from '../../components/deliveries/delivery-form'
+import { DeliveryForm } from '@/components/deliveries/delivery-form'
 
 const statusConfig = {
   'pending': { bg: 'bg-warning/10', text: 'text-warning', label: 'Pending' },
@@ -52,20 +52,15 @@ export default function DeliveriesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_18px_40px_-25px_rgba(15,23,42,0.35)] backdrop-blur-xl sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-cyan-100 px-3 py-1.5 text-xs font-medium text-cyan-700">
-                Delivery tracking
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Deliveries</h1>
-              <p className="mt-2 text-sm text-slate-500">Track and manage the movement of every order</p>
-            </div>
-              <Button onClick={() => setShowForm(true)} className="gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:opacity-95">
-              <Plus className="h-4 w-4" />
-              New Delivery
-            </Button>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Deliveries</h1>
+            <p className="text-muted-foreground mt-2">Track and manage deliveries</p>
           </div>
+          <Button onClick={() => setShowForm(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Delivery
+          </Button>
         </div>
 
         {showForm && (
@@ -75,43 +70,43 @@ export default function DeliveriesPage() {
           />
         )}
 
-        <div className="overflow-hidden rounded-[26px] border border-slate-200/80 bg-white/80 shadow-[0_18px_40px_-25px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
           {loading ? (
-            <div className="space-y-3 p-6">
+            <div className="p-6 space-y-3">
               {[...Array(5)].map((_, i) => (
                 <Skeleton key={i} className="h-16" />
               ))}
             </div>
           ) : deliveries.length === 0 ? (
             <div className="p-12 text-center">
-              <p className="text-slate-500">No deliveries found</p>
+              <p className="text-muted-foreground">No deliveries found</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50/80 text-xs uppercase tracking-[0.12em] text-slate-500">
+                <thead className="border-b border-border bg-muted/50">
                   <tr>
-                    <th className="px-6 py-3 text-left font-medium">Order #</th>
-                    <th className="px-6 py-3 text-left font-medium">Person</th>
-                    <th className="px-6 py-3 text-left font-medium">Location</th>
-                    <th className="px-6 py-3 text-center font-medium">Status</th>
-                    <th className="px-6 py-3 text-center font-medium">Receipt</th>
-                    <th className="px-6 py-3 text-center font-medium">Actions</th>
+                    <th className="px-6 py-3 text-left font-semibold">Order #</th>
+                    <th className="px-6 py-3 text-left font-semibold">Person</th>
+                    <th className="px-6 py-3 text-left font-semibold">Location</th>
+                    <th className="px-6 py-3 text-center font-semibold">Status</th>
+                    <th className="px-6 py-3 text-center font-semibold">Receipt</th>
+                    <th className="px-6 py-3 text-center font-semibold">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-border">
                   {deliveries.map((delivery) => {
                     const statusInfo = statusConfig[delivery.status as keyof typeof statusConfig]
                     return (
-                      <tr key={delivery.id} className="transition-colors hover:bg-slate-50/80">
-                        <td className="px-6 py-4 font-medium text-slate-900">{delivery.orderNumber}</td>
+                      <tr key={delivery.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-6 py-4 font-medium">{delivery.orderNumber}</td>
                         <td className="px-6 py-4">
                           <div>
-                            <p className="font-medium text-slate-800">{delivery.deliveryPersonName}</p>
-                            <p className="text-xs text-slate-500">{delivery.deliveryPersonPhone}</p>
+                            <p className="font-medium">{delivery.deliveryPersonName}</p>
+                            <p className="text-xs text-muted-foreground">{delivery.deliveryPersonPhone}</p>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-slate-500">{delivery.location}</td>
+                        <td className="px-6 py-4 text-muted-foreground">{delivery.location}</td>
                         <td className="px-6 py-4 text-center">
                           <Badge className={`${statusInfo.bg} ${statusInfo.text}`}>
                             {statusInfo.label}
@@ -119,12 +114,12 @@ export default function DeliveriesPage() {
                         </td>
                         <td className="px-6 py-4 text-center">
                           {delivery.receiptIssued ? (
-                            <div className="flex items-center justify-center gap-1 text-emerald-600">
+                            <div className="flex items-center justify-center gap-1 text-success">
                               <CheckCircle2 className="h-4 w-4" />
                               <span className="text-xs">Issued</span>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-500">Pending</span>
+                            <span className="text-xs text-muted-foreground">Pending</span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-center">
@@ -133,7 +128,6 @@ export default function DeliveriesPage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleIssueReceipt(delivery.id)}
-                              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                             >
                               Issue Receipt
                             </Button>

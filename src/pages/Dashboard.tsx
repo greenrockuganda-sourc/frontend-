@@ -218,19 +218,18 @@ export default function Dashboard({ token, user }: DashboardProps) {
   const firstName = user?.first_name || user?.email?.split('@')[0] || 'there'
 
   return (
-    <div className="w-full border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
+    <div className="w-full p-3 sm:p-6 lg:p-8">
       <div className="mb-6 sm:mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="max-w-2xl">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Overview</p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Welcome back, {firstName}!</h2>
-          <p className="mt-1 text-sm text-slate-500 sm:text-base">Here is what is happening with your store right now.</p>
+          <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Welcome back, {firstName}!</h2>
+          <p className="mt-1 text-sm text-gray-500 sm:text-base">Here is what is happening with your store right now.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 shadow-sm backdrop-blur-sm">
-          <label className="text-sm font-medium text-slate-700">Date range</label>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Date range</label>
           <select
             value={range}
             onChange={(event) => setRange(event.target.value as '7d' | '30d' | '90d' | 'all')}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-auto"
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-auto"
           >
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
@@ -240,7 +239,7 @@ export default function Dashboard({ token, user }: DashboardProps) {
         </div>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-violet-50 px-4 py-3 text-sm text-indigo-800 shadow-sm">
+      <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
         Showing dashboard metrics for <strong>{dateRangeLabel}</strong>. Use this filter to check performance across different periods.
       </div>
 

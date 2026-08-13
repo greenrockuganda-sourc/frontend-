@@ -1,4 +1,4 @@
-import { Menu, Bell, User, LogOut, Settings } from 'lucide-react'
+import { Menu, Bell, User, LogOut } from 'lucide-react'
 import { useState } from 'react'
 
 interface HeaderProps {
@@ -6,14 +6,10 @@ interface HeaderProps {
   user?: any
   onLogout: () => void
   onProfileClick?: () => void
-  notifications?: Array<{ id: string; type: string; title: string; message?: string }>
-  onDismissNotification?: (id: string) => void
-  addNotification?: (n: { type: 'success' | 'error' | 'warning' | 'info'; title: string; message?: string; duration?: number }) => string
 }
 
-export default function Header({ onMenuClick, user, onLogout, onProfileClick, notifications = [], onDismissNotification, addNotification }: HeaderProps) {
+export default function Header({ onMenuClick, user, onLogout, onProfileClick }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
 
   const displayName = user ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || 'Seller' : 'Seller'
   const initials = (displayName || 'S')
@@ -24,96 +20,58 @@ export default function Header({ onMenuClick, user, onLogout, onProfileClick, no
     .toUpperCase()
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
-        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+    <header className="sticky-header border-b border-blue-800 bg-blue-900 px-3 py-2 sm:px-6 sm:py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
           <button
             onClick={onMenuClick}
-            className="rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+            className="lg:hidden p-2 hover:bg-blue-800 rounded-lg transition-colors"
             aria-label="Open menu"
           >
-            <Menu size={22} />
+            <Menu size={22} className="text-white" />
           </button>
-
-          <div className="flex flex-1 items-center justify-center sm:justify-start">
-            <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-indigo-200/80 bg-gradient-to-br from-indigo-100 via-white to-violet-100 shadow-[0_0_22px_rgba(99,102,241,0.4)] sm:h-16 sm:w-16">
-              <img
-                src="https://res.cloudinary.com/h78tlu47/image/upload/v1784708343/icon_sotujz.jpg"
-                alt="Seller Admin logo"
-                className="h-full w-full object-contain p-1.5"
-              />
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="h-9 w-9 sm:h-12 sm:w-12 rounded-lg bg-white/10 p-1 flex-shrink-0">
+              <img src="https://res.cloudinary.com/h78tlu47/image/upload/v1784708343/icon_sotujz.jpg" alt="Glow logo" className="h-full w-full rounded-lg object-contain" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-base sm:text-lg md:text-2xl font-bold text-white">Glow</h1>
+              <p className="hidden text-xs text-blue-200 sm:block">Dashboard</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="relative">
-            <button onClick={() => setShowNotifications((s) => !s)} className="relative rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900" aria-label="Notifications">
-              <Bell size={18} />
-              {notifications.length > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">{notifications.length}</span>
-              )}
-            </button>
-
-            {showNotifications && (
-              <div className="absolute right-0 z-50 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-xl">
-                <div className="p-3">
-                  <p className="text-sm font-semibold text-slate-700">Notifications</p>
-                </div>
-                <div className="max-h-60 overflow-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-3 text-sm text-slate-500">No notifications</div>
-                  ) : (
-                    notifications.map((n) => (
-                      <div key={n.id} className="flex items-start justify-between gap-3 border-t border-slate-100 p-3">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-900">{n.title}</p>
-                          {n.message && <p className="text-xs text-slate-600">{n.message}</p>}
-                        </div>
-                        <div className="flex-shrink-0 pl-2">
-                          <button onClick={() => { onDismissNotification?.(n.id); }} className="text-xs text-indigo-600">Dismiss</button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => onProfileClick?.()}
-            className="inline-flex rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-            aria-label="Settings"
-          >
-            <Settings size={18} />
+        <div className="flex items-center gap-1 sm:gap-4">
+          <button className="relative p-2 text-blue-100 hover:bg-blue-800 rounded-lg transition-colors" aria-label="Notifications">
+            <Bell size={20} />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-red-400 rounded-full"></span>
           </button>
 
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-slate-100 sm:p-2"
+              className="flex items-center gap-2 p-1.5 sm:p-2 hover:bg-blue-800 rounded-lg transition-colors"
               aria-label="User menu"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 text-sm font-bold text-white sm:h-9 sm:w-9">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white text-blue-900 rounded-full flex items-center justify-center font-bold text-sm">
                 {initials}
               </div>
-              <span className="hidden text-sm font-medium text-slate-700 md:inline">{displayName}</span>
+              <span className="hidden text-sm font-medium text-white md:inline">{displayName}</span>
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-xl">
-                <div className="border-b border-slate-200 p-4">
-                  <p className="truncate text-sm font-medium text-slate-900">{displayName}</p>
-                  <p className="truncate text-xs text-slate-500">{user?.email || 'seller@example.com'}</p>
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50 slide-up">
+                <div className="p-4 border-b border-gray-200">
+                  <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
+                  <p className="text-xs text-gray-500 truncate">{user?.email || 'seller@example.com'}</p>
                 </div>
-                <button onClick={() => { onProfileClick?.(); setShowUserMenu(false) }} className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                <button onClick={() => { onProfileClick?.(); setShowUserMenu(false) }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                   <User size={16} />
                   Profile
                 </button>
                 <button
                   onClick={() => { onLogout(); setShowUserMenu(false) }}
-                  className="flex w-full items-center gap-2 border-t border-slate-200 px-4 py-3 text-sm text-indigo-600 transition-colors hover:bg-indigo-50"
+                  className="w-full flex items-center gap-2 px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 border-t border-gray-200 transition-colors"
                 >
                   <LogOut size={16} />
                   Logout

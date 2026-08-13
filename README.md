@@ -167,11 +167,6 @@ pnpm dev
 - Vite provides lightning-fast development server
 - Hot Module Replacement (HMR) with instant updates
 - Fast refresh for React components
-
-Environment
- - The frontend expects an environment variable `VITE_API_BASE_URL` to point to your backend API.
- - When deploying to Railway, add `VITE_API_BASE_URL` in the Railway Project > Settings > Variables, e.g. `https://my-backend.up.railway.app`.
- - For local testing, copy `.env.example` to `.env` and set the URL.
 - TypeScript support with auto-compilation
 
 ### Building for Production

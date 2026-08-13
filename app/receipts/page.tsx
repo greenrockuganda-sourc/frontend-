@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { DashboardLayout } from '../../components/layout/dashboard-layout'
-import { Receipt } from '../../lib/types'
-import { receiptsApi } from '../../lib/api'
-import { Button } from '../../components/ui/button'
-import { Skeleton } from '../../components/ui/skeleton'
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
+import { Receipt } from '@/lib/types'
+import { receiptsApi } from '@/lib/api'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Download, Eye } from 'lucide-react'
-import { ReceiptTemplate } from '../../components/receipts/receipt-template'
+import { ReceiptTemplate } from '@/components/receipts/receipt-template'
 
 export default function ReceiptsPage() {
   const [receipts, setReceipts] = useState<Receipt[]>([])
@@ -49,14 +49,9 @@ export default function ReceiptsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_18px_40px_-25px_rgba(15,23,42,0.35)] backdrop-blur-xl sm:p-6">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-indigo-100 px-3 py-1.5 text-xs font-medium text-indigo-700">
-              Financial records
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Receipts</h1>
-            <p className="mt-2 text-sm text-slate-500">View and manage issued receipts</p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Receipts</h1>
+          <p className="text-muted-foreground mt-2">View and manage issued receipts</p>
         </div>
 
         {selectedReceipt && (
@@ -66,48 +61,51 @@ export default function ReceiptsPage() {
           />
         )}
 
-        <div className="overflow-hidden rounded-[26px] border border-slate-200/80 bg-white/80 shadow-[0_18px_40px_-25px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
           {loading ? (
-            <div className="space-y-3 p-6">
+            <div className="p-6 space-y-3">
               {[...Array(5)].map((_, i) => (
                 <Skeleton key={i} className="h-16" />
               ))}
             </div>
           ) : receipts.length === 0 ? (
             <div className="p-12 text-center">
-              <p className="text-slate-500">No receipts issued yet</p>
+              <p className="text-muted-foreground">No receipts issued yet</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50/80 text-xs uppercase tracking-[0.12em] text-slate-500">
+                <thead className="border-b border-border bg-muted/50">
                   <tr>
-                    <th className="px-6 py-3 text-left font-medium">Receipt #</th>
-                    <th className="px-6 py-3 text-left font-medium">Customer</th>
-                    <th className="px-6 py-3 text-right font-medium">Total</th>
-                    <th className="px-6 py-3 text-left font-medium">Issued</th>
-                    <th className="px-6 py-3 text-center font-medium">Actions</th>
+                    <th className="px-6 py-3 text-left font-semibold">Receipt #</th>
+                    <th className="px-6 py-3 text-left font-semibold">Customer</th>
+                    <th className="px-6 py-3 text-right font-semibold">Total</th>
+                    <th className="px-6 py-3 text-left font-semibold">Issued</th>
+                    <th className="px-6 py-3 text-center font-semibold">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-border">
                   {receipts.map((receipt) => (
-                    <tr key={receipt.id} className="transition-colors hover:bg-slate-50/80">
-                      <td className="px-6 py-4 font-medium text-slate-900">{receipt.receiptNumber}</td>
+                    <tr key={receipt.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-6 py-4 font-medium">{receipt.receiptNumber}</td>
                       <td className="px-6 py-4">
                         <div>
-                          <p className="font-medium text-slate-800">{receipt.customerName}</p>
-                          <p className="text-xs text-slate-500">{receipt.customerEmail}</p>
+                          <p className="font-medium">{receipt.customerName}</p>
+                          <p className="text-xs text-muted-foreground">{receipt.customerEmail}</p>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right font-semibold text-slate-900">${receipt.total.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-sm text-slate-500">{new Date(receipt.issuedAt).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-right font-semibold">
+                        ${receipt.total.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        {new Date(receipt.issuedAt).toLocaleDateString()}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setSelectedReceipt(receipt)}
-                            className="text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -115,7 +113,6 @@ export default function ReceiptsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDownload(receipt.id)}
-                            className="text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                           >
                             <Download className="h-4 w-4" />
                           </Button>
