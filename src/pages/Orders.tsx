@@ -324,18 +324,17 @@ export default function Orders({ token }: OrdersProps) {
   }
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
+    <div className="page-container">
       <div className="mb-6 sm:mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Operations</p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Orders</h2>
-          <p className="mt-1 text-slate-500">Manage customer orders</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Orders</h2>
+          <p className="text-gray-500 mt-1">Manage customer orders</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 p-2 shadow-sm backdrop-blur-sm">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={range}
             onChange={(event) => setRange(event.target.value as RangeKey)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
@@ -345,7 +344,7 @@ export default function Orders({ token }: OrdersProps) {
           <button
             type="button"
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-medium text-white shadow-[0_18px_28px_-18px_rgba(99,102,241,0.9)] transition-colors hover:brightness-110"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
           >
             <Download size={16} />
             Export CSV
@@ -353,7 +352,7 @@ export default function Orders({ token }: OrdersProps) {
           <button
             type="button"
             onClick={handleExportExcel}
-            className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors"
           >
             <Download size={16} />
             Export Excel
@@ -361,23 +360,23 @@ export default function Orders({ token }: OrdersProps) {
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="relative">
-          <Search className="absolute left-3 top-3 text-slate-400" size={20} />
+          <Search className="absolute left-3 top-3 text-gray-400" size={20} />
           <input
             type="text"
             placeholder="Search orders by ID, customer, or status..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white/80 py-2.5 pl-10 pr-4 text-slate-700 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="relative">
-          <Filter className="absolute left-3 top-3 text-slate-400" size={20} />
+          <Filter className="absolute left-3 top-3 text-gray-400" size={20} />
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white/80 py-2.5 pl-10 pr-4 text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="All">All Statuses</option>
             <option value="Pending">Pending</option>

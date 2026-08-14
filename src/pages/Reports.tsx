@@ -210,18 +210,17 @@ export default function Reports({ token }: ReportsProps) {
   }
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
+    <div className="page-container">
       <div className="mb-6 sm:mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Insights</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Reports</h2>
-          <p className="mt-1 text-slate-500">Export or email scheduled summaries to keep your operations on track.</p>
+          <h2 className="text-3xl font-bold text-gray-900">Reports</h2>
+          <p className="text-gray-500 mt-1">Export or email scheduled summaries to keep your operations on track.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 p-2 shadow-sm backdrop-blur-sm">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={reportType}
             onChange={(event) => setReportType(event.target.value as ReportType)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {reportTypes.map((item) => (
               <option key={item.value} value={item.value}>{item.label}</option>
@@ -230,7 +229,7 @@ export default function Reports({ token }: ReportsProps) {
           <button
             type="button"
             onClick={() => handleDownloadReport('csv')}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-medium text-white shadow-[0_18px_28px_-18px_rgba(99,102,241,0.9)] transition-colors hover:brightness-110"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
           >
             <Download size={16} />
             Download CSV
@@ -238,7 +237,7 @@ export default function Reports({ token }: ReportsProps) {
           <button
             type="button"
             onClick={() => handleDownloadReport('excel')}
-            className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors"
           >
             <Download size={16} />
             Download Excel
@@ -249,22 +248,22 @@ export default function Reports({ token }: ReportsProps) {
       <div className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
         <div className="space-y-4">
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-            <label className="block text-sm font-medium text-slate-700">
+            <label className="block text-sm font-medium text-gray-700">
               Start date
               <input
                 type="date"
                 value={startDate}
                 onChange={(event) => setStartDate(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </label>
-            <label className="block text-sm font-medium text-slate-700">
+            <label className="block text-sm font-medium text-gray-700">
               End date
               <input
                 type="date"
                 value={endDate}
                 onChange={(event) => setEndDate(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </label>
           </div>

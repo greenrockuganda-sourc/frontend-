@@ -1,3 +1,4 @@
+import { Inbox } from 'lucide-react'
 import { Order } from '@/types'
 
 interface RecentOrdersProps {
@@ -5,21 +6,25 @@ interface RecentOrdersProps {
   loading?: boolean
 }
 
-const statusColors: Record<string, string> = {
-  delivered: 'bg-green-100 text-green-800',
-  pending: 'bg-yellow-100 text-yellow-800',
-  shipped: 'bg-blue-100 text-blue-800',
-  cancelled: 'bg-red-100 text-red-800',
+const statusStyles: Record<string, string> = {
+  delivered: 'badge badge-success',
+  completed: 'badge badge-success',
+  pending: 'badge badge-warning',
+  processing: 'badge badge-info',
+  shipped: 'badge badge-info',
+  cancelled: 'badge badge-danger',
 }
 
 export default function RecentOrders({ orders, loading }: RecentOrdersProps) {
   if (loading) {
     return (
-      <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-[0_18px_32px_-22px_rgba(15,23,42,0.35)] backdrop-blur-sm">
-        <h3 className="mb-4 text-lg font-bold text-slate-900">Recent Orders</h3>
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-100"></div>
+      <div className="card">
+        <div className="card-header">
+          <p className="card-title">Recent Orders</p>
+        </div>
+        <div className="space-y-3 p-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-14 animate-pulse rounded-lg bg-slate-100" />
           ))}
         </div>
       </div>
@@ -27,39 +32,66 @@ export default function RecentOrders({ orders, loading }: RecentOrdersProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_18px_32px_-22px_rgba(15,23,42,0.35)] backdrop-blur-sm">
-      <div className="border-b border-slate-200/80 p-4 sm:p-6">
-        <h3 className="text-lg font-bold tracking-tight text-slate-900">Recent Orders</h3>
+    <div className="card overflow-hidden">
+      <div className="card-header">
+        <div className="min-w-0">
+          <p className="card-title">Recent Orders</p>
+          <p className="card-subtitle">Latest activity from your storefront</p>
+        </div>
+        <span className="badge badge-neutral flex-shrink-0">
+          {orders.length} {orders.length === 1 ? 'order' : 'orders'}
+        </span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="responsive-table w-full">
-          <thead className="border-b border-slate-200 bg-slate-50/80">
-            <tr>
-              <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 sm:px-6">Order ID</th>
-              <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 sm:px-6">Customer</th>
-              <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 sm:px-6">Amount</th>
-              <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 sm:px-6">Status</th>
-              <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 sm:px-6">Date</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200">
-            {orders.map(order => (
-              <tr key={order.id} className="transition-colors hover:bg-indigo-50/50">
-                <td data-label="Order ID" className="px-4 py-4 text-sm font-semibold text-indigo-600 sm:px-6">{order.id}</td>
-                <td data-label="Customer" className="px-4 py-4 text-sm text-slate-800 sm:px-6">{order.customer}</td>
-                <td data-label="Amount" className="px-4 py-4 text-sm font-semibold text-slate-900 sm:px-6">UGX {order.amount.toFixed(2)}</td>
-                <td data-label="Status" className="px-4 py-4 text-sm sm:px-6">
-                  <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${statusColors[order.status] || 'bg-slate-100 text-slate-700'}`}>
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                  </span>
-                </td>
-                <td data-label="Date" className="px-4 py-4 text-sm text-slate-500 sm:px-6">{order.date}</td>
+      {orders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+            <Inbox size={22} />
+          </div>
+          <p className="mt-4 text-sm font-semibold text-slate-900">No orders yet</p>
+          <p className="mt-1 max-w-xs text-sm text-slate-500">
+            Orders placed in the selected period will appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="responsive-table w-full">
+            <thead>
+              <tr className="border-b border-slate-200">
+                <th className="px-4 py-3 text-left sm:px-5">Order ID</th>
+                <th className="px-4 py-3 text-left sm:px-5">Customer</th>
+                <th className="px-4 py-3 text-right sm:px-5">Amount</th>
+                <th className="px-4 py-3 text-left sm:px-5">Status</th>
+                <th className="px-4 py-3 text-left sm:px-5">Date</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {orders.map((order) => (
+                <tr key={order.id}>
+                  <td data-label="Order ID" className="px-4 py-3.5 text-sm font-semibold text-blue-600 sm:px-5">
+                    {order.id}
+                  </td>
+                  <td data-label="Customer" className="px-4 py-3.5 text-sm font-medium text-slate-800 sm:px-5">
+                    {order.customer}
+                  </td>
+                  <td data-label="Amount" className="tabular px-4 py-3.5 text-sm font-semibold text-slate-900 sm:px-5 md:text-right">
+                    UGX {order.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td data-label="Status" className="px-4 py-3.5 text-sm sm:px-5">
+                    <span className={statusStyles[order.status] || 'badge badge-neutral'}>
+                      <span className="badge-dot" />
+                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </span>
+                  </td>
+                  <td data-label="Date" className="tabular px-4 py-3.5 text-sm text-slate-500 sm:px-5">
+                    {order.date || '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { AlertCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { Product } from '@/types'
 
 interface InventoryStatusProps {
@@ -11,11 +11,13 @@ export default function InventoryStatus({ inventory, loading }: InventoryStatusP
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-[0_18px_32px_-22px_rgba(15,23,42,0.35)] backdrop-blur-sm">
-        <h3 className="mb-4 text-lg font-bold text-slate-900">Low Stock Items</h3>
-        <div className="space-y-3">
+      <div className="card">
+        <div className="card-header">
+          <p className="card-title">Low Stock Items</p>
+        </div>
+        <div className="space-y-3 p-5">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-100"></div>
+            <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100" />
           ))}
         </div>
       </div>
@@ -23,34 +25,59 @@ export default function InventoryStatus({ inventory, loading }: InventoryStatusP
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_18px_32px_-22px_rgba(15,23,42,0.35)] backdrop-blur-sm">
-      <div className="border-b border-slate-200/80 p-5">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/20">
-            <AlertCircle size={18} />
+    <div className="card overflow-hidden">
+      <div className="card-header">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-amber-100">
+            <AlertTriangle size={16} />
+          </span>
+          <div className="min-w-0">
+            <p className="card-title">Low Stock Items</p>
+            <p className="card-subtitle">Below 10 units in inventory</p>
           </div>
-          <h3 className="text-lg font-bold tracking-tight text-slate-900">Low Stock Items</h3>
         </div>
-      </div>
-
-      <div className="space-y-3 p-4">
-        {lowStockItems.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">All items are well stocked</p>
-        ) : (
-          lowStockItems.map(item => (
-            <div key={item.id} className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{item.name}</p>
-                <p className="text-xs text-slate-500">{item.sku}</p>
-              </div>
-              <div className="text-left sm:text-right">
-                <p className="text-lg font-bold text-amber-600">{item.stock}</p>
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">units</p>
-              </div>
-            </div>
-          ))
+        {lowStockItems.length > 0 && (
+          <span className="badge badge-warning flex-shrink-0">{lowStockItems.length}</span>
         )}
       </div>
+
+      {lowStockItems.length === 0 ? (
+        <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+            <CheckCircle2 size={22} />
+          </div>
+          <p className="mt-4 text-sm font-semibold text-slate-900">Inventory looks healthy</p>
+          <p className="mt-1 text-sm text-slate-500">All items are well stocked.</p>
+        </div>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {lowStockItems.map(item => {
+            const critical = item.stock <= 3
+            return (
+              <li
+                key={item.id}
+                className="flex items-center justify-between gap-4 px-5 py-3.5 transition-colors hover:bg-slate-50"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900">{item.name}</p>
+                  <p className="truncate text-xs text-slate-500">{item.sku || 'No SKU'}</p>
+                </div>
+                <div className="flex flex-shrink-0 items-center gap-3">
+                  <div className="text-right">
+                    <p className={`tabular text-base font-bold ${critical ? 'text-rose-600' : 'text-amber-600'}`}>
+                      {item.stock}
+                    </p>
+                    <p className="text-[0.6875rem] text-slate-400">units</p>
+                  </div>
+                  <span className={`badge ${critical ? 'badge-danger' : 'badge-warning'}`}>
+                    {critical ? 'Critical' : 'Low'}
+                  </span>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </div>
   )
 }

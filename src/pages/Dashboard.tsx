@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { DollarSign, ShoppingCart, Truck, AlertCircle } from 'lucide-react'
+import { DollarSign, ShoppingCart, Truck, AlertCircle, CalendarDays, RefreshCw, Receipt, TrendingUp } from 'lucide-react'
 import StatCard from '@/components/StatCard'
 import RecentOrders from '@/components/RecentOrders'
 import InventoryStatus from '@/components/InventoryStatus'
@@ -26,6 +26,9 @@ const readDashboardRangeFromUrl = (): RangeKey => {
   return validRanges.includes(value as RangeKey) ? (value as RangeKey) : '7d'
 }
 
+const formatCurrency = (amount: number) =>
+  `UGX ${Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
 interface DashboardProps {
   token: string
   user?: any
@@ -44,6 +47,7 @@ export default function Dashboard({ token, user }: DashboardProps) {
   const [error, setError] = useState<string | null>(null)
   const [range, setRange] = useState<RangeKey>(readDashboardRangeFromUrl)
   const [isMobileView, setIsMobileView] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const dateRangeLabel = useMemo(() => {
     switch (range) {
@@ -161,6 +165,7 @@ export default function Dashboard({ token, user }: DashboardProps) {
           }
         })
         setInventory(normalizedProducts)
+        setLastUpdated(new Date())
       } catch (err) {
         if (active) {
           setError(err instanceof Error ? err.message : 'Unable to load dashboard data.')
@@ -216,69 +221,68 @@ export default function Dashboard({ token, user }: DashboardProps) {
   }, [])
 
   const firstName = user?.first_name || user?.email?.split('@')[0] || 'there'
+  const rangeRevenue = recentOrders.reduce((sum, order) => sum + order.amount, 0)
+  const averageOrder = recentOrders.length ? rangeRevenue / recentOrders.length : 0
 
   return (
-    <div className="w-full border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
-      <div className="mb-6 sm:mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="max-w-2xl">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Overview</p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Welcome back, {firstName}!</h2>
-          <p className="mt-1 text-sm text-slate-500 sm:text-base">Here is what is happening with your store right now.</p>
+    <div className="page-container">
+      {/* Page header */}
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 max-w-2xl">
+          <p className="eyebrow">Overview</p>
+          <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            Welcome back, {firstName}
+          </h2>
+          <p className="mt-1.5 text-sm text-slate-500">
+            Here is what is happening with your store right now.
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 shadow-sm backdrop-blur-sm">
-          <label className="text-sm font-medium text-slate-700">Date range</label>
-          <select
-            value={range}
-            onChange={(event) => setRange(event.target.value as '7d' | '30d' | '90d' | 'all')}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-auto"
-          >
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="90d">Last 90 days</option>
-            <option value="all">All time</option>
-          </select>
-        </div>
-      </div>
 
-      <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-violet-50 px-4 py-3 text-sm text-indigo-800 shadow-sm">
-        Showing dashboard metrics for <strong>{dateRangeLabel}</strong>. Use this filter to check performance across different periods.
-      </div>
-
-      <div className="mb-8 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-gray-500">Orders in range</p>
-          <p className="mt-2 text-2xl sm:text-3xl font-semibold text-gray-900">{recentOrders.length}</p>
-        </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-gray-500">Range revenue</p>
-          <p className="mt-2 text-2xl sm:text-3xl font-semibold text-gray-900">UGX {recentOrders.reduce((sum, order) => sum + order.amount, 0).toFixed(2)}</p>
-        </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-gray-500">Average order</p>
-          <p className="mt-2 text-2xl sm:text-3xl font-semibold text-gray-900">UGX {recentOrders.length ? (recentOrders.reduce((sum, order) => sum + order.amount, 0) / recentOrders.length).toFixed(2) : '0.00'}</p>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {lastUpdated && (
+            <span className="hidden items-center gap-1.5 text-xs font-medium text-slate-500 sm:inline-flex">
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+              Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+          <div className="relative flex-1 sm:flex-none">
+            <CalendarDays size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <select
+              value={range}
+              onChange={(event) => setRange(event.target.value as '7d' | '30d' | '90d' | 'all')}
+              className="select !pl-9 sm:!w-[190px]"
+              aria-label="Date range"
+            >
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="90d">Last 90 days</option>
+              <option value="all">All time</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-          {error}
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <AlertCircle size={17} className="mt-0.5 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
       {loading ? (
         <>
-          <div className="mb-8">
+          <div className="mb-6">
             <SkeletonStats />
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
             <div className="xl:col-span-2">
-              <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="card p-5">
                 <Skeleton height={20} width="40%" className="mb-4" />
                 <SkeletonTable rows={5} columns={4} />
               </div>
             </div>
             <div className="xl:col-span-1">
-              <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="card p-5">
                 <Skeleton height={20} width="60%" className="mb-4" />
                 <SkeletonTable rows={5} columns={2} />
               </div>
@@ -287,41 +291,74 @@ export default function Dashboard({ token, user }: DashboardProps) {
         </>
       ) : (
         <>
-          <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
+          {/* Primary KPIs */}
+          <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               title="Total Revenue"
-              value={`UGX ${stats.revenue.toFixed(2)}`}
-              icon={<DollarSign size={24} />}
+              value={formatCurrency(stats.revenue)}
+              icon={<DollarSign size={20} />}
               change="Live from the API"
               trend="up"
               color="blue"
             />
-              <StatCard
-                title="Total Orders"
-                value={stats.orders.toString()}
-                icon={<ShoppingCart size={24} />}
-                change="Updated now"
-                trend="up"
-                color="blue"
-              />
-              <StatCard
-                title="Pending Deliveries"
-                value={stats.pending.toString()}
-                icon={<Truck size={24} />}
-                change="In progress"
-                trend="down"
-                color="blue"
-              />
-              <StatCard
-                title="Low Stock Items"
-                value={stats.lowStock.toString()}
-                icon={<AlertCircle size={24} />}
-                change="Needs attention"
-                color="blue"
-              />
+            <StatCard
+              title="Total Orders"
+              value={stats.orders.toLocaleString()}
+              icon={<ShoppingCart size={20} />}
+              change="Updated now"
+              trend="up"
+              color="emerald"
+            />
+            <StatCard
+              title="Pending Deliveries"
+              value={stats.pending.toLocaleString()}
+              icon={<Truck size={20} />}
+              change="In progress"
+              trend="down"
+              color="amber"
+            />
+            <StatCard
+              title="Low Stock Items"
+              value={stats.lowStock.toLocaleString()}
+              icon={<AlertCircle size={20} />}
+              change="Needs attention"
+              color="rose"
+            />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-3">
+          {/* Range summary */}
+          <div className="card mb-6 overflow-hidden">
+            <div className="card-header">
+              <div className="min-w-0">
+                <p className="card-title">Performance summary</p>
+                <p className="card-subtitle">Metrics calculated for the selected period</p>
+              </div>
+              <span className="badge badge-info flex-shrink-0">{dateRangeLabel}</span>
+            </div>
+            <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              {[
+                { label: 'Orders in range', value: recentOrders.length.toLocaleString(), icon: ShoppingCart },
+                { label: 'Range revenue', value: formatCurrency(rangeRevenue), icon: TrendingUp },
+                { label: 'Average order', value: formatCurrency(averageOrder), icon: Receipt },
+              ].map((metric) => {
+                const Icon = metric.icon
+                return (
+                  <div key={metric.label} className="flex items-center gap-3 px-5 py-4">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                      <Icon size={17} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-slate-500">{metric.label}</p>
+                      <p className="tabular mt-0.5 truncate text-lg font-bold text-slate-900">{metric.value}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Detail panels */}
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
             <div className="xl:col-span-2">
               <RecentOrders orders={recentOrders} loading={loading} />
             </div>

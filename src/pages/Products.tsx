@@ -6,7 +6,6 @@ import { notifyError, notifySuccess } from '@/lib/notify'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import { SkeletonTable } from '@/components/Skeleton'
 import ErrorMessage from '@/components/ErrorMessage'
-import { cloudinaryService } from '../../lib/cloudinary-service'
 
 interface ProductsProps {
   token: string
@@ -17,8 +16,6 @@ export default function Products({ token }: ProductsProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [showForm, setShowForm] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null)
   const [formName, setFormName] = useState('')
   const [formPrice, setFormPrice] = useState<number | ''>('')
   const [formStock, setFormStock] = useState<number | ''>('')
@@ -243,19 +240,9 @@ export default function Products({ token }: ProductsProps) {
     xhr.send(form)
   })
 
-  const closeProductModal = () => {
-    setShowForm(false)
-    setFormError(null)
-  }
-
   const handleProductSave = async (event: React.FormEvent) => {
     event.preventDefault()
-    if (isSubmitting) {
-      return
-    }
     setError(null)
-    setFormError(null)
-    setIsSubmitting(true)
 
     try {
       // upload images first (if any)
@@ -270,46 +257,34 @@ export default function Products({ token }: ProductsProps) {
         const filesToUpload = formImageFiles.slice(0, 4)
         setImageUploadProgress(new Array(filesToUpload.length).fill(0))
         setImageUploadErrors(new Array(filesToUpload.length).fill(''))
-        // Try parallel upload via cloudinaryService.uploadMultiple for speed/reliability
-        try {
-          const uploadResponses = await cloudinaryService.uploadMultiple(filesToUpload, 'seller-admin/products')
-          imageUrls = uploadResponses.map((r) => (r.secure_url || r.url)).filter(Boolean) as string[]
-        } catch (bulkErr) {
-          // If bulk upload fails, fallback to sequential XHR per-file so we can capture per-file errors
-          const results: (string | null)[] = new Array(filesToUpload.length).fill(null)
-          for (let i = 0; i < filesToUpload.length; i++) {
-            try {
-              // eslint-disable-next-line no-await-in-loop
-              const url = await uploadToCloudinaryXHR(filesToUpload[i], i, cloudName, uploadPreset)
-              results[i] = url
-              setImageUploadErrors((prev) => {
-                const next = prev.slice()
-                next[i] = ''
-                return next
-              })
-            } catch (e) {
-              setImageUploadErrors((prev) => {
-                const next = prev.slice()
-                next[i] = String(e)
-                return next
-              })
-              notifyError(`Image ${i + 1} failed to upload: ${String(e)}`)
-            }
+        const results: (string | null)[] = new Array(filesToUpload.length).fill(null)
+        for (let i = 0; i < filesToUpload.length; i++) {
+          try {
+            // eslint-disable-next-line no-await-in-loop
+            const url = await uploadToCloudinaryXHR(filesToUpload[i], i, cloudName, uploadPreset)
+            results[i] = url
+            setImageUploadErrors((prev) => {
+              const next = prev.slice()
+              next[i] = ''
+              return next
+            })
+          } catch (e) {
+            setImageUploadErrors((prev) => {
+              const next = prev.slice()
+              next[i] = String(e)
+              return next
+            })
+            notifyError(`Image ${i + 1} failed to upload: ${String(e)}`)
           }
-          imageUrls = results.filter(Boolean) as string[]
-        } finally {
-          setUploadingImages(false)
         }
+        imageUrls = results.filter(Boolean) as string[]
+        setUploadingImages(false)
       }
 
       const generatedSku = buildAutoSku(formName)
-      // Determine whether category/brand inputs are numeric IDs or freeform names
-      const categoryIsId = String(formCategoryId).match(/^\d+$/)
-      const brandIsId = String(formBrandId).match(/^\d+$/)
-
-      const productData: any = {
-        ...(categoryIsId ? { category_id: Number(formCategoryId) } : (formCategoryId ? { category_name: formCategoryId } : { category_id: Number(categories[0]?.id || 0) })),
-        ...(brandIsId ? { brand_id: Number(formBrandId) } : (formBrandId ? { brand_name: formBrandId } : { brand_id: Number(brands[0]?.id || 0) })),
+      const productData = {
+        category_id: Number(formCategoryId || categories[0]?.id || 0),
+        brand_id: Number(formBrandId || brands[0]?.id || 0),
         product_name: formName,
         sku: generatedSku,
         description: formDescription,
@@ -341,7 +316,7 @@ export default function Products({ token }: ProductsProps) {
           profit: sellingPrice - costPrice,
         }
         setProducts((prev) => prev.map((p) => (p.id === editingProductId ? updatedProduct : p)))
-        notifySuccess('Product updated successfully')
+        notifySuccess('Product updated')
         setEditingProductId(null)
       } else {
         const created = await createProduct(token, productData)
@@ -358,7 +333,7 @@ export default function Products({ token }: ProductsProps) {
           profit: sellingPrice - costPrice,
         }
         setProducts((prev) => [newProduct, ...prev])
-        notifySuccess('Product created successfully')
+        notifySuccess('Product saved')
       }
       setFormName('')
       setFormPrice('')
@@ -370,15 +345,12 @@ export default function Products({ token }: ProductsProps) {
       setFormReorderLevel('')
       setFormImageFiles([])
       setFormStatus('Available')
-      closeProductModal()
+      setShowForm(false)
       setEditingProductId(null)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to save product.'
-      setFormError(message)
-      setError(message)
+      setError(err instanceof Error ? err.message : 'Unable to save product.')
     } finally {
       setUploadingImages(false)
-      setIsSubmitting(false)
     }
   }
 
@@ -436,19 +408,30 @@ export default function Products({ token }: ProductsProps) {
   }, [formImagePreviews])
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:mb-8">
+    <div className="page-container">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Catalog</p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Products</h2>
-          <p className="mt-1 text-slate-500">Manage your inventory</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Products</h2>
+          <p className="text-gray-500 mt-1">Manage your inventory</p>
         </div>
         <button
           onClick={() => {
-            setShowForm(true)
-            setFormError(null)
+            if (!showForm) {
+              setEditingProductId(null)
+              setFormName('')
+              setFormPrice('')
+              setFormStock('')
+              setFormCategoryId('')
+              setFormBrandId('')
+              setFormDescription('')
+              setFormCostPrice('')
+              setFormReorderLevel('')
+              setFormImageFiles([])
+              setFormStatus('Available')
+            }
+            setShowForm(!showForm)
           }}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-white shadow-[0_18px_28px_-18px_rgba(99,102,241,0.9)] transition-colors hover:brightness-110 sm:w-auto"
+          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
         >
           <Plus size={20} />
           Add Product
@@ -456,203 +439,111 @@ export default function Products({ token }: ProductsProps) {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm transition-opacity duration-200">
-          <div className="w-full max-w-3xl max-h-[90vh] overflow-hidden rounded-[28px] border border-slate-200 bg-white/95 shadow-[0_24px_80px_-28px_rgba(15,23,42,0.5)] ring-1 ring-slate-200/80 animate-[fadeIn_0.2s_ease-out] flex flex-col">
-            <div className="flex items-start justify-between border-b border-slate-200 bg-slate-50/80 px-5 py-4 sm:px-6">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Inventory</p>
-                <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{editingProductId ? 'Edit Product' : 'Create Product'}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={closeProductModal}
-                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700"
-                aria-label="Close modal"
-              >
-                <X size={20} />
-              </button>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mb-6 sm:mb-8 slide-up">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Add New Product</h3>
+          <form onSubmit={handleProductSave} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input value={formName} onChange={(e) => setFormName(e.target.value)} type="text" placeholder="Product Name" className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600">
+              SKU will be generated automatically from the product name.
             </div>
-
-            <div className="px-5 py-5 sm:px-6 flex-1 overflow-hidden">
-              {formError && (
-                <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                  {formError}
-                </div>
-              )}
-
-              <div className="overflow-auto pr-2" style={{ maxHeight: '64vh' }}>
-                <form id="create-product-form" onSubmit={handleProductSave} className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="md:col-span-1">
-                    <label className="mb-2 block text-sm font-medium text-slate-700">Product name</label>
-                    <input value={formName} onChange={(e) => setFormName(e.target.value)} type="text" placeholder="Product Name" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  </div>
-                <div className="md:col-span-1">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">SKU</label>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-600">
-                    {formName.trim() ? buildAutoSku(formName) : 'SKU will be generated automatically'}
-                  </div>
-                </div>
-                <div className="md:col-span-1">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Price</label>
-                  <input value={formPrice === '' ? '' : formPrice} onChange={(e) => setFormPrice(e.target.value === '' ? '' : Number(e.target.value))} type="number" placeholder="Price" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </div>
-                <div className="md:col-span-1">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Stock</label>
-                  <input value={formStock === '' ? '' : formStock} onChange={(e) => setFormStock(e.target.value === '' ? '' : Number(e.target.value))} type="number" placeholder="Stock" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </div>
-                <div className="md:col-span-1">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Category</label>
-                    <div>
-                      <input
-                        list="categories-list"
-                        value={formCategoryId}
-                        onChange={(e) => setFormCategoryId(e.target.value)}
-                        placeholder="Select or type category"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                      <datalist id="categories-list">
-                        {categories.map((category) => (
-                          <option key={category.id} value={String(category.id)}>{category.category_name}</option>
-                        ))}
-                      </datalist>
-                    </div>
-                </div>
-                <div className="md:col-span-1">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Brand</label>
-                   <div>
-                     <input
-                       list="brands-list"
-                       value={formBrandId}
-                       onChange={(e) => setFormBrandId(e.target.value)}
-                       placeholder="Select or type brand"
-                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                     />
-                     <datalist id="brands-list">
-                       {brands.map((brand) => (
-                         <option key={brand.id} value={String(brand.id)}>{brand.brand_name}</option>
-                       ))}
-                     </datalist>
-                   </div>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Description</label>
-                  <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Description" className="h-24 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </div>
-                <div className="md:col-span-1">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Cost price</label>
-                  <input value={formCostPrice === '' ? '' : formCostPrice} onChange={(e) => setFormCostPrice(e.target.value === '' ? '' : Number(e.target.value))} type="number" placeholder="Cost Price" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </div>
-                <div className="md:col-span-1">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Reorder level</label>
-                  <input value={formReorderLevel === '' ? '' : formReorderLevel} onChange={(e) => setFormReorderLevel(e.target.value === '' ? '' : Number(e.target.value))} type="number" placeholder="Reorder Level" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Upload images (up to 4)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => {
-                      const files = e.target.files ? Array.from(e.target.files) : []
-                      const chosen = files.slice(0, 4)
-                      formImagePreviews.forEach((p) => URL.revokeObjectURL(p))
-                      const previews = chosen.map((f) => URL.createObjectURL(f))
-                      setFormImageFiles(chosen)
-                      setFormImagePreviews(previews)
-                      setImageUploadProgress(new Array(previews.length).fill(0))
-                    }}
-                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
-                  />
-                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {formImagePreviews.slice(0, 4).map((preview, idx) => (
-                      <div key={preview} className="flex flex-col items-center gap-1">
-                        <img src={preview} alt={`preview-${idx}`} className="h-20 w-20 rounded-xl object-cover shadow-sm" />
-                        <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-200">
-                          <div className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600" style={{ width: `${imageUploadProgress[idx] ?? 0}%` }} />
-                        </div>
-                        <div className="text-xs text-slate-600">{imageUploadProgress[idx] ?? 0}%</div>
-                        {imageUploadErrors[idx] ? (
-                          <div className="text-center text-xs text-indigo-600">
-                            <div className="max-w-[80px] truncate">{imageUploadErrors[idx]}</div>
-                            <button type="button" onClick={async () => {
-                              setImageUploadErrors((prev) => { const next = prev.slice(); next[idx] = ''; return next })
-                              setImageUploadProgress((prev) => { const next = prev.slice(); next[idx] = 0; return next })
-                              setUploadingImages(true)
-                              try {
-                                const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-                                const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-                                const useMockRetry = !cloudName || !uploadPreset
-                                const uploadSingle = (_file: File, index: number) => new Promise<string>((resolve, reject) => {
-                                  if (useMockRetry) {
-                                    simulateUpload(_file, index).then(resolve).catch(reject)
-                                    return
-                                  }
-                                  uploadToCloudinaryXHR(_file, index, cloudName, uploadPreset).then(resolve).catch(reject)
-                                })
-                                await uploadSingle(formImageFiles[idx], idx)
-                                setImageUploadErrors((prev) => { const next = prev.slice(); next[idx] = ''; return next })
-                              } catch (err) {
-                                setImageUploadErrors((prev) => { const next = prev.slice(); next[idx] = String(err); return next })
-                              } finally {
-                                setUploadingImages(false)
-                              }
-                            }} className="text-xs text-indigo-600">Retry</button>
-                          </div>
-                        ) : null}
+            <input value={formPrice === '' ? '' : formPrice} onChange={(e) => setFormPrice(e.target.value === '' ? '' : Number(e.target.value))} type="number" placeholder="Price" className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input value={formStock === '' ? '' : formStock} onChange={(e) => setFormStock(e.target.value === '' ? '' : Number(e.target.value))} type="number" placeholder="Stock" className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <select value={formCategoryId} onChange={(e) => setFormCategoryId(e.target.value)} className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Select category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>{category.category_name}</option>
+              ))}
+            </select>
+            <select value={formBrandId} onChange={(e) => setFormBrandId(e.target.value)} className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Select brand</option>
+              {brands.map((brand) => (
+                <option key={brand.id} value={brand.id}>{brand.brand_name}</option>
+              ))}
+            </select>
+            <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Description" className="md:col-span-2 border border-gray-300 rounded-lg px-4 py-2.5 h-24 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input value={formCostPrice === '' ? '' : formCostPrice} onChange={(e) => setFormCostPrice(e.target.value === '' ? '' : Number(e.target.value))} type="number" placeholder="Cost Price" className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input value={formReorderLevel === '' ? '' : formReorderLevel} onChange={(e) => setFormReorderLevel(e.target.value === '' ? '' : Number(e.target.value))} type="number" placeholder="Reorder Level" className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">Upload images (up to 4)</label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                  const files = e.target.files ? Array.from(e.target.files) : []
+                  const chosen = files.slice(0, 4)
+                  // revoke old previews
+                  formImagePreviews.forEach((p) => URL.revokeObjectURL(p))
+                  const previews = chosen.map((f) => URL.createObjectURL(f))
+                  setFormImageFiles(chosen)
+                  setFormImagePreviews(previews)
+                  setImageUploadProgress(new Array(previews.length).fill(0))
+                }}
+                className="mt-1"
+              />
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {formImagePreviews.slice(0, 4).map((preview, idx) => (
+                    <div key={preview} className="flex flex-col items-center gap-1">
+                      <img src={preview} alt={`preview-${idx}`} className="h-20 w-20 object-cover rounded" />
+                      <div className="w-20 h-2 bg-gray-200 rounded overflow-hidden">
+                        <div className="h-2 bg-blue-600" style={{ width: `${imageUploadProgress[idx] ?? 0}%` }} />
                       </div>
-                    ))}
-                  </div>
-                  {uploadingImages && <p className="mt-2 text-sm text-slate-500">Uploading images... ({imageUploadProgress.length ? Math.round(imageUploadProgress.reduce((a,b)=>a+b,0)/imageUploadProgress.length) : 0}% avg)</p>}
+                      <div className="text-xs text-gray-600">{imageUploadProgress[idx] ?? 0}%</div>
+                      {imageUploadErrors[idx] ? (
+                        <div className="text-xs text-blue-600 text-center">
+                          <div className="truncate max-w-[80px]">{imageUploadErrors[idx]}</div>
+                          <button type="button" onClick={async () => {
+                            // retry single file
+                            setImageUploadErrors((prev) => { const next = prev.slice(); next[idx] = ''; return next })
+                            setImageUploadProgress((prev) => { const next = prev.slice(); next[idx] = 0; return next })
+                            setUploadingImages(true)
+                            try {
+                              const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+                              const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+                              const useMockRetry = !cloudName || !uploadPreset
+                              const uploadSingle = (_file: File, index: number) => new Promise<string>((resolve, reject) => {
+                                if (useMockRetry) {
+                                  simulateUpload(_file, index).then(resolve).catch(reject)
+                                  return
+                                }
+                                uploadToCloudinaryXHR(_file, index, cloudName, uploadPreset).then(resolve).catch(reject)
+                              })
+                              await uploadSingle(formImageFiles[idx], idx)
+                              setImageUploadErrors((prev) => { const next = prev.slice(); next[idx] = ''; return next })
+                            } catch (err) {
+                              setImageUploadErrors((prev) => { const next = prev.slice(); next[idx] = String(err); return next })
+                            } finally {
+                              setUploadingImages(false)
+                            }
+                          }} className="text-xs text-blue-600">Retry</button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
                 </div>
-                <div className="md:col-span-1">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Status</label>
-                  <select value={formStatus} onChange={(e) => setFormStatus(e.target.value as 'Available' | 'Out of Stock')} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="Available">Available</option>
-                    <option value="Out of Stock">Out of Stock</option>
-                  </select>
-                </div>
-
-                </form>
-              </div>
+                {uploadingImages && <p className="text-sm text-gray-500">Uploading images... ({imageUploadProgress.length ? Math.round(imageUploadProgress.reduce((a,b)=>a+b,0)/imageUploadProgress.length) : 0}% avg)</p>}
             </div>
-
-            <div className="border-t border-slate-200 bg-white/90 px-5 py-3 sm:px-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={closeProductModal}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-medium text-slate-700 transition-colors hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={(e) => { const form = document.querySelector('#create-product-form') as HTMLFormElement | null; if (form) form.requestSubmit(); }}
-                disabled={isSubmitting || uploadingImages}
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 font-medium text-white shadow-[0_18px_28px_-18px_rgba(99,102,241,0.9)] transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Product'
-                )}
-              </button>
+            <select value={formStatus} onChange={(e) => setFormStatus(e.target.value as 'Available' | 'Out of Stock')} className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="Available">Available</option>
+              <option value="Out of Stock">Out of Stock</option>
+            </select>
+            <div className="md:col-span-2 flex flex-col sm:flex-row gap-2">
+              <button type="submit" className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition-colors">Save Product</button>
+                      <button type="button" onClick={() => { setShowForm(false); setFormName(''); setFormPrice(''); setFormStock(''); setFormCategoryId(''); setFormBrandId(''); setFormDescription(''); setFormCostPrice(''); setFormReorderLevel(''); setFormImageFiles([]); setFormStatus('Available') }} className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 
       <div className="mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-3 text-slate-400" size={20} />
+          <Search className="absolute left-3 top-3 text-gray-400" size={20} />
           <input
             type="text"
             placeholder="Search products..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white/80 py-2.5 pl-10 pr-4 text-slate-700 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -694,7 +585,7 @@ export default function Products({ token }: ProductsProps) {
             window.URL.revokeObjectURL(url)
             notifySuccess('Products exported to CSV')
           }}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-medium text-white shadow-[0_18px_28px_-18px_rgba(99,102,241,0.9)] transition-colors hover:brightness-110"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
         >
           <Download size={16} />
           Export CSV
@@ -725,7 +616,7 @@ export default function Products({ token }: ProductsProps) {
             window.URL.revokeObjectURL(url)
             notifySuccess('Products exported to Excel')
           }}
-          className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors"
         >
           <Download size={16} />
           Export Excel
@@ -736,12 +627,12 @@ export default function Products({ token }: ProductsProps) {
         <button
           type="button"
           onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <Filter size={16} />
           Advanced Filters
           {(categoryFilter || brandFilter || stockFilter !== 'all') && (
-            <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-indigo-700">Active</span>
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">Active</span>
           )}
         </button>
         {(categoryFilter || brandFilter || stockFilter !== 'all') && (
@@ -752,7 +643,7 @@ export default function Products({ token }: ProductsProps) {
               setBrandFilter('')
               setStockFilter('all')
             }}
-            className="inline-flex items-center gap-1 rounded-xl text-sm font-medium text-indigo-600 hover:text-indigo-700"
+            className="inline-flex items-center gap-1 rounded-lg text-sm text-blue-600 hover:text-blue-700"
           >
             <X size={16} />
             Clear filters
@@ -761,15 +652,15 @@ export default function Products({ token }: ProductsProps) {
       </div>
 
       {showAdvancedFilters && (
-        <div className="mb-6 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur-sm sm:p-6 slide-up">
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Advanced Filters</h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 sm:p-6 slide-up">
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">Advanced Filters</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All categories</option>
                 {categories.map((cat) => (
@@ -778,11 +669,11 @@ export default function Products({ token }: ProductsProps) {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Brand</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Brand</label>
               <select
                 value={brandFilter}
                 onChange={(e) => setBrandFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All brands</option>
                 {brands.map((brand) => (
@@ -791,11 +682,11 @@ export default function Products({ token }: ProductsProps) {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Stock Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Stock Status</label>
               <select
                 value={stockFilter}
                 onChange={(e) => setStockFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All stock levels</option>
                 <option value="low">Low stock (≤ 10)</option>

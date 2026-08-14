@@ -161,11 +161,10 @@ export default function Deliveries({ token }: DeliveriesProps) {
   const deliveredCount = deliveries.filter((d) => isDeliveryDelivered(d.status)).length
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
+    <div className="page-container">
       <div className="mb-6 sm:mb-8">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Logistics</p>
-        <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Deliveries</h2>
-        <p className="mt-1 text-slate-500">Track and manage deliveries</p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Deliveries</h2>
+        <p className="text-gray-500 mt-1">Track and manage deliveries</p>
       </div>
 
       {error && (
@@ -174,36 +173,36 @@ export default function Deliveries({ token }: DeliveriesProps) {
         </div>
       )}
 
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4 sm:mb-8">
-        <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-[0_18px_32px_-22px_rgba(15,23,42,0.35)] backdrop-blur-sm">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Pending</p>
-          <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{pendingCount}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <p className="text-gray-600 text-sm">Pending</p>
+          <p className="text-2xl font-bold text-gray-900">{pendingCount}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-[0_18px_32px_-22px_rgba(15,23,42,0.35)] backdrop-blur-sm">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">In Transit</p>
-          <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{inTransitCount}</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <p className="text-gray-600 text-sm">In Transit</p>
+          <p className="text-2xl font-bold text-gray-900">{inTransitCount}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-[0_18px_32px_-22px_rgba(15,23,42,0.35)] backdrop-blur-sm">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Delivered</p>
-          <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{deliveredCount}</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <p className="text-gray-600 text-sm">Delivered</p>
+          <p className="text-2xl font-bold text-gray-900">{deliveredCount}</p>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_18px_32px_-22px_rgba(15,23,42,0.35)] backdrop-blur-sm">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="responsive-table w-full">
-            <thead className="border-b border-slate-200 bg-slate-50/80">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Delivery ID</th>
-                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Order ID</th>
-                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Driver</th>
-                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Address</th>
-                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Status</th>
-                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Receipt</th>
-                <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Delivery ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Driver</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Address</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Receipt</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
                   <td colSpan={7}>
@@ -224,29 +223,29 @@ export default function Deliveries({ token }: DeliveriesProps) {
                 </tr>
               ) : (
                 deliveries.map((delivery) => (
-                  <tr key={delivery.id} className="transition-colors hover:bg-indigo-50/50">
-                    <td data-label="Delivery ID" className="px-6 py-4 text-sm font-semibold text-indigo-600">{delivery.id}</td>
-                    <td data-label="Order ID" className="px-6 py-4 text-sm text-slate-800">{delivery.orderId}</td>
-                    <td data-label="Driver" className="px-6 py-4 text-sm text-slate-800">{delivery.driver}</td>
-                    <td data-label="Address" className="px-6 py-4 text-sm text-slate-600">
-                      <span className="flex items-center gap-1.5">
-                        <MapPin size={16} className="flex-shrink-0 text-slate-400" />
+                  <tr key={delivery.id} className="hover:bg-gray-50 transition-colors">
+                    <td data-label="Delivery ID" className="px-6 py-4 text-sm font-medium text-blue-600">{delivery.id}</td>
+                    <td data-label="Order ID" className="px-6 py-4 text-sm text-gray-900">{delivery.orderId}</td>
+                    <td data-label="Driver" className="px-6 py-4 text-sm text-gray-900">{delivery.driver}</td>
+                    <td data-label="Address" className="px-6 py-4 text-sm text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <MapPin size={16} className="flex-shrink-0" />
                         <span className="break-words">{delivery.address}</span>
                       </span>
                     </td>
                     <td data-label="Status" className="px-6 py-4 text-sm">
-                      <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${getDeliveryStatusColor(delivery.status)}`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDeliveryStatusColor(delivery.status)}`}>
                         {formatDeliveryStatus(delivery.status)}
                       </span>
                     </td>
                     <td data-label="Receipt" className="px-6 py-4 text-sm">
                       {delivery.receiptIssued ? (
-                        <span className="flex items-center gap-1 text-emerald-600">
+                        <span className="flex items-center gap-1 text-blue-600">
                           <Check size={16} />
                           Issued
                         </span>
                       ) : (
-                        <span className="text-slate-500">Pending</span>
+                        <span className="text-gray-500">Pending</span>
                       )}
                     </td>
                     <td data-label="Actions" className="px-6 py-4 text-sm">
@@ -255,7 +254,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
                           <button
                             onClick={() => handleMarkDelivered(delivery.id)}
                             disabled={busyDelivery === delivery.id}
-                            className="flex items-center gap-1 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-2 text-[11px] font-semibold text-white shadow-[0_18px_28px_-18px_rgba(99,102,241,0.9)] transition-colors hover:brightness-110 disabled:opacity-50"
+                            className="bg-blue-600 text-white px-3 py-2 rounded text-xs hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-1"
                           >
                             {busyDelivery === delivery.id ? 'Updating...' : 'Mark Delivered'}
                           </button>
@@ -264,7 +263,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
                           <button
                             onClick={() => handleDownloadReceipt(delivery)}
                             disabled={busyDelivery === delivery.id}
-                            className="rounded-xl p-2 text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-50"
+                            className="text-blue-600 hover:text-blue-800 p-2 disabled:opacity-50"
                             aria-label="Download receipt"
                             title="Download receipt"
                           >
@@ -275,7 +274,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
                           <button
                             onClick={() => handleEmailReceipt(delivery)}
                             disabled={busyDelivery === delivery.id}
-                            className="rounded-xl p-2 text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-50"
+                            className="text-blue-600 hover:text-blue-800 p-2 disabled:opacity-50"
                             aria-label="Email receipt"
                             title="Email receipt"
                           >
