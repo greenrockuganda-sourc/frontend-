@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { Save } from 'lucide-react'
 import { updateProfile } from '@/lib/api'
 import { UserProfile } from '@/types'
@@ -57,6 +57,28 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
 
     const fileName = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()
     return `${folderPrefix}/${fileName}`
+  }
+
+  const handleProfileImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    try {
+      if (profileImagePreview && profileImagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(profileImagePreview)
+      }
+    } catch {}
+
+    const objectUrl = URL.createObjectURL(file)
+    setProfileImageFile(file)
+    setProfileImagePreview(objectUrl)
+    setSettings((current) => ({ ...current, profileImage: objectUrl }))
+    event.target.value = ''
   }
 
   const handleSave = async () => {
@@ -193,7 +215,13 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
           <h3 className="text-lg font-bold text-gray-900">Profile Information</h3>
         </div>
 
-        <form className="space-y-6 p-6">
+        <form
+          className="space-y-6 p-6"
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">First Name</label>
@@ -249,14 +277,9 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => {
-                      const f = e.target.files && e.target.files[0]
-                      if (f) {
-                        try { URL.revokeObjectURL(profileImagePreview) } catch {}
-                        const url = URL.createObjectURL(f)
-                        setProfileImageFile(f)
-                        setProfileImagePreview(url)
-                      }
+                    onChange={handleProfileImageChange}
+                    onClick={(event) => {
+                      event.stopPropagation()
                     }}
                     className="mb-2"
                   />
