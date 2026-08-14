@@ -5,10 +5,30 @@ export interface Product {
   price: number
   quantity: number
   category: string
+  brand?: string
   description?: string
   image?: string
   createdAt: string
   updatedAt: string
+}
+
+export interface Category {
+  id: string
+  category_name: string
+  description?: string
+  image_url?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Brand {
+  id: string
+  brand_name: string
+  description?: string
+  country?: string
+  logo?: string
+  created_at: string
+  updated_at: string
 }
 
 export interface OrderItem {

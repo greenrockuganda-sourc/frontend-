@@ -86,3 +86,27 @@ export const receiptsApi = {
 export const dashboardApi = {
   getStats: () => apiCall<DashboardStats>('/stats'),
 }
+
+// Categories
+export const categoriesApi = {
+  getAll: () => apiCall('/categories') as Promise<any>,
+  getById: (id: string) => apiCall(`/categories/${id}`) as Promise<any>,
+  create: (data: any, token?: string) => {
+    const headers: Record<string,string> = {}
+    const t = token || (typeof window !== 'undefined' && (localStorage.getItem('access') || localStorage.getItem('django_auth_token'))) || ''
+    if (t) headers['x-forward-auth-token'] = t
+    return apiCall('/categories', { method: 'POST', body: JSON.stringify(data), headers }) as Promise<any>
+  },
+}
+
+// Brands
+export const brandsApi = {
+  getAll: () => apiCall('/brands') as Promise<any>,
+  getById: (id: string) => apiCall(`/brands/${id}`) as Promise<any>,
+  create: (data: any, token?: string) => {
+    const headers: Record<string,string> = {}
+    const t = token || (typeof window !== 'undefined' && (localStorage.getItem('access') || localStorage.getItem('django_auth_token'))) || ''
+    if (t) headers['x-forward-auth-token'] = t
+    return apiCall('/brands', { method: 'POST', body: JSON.stringify(data), headers }) as Promise<any>
+  },
+}
