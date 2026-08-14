@@ -1,4 +1,4 @@
-import { Home, Package, ShoppingCart, Truck, FileText, Settings as SettingsIcon, X, BarChart3, ShieldCheck } from 'lucide-react'
+import { Home, Package, ShoppingCart, Truck, FileText, Settings as SettingsIcon, X, BarChart3, ShieldCheck, Tag, Award } from 'lucide-react'
 
 interface SidebarProps {
   currentPage: string
@@ -16,6 +16,8 @@ const navSections = [
     label: 'Operations',
     items: [
       { id: 'products', label: 'Products', icon: Package },
+      { id: 'categories', label: 'Categories', icon: Tag },
+      { id: 'brands', label: 'Brands', icon: Award },
       { id: 'orders', label: 'Orders', icon: ShoppingCart },
       { id: 'deliveries', label: 'Deliveries', icon: Truck },
       { id: 'receipts', label: 'Receipts', icon: FileText },

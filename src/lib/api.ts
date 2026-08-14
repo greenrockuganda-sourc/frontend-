@@ -193,8 +193,48 @@ export async function getCategories() {
   return request<any>('/api/categories/', {}, undefined)
 }
 
+export async function createCategory(token: string | undefined, categoryData: { category_name: string; description?: string; image_url?: string }) {
+  return request<any>('/api/categories/', {
+    method: 'POST',
+    body: JSON.stringify(categoryData),
+  }, token)
+}
+
+export async function updateCategory(token: string | undefined, categoryId: string, categoryData: { category_name?: string; description?: string; image_url?: string }) {
+  return request<any>(`/api/categories/${categoryId}/`, {
+    method: 'PUT',
+    body: JSON.stringify(categoryData),
+  }, token)
+}
+
+export async function deleteCategory(token: string | undefined, categoryId: string) {
+  return request<any>(`/api/categories/${categoryId}/`, {
+    method: 'DELETE',
+  }, token)
+}
+
 export async function getBrands() {
   return request<any>('/api/brands/', {}, undefined)
+}
+
+export async function createBrand(token: string | undefined, brandData: { brand_name: string; description?: string; country?: string; logo?: string }) {
+  return request<any>('/api/brands/', {
+    method: 'POST',
+    body: JSON.stringify(brandData),
+  }, token)
+}
+
+export async function updateBrand(token: string | undefined, brandId: string, brandData: { brand_name?: string; description?: string; country?: string; logo?: string }) {
+  return request<any>(`/api/brands/${brandId}/`, {
+    method: 'PUT',
+    body: JSON.stringify(brandData),
+  }, token)
+}
+
+export async function deleteBrand(token: string | undefined, brandId: string) {
+  return request<any>(`/api/brands/${brandId}/`, {
+    method: 'DELETE',
+  }, token)
 }
 
 export async function createReceipt(token: string, orderId: string) {

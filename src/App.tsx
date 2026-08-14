@@ -3,6 +3,8 @@ import Sidebar from '@/components/layout/Sidebar'
 import Header from '@/components/layout/Header'
 import Dashboard from '@/pages/Dashboard'
 import Products from '@/pages/Products'
+import Categories from '@/pages/Categories'
+import Brands from '@/pages/Brands'
 import Orders from '@/pages/Orders'
 import Deliveries from '@/pages/Deliveries'
 import Receipts from '@/pages/Receipts'
@@ -16,7 +18,7 @@ import { UserProfile } from '@/types'
 import { Home, Package, ShoppingCart, Truck, FileText, BarChart3, Settings as SettingsIcon } from 'lucide-react'
 import NotificationSystem, { useNotifications } from '@/components/NotificationSystem'
 
-type Page = 'dashboard' | 'products' | 'orders' | 'deliveries' | 'receipts' | 'reports' | 'settings'
+type Page = 'dashboard' | 'products' | 'categories' | 'brands' | 'orders' | 'deliveries' | 'receipts' | 'reports' | 'settings'
 type MobileNavId = Page | 'more'
 
 const pageTitles: Record<Page, string> = {
@@ -139,6 +141,10 @@ export default function App() {
         return <Dashboard token={accessToken} user={user} />
       case 'products':
         return <Products token={accessToken} />
+      case 'categories':
+        return <Categories />
+      case 'brands':
+        return <Brands />
       case 'orders':
         return <Orders token={accessToken} />
       case 'deliveries':

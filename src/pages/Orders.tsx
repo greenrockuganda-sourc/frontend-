@@ -47,7 +47,7 @@ export default function Orders({ token }: OrdersProps) {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [statusDraft, setStatusDraft] = useState('Pending')
   const [range, setRange] = useState<RangeKey>(readOrdersRangeFromUrl)
-  const [visibleOrders, setVisibleOrders] = useState(20)
+  const visibleOrders = 20
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)

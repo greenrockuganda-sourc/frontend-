@@ -3,7 +3,7 @@ import { Check, MapPin, PackageOpen, FileText, Send } from 'lucide-react'
 import { fetchDeliveries, updateDelivery, createReceipt, downloadReceiptPdf, sendReceiptEmail } from '@/lib/api'
 import { notifySuccess } from '@/lib/notify'
 import { Delivery } from '@/types'
-import Skeleton, { SkeletonTable } from '@/components/Skeleton'
+import { SkeletonTable } from '@/components/Skeleton'
 
 interface DeliveriesProps {
   token: string
