@@ -1,17 +1,19 @@
-import { Menu, Bell, User, LogOut, ChevronDown, Search } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Menu, Bell, User, LogOut, Settings } from 'lucide-react'
+import { useState } from 'react'
 
 interface HeaderProps {
   onMenuClick: () => void
   user?: any
   onLogout: () => void
   onProfileClick?: () => void
-  pageTitle?: string
+  notifications?: Array<{ id: string; type: string; title: string; message?: string }>
+  onDismissNotification?: (id: string) => void
+  addNotification?: (n: { type: 'success' | 'error' | 'warning' | 'info'; title: string; message?: string; duration?: number }) => string
 }
 
-export default function Header({ onMenuClick, user, onLogout, onProfileClick, pageTitle }: HeaderProps) {
+export default function Header({ onMenuClick, user, onLogout, onProfileClick, notifications = [], onDismissNotification, addNotification }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const menuRef = useRef<HTMLDivElement | null>(null)
+  const [showNotifications, setShowNotifications] = useState(false)
 
   const displayName = user ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || 'Seller' : 'Seller'
   const initials = (displayName || 'S')
@@ -20,131 +22,122 @@ export default function Header({ onMenuClick, user, onLogout, onProfileClick, pa
     .slice(0, 2)
     .join('')
     .toUpperCase()
-  const roleLabel = user?.role || 'Seller'
-
-  useEffect(() => {
-    if (!showUserMenu) return
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false)
-      }
-    }
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setShowUserMenu(false)
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('keydown', handleEscape)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('keydown', handleEscape)
-    }
-  }, [showUserMenu])
 
   return (
-    <header className="sticky-header no-print">
-      <div className="flex h-16 items-center justify-between gap-3 px-3 sm:px-6">
-        {/* Left: menu + title */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <button
             onClick={onMenuClick}
-            className="btn btn-ghost -ml-1 !px-2 lg:hidden"
+            className="rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden"
             aria-label="Open menu"
           >
-            <Menu size={20} />
+            <Menu size={22} />
           </button>
 
-          <div className="flex items-center gap-2.5 lg:hidden">
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
-              <span className="text-xs font-bold">GL</span>
+          <div className="flex flex-1 items-center justify-center sm:justify-start">
+            <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-indigo-200/80 bg-gradient-to-br from-indigo-100 via-white to-violet-100 sm:h-16 sm:w-16">
+              <img
+                src="https://res.cloudinary.com/h78tlu47/image/upload/v1784708343/icon_sotujz.jpg"
+                alt="Seller Admin logo"
+                className="h-full w-full object-contain p-1.5"
+              />
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-xl"
+                style={{
+                  boxShadow: '0 14px 32px -14px rgba(99,102,241,0.4), 0 0 48px rgba(168,85,247,0.18)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <span className="absolute inset-0 rounded-xl ring-1 ring-indigo-200/70 ring-offset-2 ring-offset-white" />
             </div>
-          </div>
-
-          <div className="min-w-0">
-            <p className="eyebrow hidden sm:block">Glow Commerce</p>
-            <h1 className="truncate text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
-              {pageTitle || 'Dashboard'}
-            </h1>
           </div>
         </div>
 
-        {/* Right: search + actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="relative hidden xl:block">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="search"
-              placeholder="Search…"
-              className="input !w-64 !py-2 pl-9 text-sm"
-              aria-label="Search"
-            />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="relative">
+            <button onClick={() => setShowNotifications((s) => !s)} className="relative rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900" aria-label="Notifications">
+              <Bell size={18} />
+              {notifications.length > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">{notifications.length}</span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div className="absolute right-0 z-50 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-xl">
+                <div className="p-3">
+                  <p className="text-sm font-semibold text-slate-700">Notifications</p>
+                </div>
+                <div className="max-h-60 overflow-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-3 text-sm text-slate-500">No notifications</div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div key={n.id} className="flex items-start justify-between gap-3 border-t border-slate-100 p-3">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-slate-900">{n.title}</p>
+                          {n.message && <p className="text-xs text-slate-600">{n.message}</p>}
+                        </div>
+                        <div className="flex-shrink-0 pl-2">
+                          <button onClick={() => { onDismissNotification?.(n.id); }} className="text-xs text-indigo-600">Dismiss</button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <button
-            className="relative rounded-lg p-2.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
-            aria-label="Notifications"
+            onClick={() => onProfileClick?.()}
+            className="inline-flex rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            aria-label="Settings"
           >
-            <Bell size={19} />
-            <span className="absolute right-2 top-2 flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
-            </span>
+            <Settings size={18} />
           </button>
 
-          <div className="mx-1 hidden h-6 w-px bg-slate-200 sm:block" />
-
-          <div className="relative" ref={menuRef}>
+          <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 rounded-lg py-1.5 pl-1.5 pr-2 transition-colors hover:bg-slate-100"
-              aria-haspopup="menu"
-              aria-expanded={showUserMenu}
+              className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-slate-100 sm:p-2"
               aria-label="User menu"
             >
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-500 text-sm font-semibold text-white shadow-sm">
+              <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 text-sm font-bold text-white sm:h-9 sm:w-9">
                 {initials}
+                {user?.profile_image && (
+                  <img
+                    key={user.profile_image}
+                    src={user.profile_image}
+                    alt={`${displayName}'s profile`}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none'
+                    }}
+                  />
+                )}
               </div>
-              <div className="hidden min-w-0 text-left md:block">
-                <p className="truncate text-sm font-semibold leading-tight text-slate-900">{displayName}</p>
-                <p className="truncate text-xs leading-tight text-slate-500">{roleLabel}</p>
-              </div>
-              <ChevronDown size={15} className={`hidden text-slate-400 transition-transform md:block ${showUserMenu ? 'rotate-180' : ''}`} />
+              <span className="hidden text-sm font-medium text-slate-700 md:inline">{displayName}</span>
             </button>
 
             {showUserMenu && (
-              <div
-                className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg slide-up"
-                role="menu"
-              >
-                <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 p-4">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-500 text-sm font-semibold text-white">
-                    {initials}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
-                    <p className="truncate text-xs text-slate-500">{user?.email || 'seller@example.com'}</p>
-                  </div>
+              <div className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-xl">
+                <div className="border-b border-slate-200 p-4">
+                  <p className="truncate text-sm font-medium text-slate-900">{displayName}</p>
+                  <p className="truncate text-xs text-slate-500">{user?.email || 'seller@example.com'}</p>
                 </div>
-                <div className="p-1.5">
-                  <button
-                    onClick={() => { onProfileClick?.(); setShowUserMenu(false) }}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-                    role="menuitem"
-                  >
-                    <User size={16} className="text-slate-400" />
-                    Profile &amp; settings
-                  </button>
-                  <button
-                    onClick={() => { onLogout(); setShowUserMenu(false) }}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50"
-                    role="menuitem"
-                  >
-                    <LogOut size={16} />
-                    Sign out
-                  </button>
-                </div>
+                <button onClick={() => { onProfileClick?.(); setShowUserMenu(false) }} className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                  <User size={16} />
+                  Profile
+                </button>
+                <button
+                  onClick={() => { onLogout(); setShowUserMenu(false) }}
+                  className="flex w-full items-center gap-2 border-t border-slate-200 px-4 py-3 text-sm text-indigo-600 transition-colors hover:bg-indigo-50"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
               </div>
             )}
           </div>

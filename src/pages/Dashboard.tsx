@@ -19,22 +19,31 @@ const getRangeStartDate = (range: RangeKey) => {
   return new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000)
 }
 
+const normalizeRangeValue = (raw?: string | null): RangeKey => {
+  if (!raw) return '7d'
+  const v = String(raw).toLowerCase().trim()
+  if (v === '7' || v === '7d' || v === '7days' || v === '7day' || v === 'last7') return '7d'
+  if (v === '30' || v === '30d' || v === '30days' || v === '30day' || v === 'last30') return '30d'
+  if (v === '90' || v === '90d' || v === '90days' || v === '90day' || v === 'last90') return '90d'
+  if (v === 'all' || v === 'alltime' || v === 'lifetime') return 'all'
+  return '7d'
+}
+
 const readDashboardRangeFromUrl = (): RangeKey => {
   if (typeof window === 'undefined') return '7d'
   const params = new URLSearchParams(window.location.search)
   const value = params.get('dashboardRange')
-  return validRanges.includes(value as RangeKey) ? (value as RangeKey) : '7d'
+  return normalizeRangeValue(value)
 }
 
 const formatCurrency = (amount: number) =>
   `UGX ${Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 interface DashboardProps {
-  token: string
   user?: any
 }
 
-export default function Dashboard({ token, user }: DashboardProps) {
+export default function Dashboard({ user }: DashboardProps) {
   const [stats, setStats] = useState({
     revenue: 0,
     orders: 0,
@@ -67,10 +76,10 @@ export default function Dashboard({ token, user }: DashboardProps) {
         setError(null)
 
         const [dashboardData, productsData, ordersData, deliveriesData] = await Promise.all([
-          fetchDashboard(token),
-          fetchProducts(token),
-          fetchOrders(token),
-          fetchDeliveries(token),
+          fetchDashboard(),
+          fetchProducts(),
+          fetchOrders(),
+          fetchDeliveries(),
         ])
         if (!active) {
           return
@@ -198,7 +207,7 @@ export default function Dashboard({ token, user }: DashboardProps) {
       window.removeEventListener('focus', handleVisibilityChange)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [token, range])
+  }, [range])
 
   useEffect(() => {
     if (typeof window === 'undefined') return

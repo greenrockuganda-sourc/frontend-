@@ -39,7 +39,13 @@ export interface ProductFormData {
  */
 function getAuthToken(): string {
   if (typeof window === 'undefined') return ''
-  return localStorage.getItem('auth_token') || ''
+  // prefer the new 'access' token key; fall back to legacy keys
+  return (
+    localStorage.getItem('access') ||
+    localStorage.getItem('django_auth_token') ||
+    localStorage.getItem('auth_token') ||
+    ''
+  )
 }
 
 /**
@@ -84,6 +90,8 @@ async function djangoApiCall<T>(
 
     if (!response.ok) {
       if (response.status === 401) {
+        localStorage.removeItem('access')
+        localStorage.removeItem('django_auth_token')
         localStorage.removeItem('auth_token')
         throw new Error('Unauthorized - please login again')
       }

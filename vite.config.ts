@@ -21,8 +21,13 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: backendUrl,
           changeOrigin: true,
-          secure: false,
+          // SECURITY: Require HTTPS in production. Only disable for localhost development.
+          secure: process.env.NODE_ENV === 'production' || !backendUrl.includes('localhost'),
           rewrite: (path) => path.replace(/^\/api/, '/api'),
+          // Enable cookie forwarding between backend and frontend
+          cookieDomainRewrite: {
+            '*': ''
+          }
         },
       },
     },

@@ -2,7 +2,11 @@ import { Product, Order, Delivery, Receipt, DashboardStats } from './types'
 
 const API_BASE = '/api'
 
-// Helper for making requests
+/**
+ * SECURITY: All requests use HttpOnly cookies for authentication.
+ * Credentials are automatically included via credentials: 'include'.
+ * No tokens are handled or stored in the frontend.
+ */
 async function apiCall<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -10,6 +14,7 @@ async function apiCall<T>(
   const url = `${API_BASE}${endpoint}`
   const response = await fetch(url, {
     ...options,
+    credentials: 'include', // Include cookies automatically
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -17,7 +22,9 @@ async function apiCall<T>(
   })
 
   if (!response.ok) {
-    throw new Error(`API Error: ${response.statusText}`)
+    const errorData = await response.json().catch(() => ({}))
+    const errorMessage = typeof errorData === 'string' ? errorData : errorData.detail || errorData.error || response.statusText
+    throw new Error(`API Error: ${errorMessage}`)
   }
 
   return response.json()
@@ -89,24 +96,40 @@ export const dashboardApi = {
 
 // Categories
 export const categoriesApi = {
-  getAll: () => apiCall('/categories') as Promise<any>,
-  getById: (id: string) => apiCall(`/categories/${id}`) as Promise<any>,
-  create: (data: any, token?: string) => {
-    const headers: Record<string,string> = {}
-    const t = token || (typeof window !== 'undefined' && (localStorage.getItem('access') || localStorage.getItem('django_auth_token'))) || ''
-    if (t) headers['x-forward-auth-token'] = t
-    return apiCall('/categories', { method: 'POST', body: JSON.stringify(data), headers }) as Promise<any>
+  getAll: () => apiCall('/categories/') as Promise<any>,
+  getById: (id: string) => apiCall(`/categories/${id}/`) as Promise<any>,
+  create: (data: any) => {
+    // Ensure timestamp fields are not sent from the client; backend should set them automatically
+    const payload = { ...data }
+    delete payload.created_at
+    delete payload.updated_at
+    return apiCall('/categories/', { method: 'POST', body: JSON.stringify(payload) }) as Promise<any>
+  },
+  update: (id: string, data: any) => {
+    const payload = { ...data }
+    delete payload.created_at
+    delete payload.updated_at
+    delete payload.id
+    return apiCall(`/categories/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }) as Promise<any>
   },
 }
 
 // Brands
 export const brandsApi = {
-  getAll: () => apiCall('/brands') as Promise<any>,
-  getById: (id: string) => apiCall(`/brands/${id}`) as Promise<any>,
-  create: (data: any, token?: string) => {
-    const headers: Record<string,string> = {}
-    const t = token || (typeof window !== 'undefined' && (localStorage.getItem('access') || localStorage.getItem('django_auth_token'))) || ''
-    if (t) headers['x-forward-auth-token'] = t
-    return apiCall('/brands', { method: 'POST', body: JSON.stringify(data), headers }) as Promise<any>
+  getAll: () => apiCall('/brands/') as Promise<any>,
+  getById: (id: string) => apiCall(`/brands/${id}/`) as Promise<any>,
+  create: (data: any) => {
+    // Ensure timestamp fields are not sent from the client; backend should set them automatically
+    const payload = { ...data }
+    delete payload.created_at
+    delete payload.updated_at
+    return apiCall('/brands/', { method: 'POST', body: JSON.stringify(payload) }) as Promise<any>
+  },
+  update: (id: string, data: any) => {
+    const payload = { ...data }
+    delete payload.created_at
+    delete payload.updated_at
+    delete payload.id
+    return apiCall(`/brands/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }) as Promise<any>
   },
 }

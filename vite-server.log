@@ -1,0 +1,36 @@
+
+> seller-dashboard@0.1.0 dev
+> vite --host 127.0.0.1 --port 3000
+
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m789[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m3000[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[2m10:56:16 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css, /src/pages/Login.tsx, /src/pages/Receipts.tsx, /src/pages/Deliveries.tsx, /src/pages/Reports.tsx, /src/pages/Dashboard.tsx, /src/pages/Settings.tsx, /src/pages/Products.tsx, /src/pages/Orders.tsx[22m
+[2m10:56:49 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/user/profile/[39m
+Error: connect ETIMEDOUT 69.46.46.118:443
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[2m10:56:58 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtmp_browser_check.mjs[22m
+[2m10:57:11 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtmp_browser_check.mjs[22m
+[2m10:58:13 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css, /src/pages/Login.tsx, /src/pages/Receipts.tsx, /src/pages/Deliveries.tsx, /src/pages/Reports.tsx, /src/pages/Dashboard.tsx, /src/pages/Settings.tsx, /src/pages/Products.tsx, /src/pages/Orders.tsx[22m
+[2m10:58:15 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Products.tsx, /src/index.css[22m
+[2m10:58:27 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtmp_browser_check.mjs[22m
+[2m10:58:51 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Products.tsx, /src/index.css[22m
+[2m10:59:19 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/login/[39m
+Error: connect ETIMEDOUT 69.46.46.118:443
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[2m11:00:11 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtmp_browser_check.mjs[22m
+[2m11:02:33 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtmp_browser_check.mjs[22m
+[2m11:07:30 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Settings.tsx, /src/index.css[22m
+[2m11:07:31 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Header.tsx, /src/index.css[22m
+[2m12:03:10 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/products/brand-form.tsx, /src/index.css[22m
+[2m12:03:11 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/products/category-form.tsx, /src/index.css[22m
+[2m12:03:12 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css, /src/pages/Login.tsx, /src/pages/Receipts.tsx, /src/pages/Deliveries.tsx, /src/pages/Reports.tsx, /src/pages/Dashboard.tsx, /src/pages/Settings.tsx, /src/pages/Products.tsx, /src/pages/Orders.tsx[22m
+[2m12:03:14 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Brands.tsx, /src/index.css[22m
+[2m12:03:15 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Categories.tsx, /src/index.css[22m
+[2m12:03:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/products/brand-form.tsx, /src/index.css[22m
+[2m12:21:53 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Categories.tsx, /src/pages/Brands.tsx, /components/products/brand-form.tsx, /components/products/category-form.tsx[22m
+[2m12:32:57 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/types.ts[22m
+[2m12:33:00 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Products.tsx, /src/index.css[22m
+[2m12:33:28 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Products.tsx, /src/index.css[22m

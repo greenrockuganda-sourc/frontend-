@@ -1,6 +1,10 @@
 /**
  * Django API Integration Layer
  * This module provides comprehensive integration with Django REST Framework backend
+ * 
+ * SECURITY: All authentication is cookie-based (HttpOnly, Secure, SameSite).
+ * The frontend NEVER handles or stores tokens. The browser automatically
+ * includes cookies in requests via credentials: 'include'.
  */
 
 import { Order, OrderItem, Delivery } from './types'
@@ -44,7 +48,7 @@ interface DjangoRequestOptions extends RequestInit {
 }
 
 /**
- * Make authenticated request to Django API
+ * Make authenticated request to Django API using HttpOnly cookies
  */
 async function djangoApiCall<T>(
   endpoint: string,
@@ -62,15 +66,9 @@ async function djangoApiCall<T>(
     url += `?${searchParams.toString()}`
   }
 
-  // Add auth token if available
-  const token = localStorage.getItem('django_auth_token')
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...fetchOptions.headers,
-  }
-  
-  if (token) {
-    headers['Authorization'] = `Token ${token}`
   }
 
   // Retry logic for failed requests
@@ -83,6 +81,7 @@ async function djangoApiCall<T>(
 
       const response = await fetch(url, {
         ...fetchOptions,
+        credentials: 'include', // Include HttpOnly cookies automatically
         headers,
         signal: controller.signal,
       })
@@ -91,8 +90,7 @@ async function djangoApiCall<T>(
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Handle unauthorized - clear token
-          localStorage.removeItem('django_auth_token')
+          // Unauthorized - session expired or invalid
           throw new Error('Authentication required')
         }
         
@@ -304,22 +302,12 @@ export async function checkDjangoApiHealth(): Promise<boolean> {
 }
 
 /**
- * Set authentication token
+ * SECURITY NOTE: Token management is now handled exclusively via HttpOnly cookies.
+ * The frontend does NOT store, manage, or access tokens.
+ * 
+ * Authentication is handled entirely by:
+ * 1. Backend setting HttpOnly, Secure, SameSite cookies on login
+ * 2. Browser automatically including cookies in all requests (credentials: 'include')
+ * 3. Backend validating cookies and session on each request
  */
-export function setDjangoAuthToken(token: string) {
-  localStorage.setItem('django_auth_token', token)
-}
 
-/**
- * Clear authentication token
- */
-export function clearDjangoAuthToken() {
-  localStorage.removeItem('django_auth_token')
-}
-
-/**
- * Get authentication token
- */
-export function getDjangoAuthToken(): string | null {
-  return localStorage.getItem('django_auth_token')
-}

@@ -1,88 +1,242 @@
-import { useEffect, useState } from 'react'
-import { getBrands, createBrand, updateBrand, deleteBrand } from '@/lib/api'
-import { Brand } from '@/types'
-import { notifyError, notifySuccess } from '@/lib/notify'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowUpRight, Clock3, Filter, Pencil, Plus, Search, Sparkles, Tag } from 'lucide-react'
+import { brandsApi } from '../../lib/api'
+import BrandForm from '../../components/products/brand-form'
 
-export default function BrandsPage() {
-  const [brands, setBrands] = useState<Brand[]>([])
+interface Props {
+  token?: string
+  onNavigate?: (page: string) => void
+}
+
+const formatDate = (value?: string) => {
+  if (!value) return 'Not set'
+  try {
+    return new Date(value).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  } catch {
+    return value
+  }
+}
+
+export default function Brands({ onNavigate }: Props) {
+  const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [newName, setNewName] = useState('')
-
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access') || undefined : undefined
+  const [query, setQuery] = useState('')
+  const [editingBrand, setEditingBrand] = useState<any | null>(null)
 
   useEffect(() => {
-    let active = true
-    const load = async () => {
-      try {
-        setLoading(true)
-        const data = await getBrands()
-        if (!active) return
-        setBrands(Array.isArray(data) ? data.map((b: any) => ({ id: String(b.id), brand_name: b.brand_name || b.name || 'Unknown' })) : [])
-      } catch (err) {
-        notifyError(String(err))
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-    load()
-    return () => { active = false }
+    void load()
   }, [])
 
-  const handleCreate = async () => {
-    if (!newName.trim()) return
+  const load = async () => {
     try {
-      const created = await createBrand(token, { brand_name: newName.trim() })
-      setBrands((prev) => [{ id: String(created.id), brand_name: created.brand_name || newName.trim() }, ...prev])
-      setNewName('')
-      notifySuccess('Brand created')
+      setLoading(true)
+      const data = await brandsApi.getAll()
+      setItems(Array.isArray(data) ? data : [])
     } catch (err) {
-      notifyError(String(err))
+      console.error('Failed to load brands', err)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleEdit = async (brand: Brand) => {
-    const next = window.prompt('Edit brand name', brand.brand_name)
-    if (!next) return
-    try {
-      const updated = await updateBrand(token, brand.id, { brand_name: next.trim() })
-      setBrands((prev) => prev.map((b) => (b.id === brand.id ? { ...b, brand_name: updated.brand_name || next.trim() } : b)))
-      notifySuccess('Brand updated')
-    } catch (err) {
-      notifyError(String(err))
-    }
-  }
+  const filteredItems = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return items
+    return items.filter((item) => {
+      const haystack = String(item.brand_name ?? '').toLowerCase()
+      return haystack.includes(q)
+    })
+  }, [items, query])
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this brand?')) return
-    try {
-      await deleteBrand(token, id)
-      setBrands((prev) => prev.filter((b) => b.id !== id))
-      notifySuccess('Brand deleted')
-    } catch (err) {
-      notifyError(String(err))
-    }
-  }
+  const totalProducts = items.length
+  const activeCount = items.length > 0 ? items.length : 0
 
   return (
-    <div className="p-4">
-      <h2 className="text-lg font-semibold mb-4">Brands</h2>
-      <div className="mb-4 flex gap-2">
-        <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="New brand" className="flex-1 border rounded px-3 py-2" />
-        <button onClick={handleCreate} className="bg-blue-600 text-white px-3 py-2 rounded">Add</button>
-      </div>
-      {loading ? <div>Loading...</div> : (
-        <div className="space-y-2">
-          {brands.map((b) => (
-            <div key={b.id} className="flex items-center justify-between border rounded p-2">
-              <span>{b.brand_name}</span>
-              <div className="flex gap-2">
-                <button onClick={() => handleEdit(b)} className="text-sm text-blue-600">Edit</button>
-                <button onClick={() => handleDelete(b.id)} className="text-sm text-red-600">Delete</button>
+    <main className="min-h-screen bg-white text-slate-950">
+      <div className="mx-auto max-w-[1400px] p-4 sm:p-6 lg:p-8">
+        <section className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-indigo-700 via-violet-700 to-indigo-950 px-6 py-8 text-white shadow-[0_30px_70px_-30px_rgba(79,70,229,0.8)] sm:px-8 lg:px-10">
+          <div className="absolute -right-12 -top-12 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -bottom-16 right-20 h-52 w-52 rounded-full bg-fuchsia-400/20 blur-3xl" />
+
+          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-indigo-100 backdrop-blur-sm">
+                <Sparkles className="h-3.5 w-3.5" />
+                Catalog workspace
               </div>
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Brands</h1>
+              <p className="mt-3 max-w-xl text-sm text-indigo-100 sm:text-base">
+                Manage your product brands, monitor updates, and keep every storefront identity aligned.
+              </p>
             </div>
-          ))}
+
+            <button
+              type="button"
+              onClick={() => {
+                console.log('Brands (spa): Add clicked')
+                if (onNavigate) onNavigate('createBrand')
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/20 transition hover:bg-indigo-50"
+            >
+              <Plus className="h-4 w-4" />
+              Add Brand
+            </button>
+          </div>
+        </section>
+
+        <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[
+            { label: 'Total brands', value: String(totalProducts), detail: 'Across catalog', accent: 'from-indigo-500 to-indigo-600', icon: Tag },
+            { label: 'Active brands', value: String(activeCount), detail: 'Currently visible', accent: 'from-violet-500 to-violet-600', icon: Sparkles },
+            { label: 'Latest updates', value: 'Today', detail: 'Sync in real time', accent: 'from-sky-500 to-cyan-500', icon: Clock3 },
+          ].map((stat) => {
+            const Icon = stat.icon
+            return (
+              <div key={stat.label} className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${stat.accent} text-white`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-xs font-semibold text-emerald-600">Live</span>
+                </div>
+                <p className="mt-5 text-sm text-slate-500">{stat.label}</p>
+                <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{stat.value}</p>
+                <p className="mt-1 text-xs text-slate-500">{stat.detail}</p>
+              </div>
+            )
+          })}
+        </section>
+
+        <section className="mt-6 overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.25)]">
+          <div className="flex flex-col gap-4 border-b border-slate-200/80 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Brand directory</h2>
+              <p className="mt-1 text-sm text-slate-500">Review and manage brand details in one place.</p>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1">
+              <span className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-slate-900 shadow-sm">Brands</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 border-b border-slate-200/80 p-4 sm:flex-row sm:items-center sm:px-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search brands..."
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              />
+            </div>
+            <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+              <Filter className="h-4 w-4" />
+              Filter
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="space-y-3 p-5 sm:p-6">
+              {[...Array(4)].map((_, index) => (
+                <div key={index} className="h-24 animate-pulse rounded-2xl bg-slate-100" />
+              ))}
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                <Search className="h-5 w-5" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-slate-900">No brands found</h3>
+              <p className="mt-1 max-w-md text-sm text-slate-500">Try a different search term or add a brand to start building your catalog.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-200/80">
+              {filteredItems.map((brand) => (
+                <div key={brand.id} className="group flex flex-col gap-4 p-5 transition hover:bg-slate-50/80 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  <div className="flex min-w-0 flex-1 items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-indigo-100 via-white to-violet-100 text-sm font-bold text-indigo-700 shadow-sm">
+                      {brand.logo ? (
+                        <img src={brand.logo} alt={brand.brand_name} className="h-full w-full object-cover" />
+                      ) : (
+                        (brand.brand_name ?? 'BR').slice(0, 2).toUpperCase()
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="truncate text-base font-semibold text-slate-900">{brand.brand_name}</h3>
+                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">Active</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:gap-8">
+                    <div className="flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600">
+                      <Clock3 className="h-3.5 w-3.5" />
+                      Updated {formatDate(brand.updated_at)}
+                    </div>
+                    <div className="hidden text-xs text-slate-500 md:block">
+                      Created {formatDate(brand.created_at)}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingBrand(brand)}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                      aria-label={`Edit ${brand.brand_name}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span className="text-xs font-medium">Edit</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between border-t border-slate-200/80 px-6 py-4 text-sm text-slate-500">
+            <span>Showing {filteredItems.length} of {items.length} brands</span>
+            <button className="inline-flex items-center gap-1 font-medium text-indigo-600 transition hover:text-indigo-700">
+              View report
+              <ArrowUpRight className="h-4 w-4" />
+            </button>
+          </div>
+        </section>
+      </div>
+
+      {editingBrand && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <div className="w-full max-w-3xl rounded-[28px] border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">Edit brand</p>
+                <h3 className="mt-1 text-2xl font-semibold text-slate-900">{editingBrand.brand_name}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingBrand(null)}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+              >
+                Close
+              </button>
+            </div>
+            <BrandForm
+              mode="edit"
+              initialData={editingBrand}
+              onDone={(updated) => {
+                setItems((prev) => prev.map((item) => (String(item.id) === String(updated?.id ?? item.id) ? { ...item, ...updated } : item)))
+                setEditingBrand(null)
+                void load()
+              }}
+              onClose={() => setEditingBrand(null)}
+            />
+          </div>
         </div>
       )}
-    </div>
+    </main>
   )
 }

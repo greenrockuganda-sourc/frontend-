@@ -19,6 +19,7 @@ export function ProductImageUpload({
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string>('')
   const [fileName, setFileName] = useState<string>('')
+  const [progress, setProgress] = useState<number | null>(null)
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -40,21 +41,28 @@ export function ProductImageUpload({
     }
     reader.readAsDataURL(file)
 
-    // Upload to Cloudinary
+    // Upload to Cloudinary with progress
     setUploading(true)
+    setProgress(0)
     try {
       console.log('[ProductImageUpload] Uploading image to Cloudinary...')
-      const uploadResponse = await cloudinaryService.uploadImage(file, 'seller-admin/products')
+      const uploadResponse = await cloudinaryService.uploadImageWithProgress(
+        file,
+        'seller-admin/products',
+        (p) => setProgress(p)
+      )
       const imageUrl = cloudinaryService.getSecureUrl(uploadResponse)
 
       console.log('[ProductImageUpload] Upload successful:', imageUrl)
       onImageUpload(imageUrl)
+      setProgress(null)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Upload failed'
       console.error('[ProductImageUpload] Upload error:', errorMessage)
       onError?.(errorMessage)
       setPreview('')
       setFileName('')
+      setProgress(null)
     } finally {
       setUploading(false)
     }
@@ -103,7 +111,11 @@ export function ProductImageUpload({
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                 <div className="flex flex-col items-center">
                   <Loader className="w-6 h-6 text-white animate-spin mb-2" />
-                  <p className="text-xs text-white">Uploading...</p>
+                  {progress !== null ? (
+                    <p className="text-xs text-white">Uploading... {progress}%</p>
+                  ) : (
+                    <p className="text-xs text-white">Uploading...</p>
+                  )}
                 </div>
               </div>
             )}

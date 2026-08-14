@@ -108,6 +108,62 @@ export class CloudinaryService {
   }
 
   /**
+   * Upload image using XHR to provide progress updates
+   */
+  async uploadImageWithProgress(
+    file: File,
+    folder: string = 'seller-admin',
+    onProgress?: (percent: number) => void
+  ): Promise<CloudinaryUploadResponse> {
+    this.ensureConfigured()
+
+    return new Promise<CloudinaryUploadResponse>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', this.uploadPreset)
+      formData.append('folder', folder)
+      formData.append('resource_type', 'auto')
+
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${this.cloudName}/image/upload`)
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText) as CloudinaryUploadResponse
+            console.log('[Cloudinary] Upload successful:', data.public_id)
+            resolve(data)
+          } catch (err) {
+            reject(new Error('Unexpected Cloudinary response'))
+          }
+        } else {
+          try {
+            const err = JSON.parse(xhr.responseText) as CloudinaryError
+            reject(new Error(err?.error?.message || `Cloudinary upload failed with status ${xhr.status}`))
+          } catch {
+            reject(new Error(`Cloudinary upload failed with status ${xhr.status}`))
+          }
+        }
+      }
+
+      xhr.onerror = () => reject(new Error('Network error while uploading image to Cloudinary'))
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percent = Math.round((event.loaded / event.total) * 100)
+          onProgress(percent)
+        }
+      }
+
+      try {
+        xhr.send(formData)
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error(String(err)))
+      }
+    })
+  }
+
+  /**
    * Upload multiple images
    */
   async uploadMultiple(
@@ -139,14 +195,25 @@ export class CloudinaryService {
     height?: number,
     quality: string = 'auto'
   ): string {
-    let url = `https://res.cloudinary.com/${this.cloudName}/image/upload/`
-
-    if (width || height) {
-      url += `c_fill,w_${width || 'auto'},h_${height || 'auto'},`
+    // If a full URL was passed (secure_url from backend), return it unchanged.
+    // Many backends store the full secure URL; callers may pass either a Cloudinary
+    // public_id or a full URL. We only construct a transformation path when a
+    // public id-like value is provided.
+    if (/^https?:\/\//i.test(publicId)) {
+      return publicId
     }
 
-    url += `q_${quality}/${publicId}`
-    return url
+    // Build a safe transformation string and ensure the publicId is URL-encoded
+    const parts: string[] = []
+    if (width || height) {
+      parts.push(`c_fill,w_${width ?? 'auto'},h_${height ?? 'auto'}`)
+    }
+    parts.push(`q_${quality}`)
+
+    const transformation = parts.join(',')
+    const encodedPublicId = encodeURIComponent(publicId)
+
+    return `https://res.cloudinary.com/${this.cloudName}/image/upload/${transformation}/${encodedPublicId}`
   }
 
   /**

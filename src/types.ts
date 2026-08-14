@@ -15,6 +15,9 @@ export interface Product {
   price: number
   stock: number
   category: string
+  categoryId?: string
+  brand?: string
+  brandId?: string
   description?: string
   costPrice?: number
   profit?: number

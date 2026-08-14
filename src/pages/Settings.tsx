@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { Save } from 'lucide-react'
 import { updateProfile } from '@/lib/api'
+import { cloudinaryService } from '@/lib/cloudinary-service'
 import { UserProfile } from '@/types'
 import { notifyError, notifySuccess } from '@/lib/notify'
 
 interface SettingsProps {
   user?: UserProfile | null
-  token: string
   onProfileSave: (profile: UserProfile) => void
 }
 
-export default function Settings({ user, token, onProfileSave }: SettingsProps) {
+export default function Settings({ user, onProfileSave }: SettingsProps) {
   const [settings, setSettings] = useState({
     firstName: '',
     lastName: '',
@@ -49,14 +49,26 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
     }
   }, [profileImagePreview])
 
-  const getCloudinaryFolder = (file: File) => {
-    const folderPrefix = import.meta.env.VITE_CLOUDINARY_UPLOAD_FOLDER?.trim()
-    if (!folderPrefix) {
-      return undefined
+  const handleProfileImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
     }
 
-    const fileName = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()
-    return `${folderPrefix}/${fileName}`
+    try {
+      if (profileImagePreview && profileImagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(profileImagePreview)
+      }
+    } catch {}
+
+    const objectUrl = URL.createObjectURL(file)
+    setProfileImageFile(file)
+    setProfileImagePreview(objectUrl)
+    setSettings((current) => ({ ...current, profileImage: objectUrl }))
+    event.target.value = ''
   }
 
   const handleSave = async () => {
@@ -70,53 +82,25 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
     try {
       let profileImageUrl = settings.profileImage
       if (profileImageFile) {
-        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-        const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-        if (!cloudName || !uploadPreset) {
-          throw new Error('Cloudinary upload is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.')
-        }
-
         setUploadingImage(true)
-        const uploadSingle = (file: File) => new Promise<string>((resolve, reject) => {
-          const xhr = new XMLHttpRequest()
-          xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`)
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              try {
-                const responseBody = JSON.parse(xhr.responseText)
-                resolve(responseBody.secure_url || responseBody.url)
-              } catch (e) {
-                reject(new Error('Unexpected Cloudinary response'))
-              }
-            } else {
-              try {
-                const responseBody = JSON.parse(xhr.responseText)
-                reject(new Error(responseBody?.error?.message || `Cloudinary upload failed with status ${xhr.status}`))
-              } catch {
-                reject(new Error(`Cloudinary upload failed with status ${xhr.status}`))
-              }
-            }
-          }
-          xhr.onerror = () => reject(new Error('Network error while uploading image to Cloudinary'))
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-              setImageUploadProgress(Math.round((e.loaded / e.total) * 100))
-            }
-          }
-          const form = new FormData()
-          form.append('file', file)
-          form.append('upload_preset', uploadPreset)
-          form.append('resource_type', 'auto')
-          const folder = getCloudinaryFolder(file)
-          if (folder) {
-            form.append('folder', folder)
-          }
-          xhr.send(form)
-        })
+        setImageUploadProgress(0)
         try {
-          profileImageUrl = await uploadSingle(profileImageFile)
+          // validate image
+          const validation = cloudinaryService.validateImage(profileImageFile, 10)
+          if (!validation.valid) {
+            throw new Error(validation.error || 'Invalid image')
+          }
+
+          const uploadResp = await cloudinaryService.uploadImageWithProgress(
+            profileImageFile,
+            'seller-admin/profiles',
+            (pct) => setImageUploadProgress(pct)
+          )
+
+          profileImageUrl = cloudinaryService.getSecureUrl(uploadResp)
         } catch (err) {
-          notifyError('Profile image upload failed')
+          const msg = err instanceof Error ? err.message : String(err)
+          notifyError(`Profile image upload failed: ${msg}`)
           throw err
         } finally {
           setUploadingImage(false)
@@ -124,21 +108,26 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
         }
       }
 
-      const updated = await updateProfile(token, {
+      const updated = await updateProfile({
         first_name: settings.firstName,
         last_name: settings.lastName,
         phone_number: settings.phoneNumber,
         profile_image: profileImageUrl,
       })
 
+      const persistedProfileImage = updated.profile_image || profileImageUrl
+
       const updatedProfile: UserProfile = {
         ...user,
         first_name: updated.first_name || settings.firstName,
         last_name: updated.last_name || settings.lastName,
         phone_number: updated.phone_number ?? settings.phoneNumber,
-        profile_image: updated.profile_image ?? settings.profileImage,
+        profile_image: persistedProfileImage,
       }
       onProfileSave(updatedProfile)
+      setSettings((current) => ({ ...current, profileImage: persistedProfileImage }))
+      setProfileImagePreview(persistedProfileImage)
+      setProfileImageFile(null)
       setSaved(true)
       notifySuccess('Profile updated')
       setTimeout(() => setSaved(false), 3000)
@@ -159,10 +148,11 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
   }
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8">
+    <div className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h2>
-        <p className="text-gray-500 mt-1">Manage your account and profile settings</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Account</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Settings</h2>
+        <p className="mt-1 text-slate-500">Manage your account and profile settings</p>
       </div>
 
       {error && (
@@ -176,42 +166,48 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
           <h3 className="text-lg font-bold text-gray-900">Profile Information</h3>
         </div>
 
-        <form className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form
+          className="space-y-6 p-6"
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+        >
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">First Name</label>
               <input
                 type="text"
                 value={settings.firstName}
                 onChange={(event) => setSettings({ ...settings, firstName: event.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Last Name</label>
               <input
                 type="text"
                 value={settings.lastName}
                 onChange={(event) => setSettings({ ...settings, lastName: event.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
               <input
                 type="email"
                 value={settings.email}
                 readOnly
-                className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2"
+                className="w-full rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-slate-600"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Phone Number</label>
               <input
                 type="tel"
                 value={settings.phoneNumber}
                 onChange={(event) => setSettings({ ...settings, phoneNumber: event.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div className="md:col-span-2">
@@ -219,7 +215,7 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div>
                   <img
-                    src={profileImagePreview || settings.profileImage || DEFAULT_PROFILE_PLACEHOLDER}
+                    src={profileImageFile ? profileImagePreview : settings.profileImage || DEFAULT_PROFILE_PLACEHOLDER}
                     alt="avatar"
                     onError={(event) => {
                       event.currentTarget.onerror = null
@@ -232,14 +228,9 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => {
-                      const f = e.target.files && e.target.files[0]
-                      if (f) {
-                        try { URL.revokeObjectURL(profileImagePreview) } catch {}
-                        const url = URL.createObjectURL(f)
-                        setProfileImageFile(f)
-                        setProfileImagePreview(url)
-                      }
+                    onChange={handleProfileImageChange}
+                    onClick={(event) => {
+                      event.stopPropagation()
                     }}
                     className="mb-2"
                   />
@@ -247,7 +238,11 @@ export default function Settings({ user, token, onProfileSave }: SettingsProps) 
                     type="url"
                     placeholder="Or paste image URL"
                     value={settings.profileImage}
-                    onChange={(event) => setSettings({ ...settings, profileImage: event.target.value })}
+                    onChange={(event) => {
+                      setProfileImageFile(null)
+                      setProfileImagePreview('')
+                      setSettings({ ...settings, profileImage: event.target.value })
+                    }}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {uploadingImage && <div className="text-sm text-gray-500 mt-1">Uploading image... {imageUploadProgress}%</div>}
