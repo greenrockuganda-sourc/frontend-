@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, Search, PackageOpen, Filter, X, Download } from 'lucide-react'
-import { fetchProducts, getCategories, getBrands, createProduct, updateProduct, deleteProduct } from '@/lib/api'
+import { fetchProducts, getCategories, getBrands, createProduct, updateProduct, deleteProduct, createCategory, createBrand } from '@/lib/api'
 import { Product, Category, Brand } from '@/types'
 import { notifyError, notifySuccess } from '@/lib/notify'
 import ConfirmationModal from '@/components/ConfirmationModal'
@@ -395,6 +395,32 @@ export default function Products({ token }: ProductsProps) {
     setPendingDeleteProduct(null)
   }
 
+  const handleAddCategory = async () => {
+    const name = window.prompt('New category name')
+    if (!name || !name.trim()) return
+    try {
+      await createCategory({ category_name: name.trim() })
+      notifySuccess('Category created')
+      const catData = await getCategories()
+      setCategories((Array.isArray(catData) ? catData : []).map((category: any) => ({ id: String(category.id), category_name: category.category_name || category.name || 'Unknown' })))
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to create category')
+    }
+  }
+
+  const handleAddBrand = async () => {
+    const name = window.prompt('New brand name')
+    if (!name || !name.trim()) return
+    try {
+      await createBrand({ brand_name: name.trim() })
+      notifySuccess('Brand created')
+      const brandData = await getBrands()
+      setBrands((Array.isArray(brandData) ? brandData : []).map((brand: any) => ({ id: String(brand.id), brand_name: brand.brand_name || brand.name || 'Unknown' })))
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to create brand')
+    }
+  }
+
   useEffect(() => {
     return () => {
       formImagePreviews.forEach((p) => {
@@ -414,28 +440,43 @@ export default function Products({ token }: ProductsProps) {
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Products</h2>
           <p className="text-gray-500 mt-1">Manage your inventory</p>
         </div>
-        <button
-          onClick={() => {
-            if (!showForm) {
-              setEditingProductId(null)
-              setFormName('')
-              setFormPrice('')
-              setFormStock('')
-              setFormCategoryId('')
-              setFormBrandId('')
-              setFormDescription('')
-              setFormCostPrice('')
-              setFormReorderLevel('')
-              setFormImageFiles([])
-              setFormStatus('Available')
-            }
-            setShowForm(!showForm)
-          }}
-          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
-        >
-          <Plus size={20} />
-          Add Product
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleAddCategory}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            Add Category
+          </button>
+          <button
+            onClick={handleAddBrand}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            Add Brand
+          </button>
+          <button
+            onClick={() => {
+              if (!showForm) {
+                setEditingProductId(null)
+                setFormName('')
+                setFormPrice('')
+                setFormStock('')
+                setFormCategoryId('')
+                setFormBrandId('')
+                setFormDescription('')
+                setFormCostPrice('')
+                setFormReorderLevel('')
+                setFormImageFiles([])
+                setFormStatus('Available')
+                setFormError(null)
+              }
+              setShowForm(!showForm)
+            }}
+            className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
+          >
+            <Plus size={20} />
+            Add Product
+          </button>
+        </div>
       </div>
 
       {showForm && (

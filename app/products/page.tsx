@@ -8,12 +8,16 @@ import { Button } from '../../components/ui/button'
 import { Skeleton } from '../../components/ui/skeleton'
 import { Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
 import { ProductForm } from '../../components/products/product-form'
+import BrandForm from '../../components/products/brand-form'
+import CategoryForm from '../../components/products/category-form'
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [showBrandForm, setShowBrandForm] = useState(false)
+  const [showCategoryForm, setShowCategoryForm] = useState(false)
 
   useEffect(() => {
     fetchProducts()
@@ -53,10 +57,20 @@ export default function ProductsPage() {
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">Products</h1>
               <p className="mt-2 text-sm text-slate-500">Manage your inventory and product catalog</p>
             </div>
-            <Button onClick={() => { setEditingProduct(null); setShowForm(true) }} className="gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:opacity-95">
-              <Plus className="h-4 w-4" />
-              Add Product
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button onClick={() => { setEditingProduct(null); setShowForm(true) }} className="gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:opacity-95">
+                <Plus className="h-4 w-4" />
+                Add Product
+              </Button>
+
+              <Button onClick={() => setShowCategoryForm(true)} variant="outline" className="inline-flex">
+                Add Category
+              </Button>
+
+              <Button onClick={() => setShowBrandForm(true)} variant="outline" className="inline-flex">
+                Add Brand
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -66,6 +80,22 @@ export default function ProductsPage() {
             onClose={() => { setShowForm(false); setEditingProduct(null) }}
             onSave={() => { fetchProducts(); setShowForm(false); setEditingProduct(null) }}
           />
+        )}
+
+        {showCategoryForm && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-card p-4 rounded max-w-md w-full">
+              <CategoryForm onDone={() => { setShowCategoryForm(false) }} onClose={() => setShowCategoryForm(false)} />
+            </div>
+          </div>
+        )}
+
+        {showBrandForm && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-card p-4 rounded max-w-md w-full">
+              <BrandForm onDone={() => { setShowBrandForm(false) }} onClose={() => setShowBrandForm(false)} />
+            </div>
+          </div>
         )}
 
         <div className="overflow-hidden rounded-[26px] border border-slate-200/80 bg-white/80 shadow-[0_18px_40px_-25px_rgba(15,23,42,0.35)] backdrop-blur-xl">

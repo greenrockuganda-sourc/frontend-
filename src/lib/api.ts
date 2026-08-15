@@ -217,14 +217,54 @@ export async function getBrands() {
   return request<any>('/api/brands/', {}, undefined)
 }
 
-export async function createBrand(token: string | undefined, brandData: { brand_name: string; description?: string; country?: string; logo?: string }) {
-  return request<any>('/api/brands/', {
+export async function createCategory(
+  tokenOrData?: string | { category_name: string; description?: string; image_url?: string },
+  categoryData?: { category_name: string; description?: string; image_url?: string },
+) {
+  const token = typeof tokenOrData === 'string' ? tokenOrData : undefined
+  const payload = typeof tokenOrData === 'string' ? (categoryData ?? {}) : (tokenOrData ?? {})
+
+  return request<any>('/api/categories/', {
     method: 'POST',
-    body: JSON.stringify(brandData),
+    body: JSON.stringify(payload),
   }, token)
 }
 
-export async function updateBrand(token: string | undefined, brandId: string, brandData: { brand_name?: string; description?: string; country?: string; logo?: string }) {
+export async function updateCategory(
+  token: string | undefined,
+  categoryId: string,
+  categoryData: { category_name?: string; description?: string; image_url?: string },
+) {
+  return request<any>(`/api/categories/${categoryId}/`, {
+    method: 'PUT',
+    body: JSON.stringify(categoryData),
+  }, token)
+}
+
+export async function deleteCategory(token: string | undefined, categoryId: string) {
+  return request<any>(`/api/categories/${categoryId}/`, {
+    method: 'DELETE',
+  }, token)
+}
+
+export async function createBrand(
+  tokenOrData?: string | { brand_name: string; description?: string; country?: string; logo?: string },
+  brandData?: { brand_name: string; description?: string; country?: string; logo?: string },
+) {
+  const token = typeof tokenOrData === 'string' ? tokenOrData : undefined
+  const payload = typeof tokenOrData === 'string' ? (brandData ?? {}) : (tokenOrData ?? {})
+
+  return request<any>('/api/brands/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token)
+}
+
+export async function updateBrand(
+  token: string | undefined,
+  brandId: string,
+  brandData: { brand_name?: string; description?: string; country?: string; logo?: string },
+) {
   return request<any>(`/api/brands/${brandId}/`, {
     method: 'PUT',
     body: JSON.stringify(brandData),

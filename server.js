@@ -6,7 +6,7 @@ import url from 'node:url'
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 const distDir = path.join(__dirname, 'dist')
-const port = Number(process.env.PORT || 8080)
+const port = Number(process.env.PORT || 3000)
 
 const mimeTypes = {
   '.html': 'text/html',
@@ -83,15 +83,13 @@ createServer(async (req, res) => {
 
   if (shouldProxyApi && requestPath.startsWith('/api')) {
     try {
-      // rewrite certain frontend paths to the Django API versioned paths when necessary
-      const parts = requestPath.replace(/^\//, '').split('/') // ['api','categories', ...]
+      const parts = requestPath.replace(/^\/+|\/+$/g, '').split('/')
       let proxyPath = requestUrl.pathname + requestUrl.search
 
-      if (parts[1] === 'categories' || parts[1] === 'brands') {
-        // map /api/categories[/id] -> {BACKEND}/api/{API_VERSION}/categories[/id]/
+      if (parts[0] === 'api' && (parts[1] === 'categories' || parts[1] === 'brands')) {
         const resource = parts[1]
-        const id = parts[2] ? `/${parts.slice(2).join('/')}` : ''
-        proxyPath = `/api/${API_VERSION}/${resource}${id}${requestUrl.search}`
+        const remainder = parts.slice(2).join('/')
+        proxyPath = `/api/${API_VERSION}/${resource}${remainder ? `/${remainder}` : ''}${requestUrl.search}`
       }
 
       const base = backendBaseUrl.trim().replace(/\/$/, '')
