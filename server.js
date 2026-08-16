@@ -53,7 +53,6 @@ async function readRequestBody(stream) {
 const DEFAULT_BACKEND_BASE_URL = 'https://backends-production-3d0b.up.railway.app'
 const backendBaseUrl = process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || DEFAULT_BACKEND_BASE_URL
 const shouldProxyApi = backendBaseUrl.trim() !== ''
-const API_VERSION = process.env.API_VERSION || 'v1'
 
 // Simple file-backed storage for categories and brands when no external API is configured
 const dataDir = path.join(__dirname, 'data')
@@ -87,17 +86,8 @@ createServer(async (req, res) => {
 
   if (shouldProxyApi && requestPath.startsWith('/api')) {
     try {
-      const parts = requestPath.replace(/^\/+|\/+$/g, '').split('/')
-      let proxyPath = requestUrl.pathname + requestUrl.search
-
-      if (parts[0] === 'api' && (parts[1] === 'categories' || parts[1] === 'brands')) {
-        const resource = parts[1]
-        const remainder = parts.slice(2).join('/')
-        proxyPath = `/api/${API_VERSION}/${resource}${remainder ? `/${remainder}` : ''}${requestUrl.search}`
-      }
-
       const base = backendBaseUrl.trim().replace(/\/$/, '')
-      const proxyUrl = new URL(proxyPath, base).toString()
+      const proxyUrl = new URL(requestUrl.pathname + requestUrl.search, base).toString()
       const headers = new Headers()
 
       for (const [name, value] of Object.entries(req.headers)) {
