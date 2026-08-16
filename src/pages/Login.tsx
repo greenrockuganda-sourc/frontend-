@@ -1,384 +1,98 @@
-import { useState } from 'react'
-import { ArrowLeft, Lock, Mail, ShieldCheck } from 'lucide-react'
+import { FormEvent, useEffect, useState } from 'react'
+import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, Mail, Phone, ShieldCheck, Sparkles, UserRound } from 'lucide-react'
 import { forgotPassword, login, register, resetPassword } from '@/lib/api'
 
-interface LoginProps {
-  /**
-   * Called when login succeeds. Backend validates authorization.
-   * We don't perform any role checks on the client.
-   */
-  onLogin: () => void
+interface LoginProps { onLogin: () => void }
+type AuthView = 'sign-in' | 'sign-up' | 'forgot-password' | 'reset-password'
+
+const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+
+function PasswordField({ label, value, onChange, placeholder, autoComplete }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; autoComplete: string }) {
+  const [visible, setVisible] = useState(false)
+  return <label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">{label}</span><span className="relative block"><LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={value} onChange={(event) => onChange(event.target.value)} type={visible ? 'text' : 'password'} className={`${inputClass} pl-11 pr-12`} placeholder={placeholder} autoComplete={autoComplete} required /><button type="button" onClick={() => setVisible((current) => !current)} className="absolute right-3 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label={visible ? 'Hide password' : 'Show password'}>{visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></span></label>
 }
 
 export default function Login({ onLogin }: LoginProps) {
-  const [isRegistering, setIsRegistering] = useState(false)
+  const [view, setView] = useState<AuthView>('sign-in')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [identifier, setIdentifier] = useState('')
+  const [email, setEmail] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [forgotEmail, setForgotEmail] = useState('')
-  const [resetToken, setResetToken] = useState('')
-  const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [resetUid, setResetUid] = useState('')
-  const [passwordActionLoading, setPasswordActionLoading] = useState(false)
-  const [passwordActionMessage, setPasswordActionMessage] = useState<string | null>(null)
+  const [resetToken, setResetToken] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    setLoading(true)
-    setError(null)
-    setSuccessMessage(null)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const uid = params.get('uid') || params.get('uidb64') || ''
+    const token = params.get('token') || ''
+    if (uid || token) { setResetUid(uid); setResetToken(token); setView('reset-password') }
+  }, [])
 
-    if (isRegistering) {
-      if (!firstName.trim() || !lastName.trim() || !identifier.trim() || !phoneNumber.trim() || !password) {
-        setError('Please fill in all signup fields.')
-        setLoading(false)
-        return
-      }
-    } else if (!identifier.trim() || !password) {
-      setError('Please enter your email or phone and password.')
-      setLoading(false)
-      return
-    }
+  const changeView = (next: AuthView) => { setView(next); setError(null); setNotice(null) }
+  const validEmail = () => {
+    if (!email.trim()) { setError('Enter your email address.'); return false }
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) { setError('Enter a valid email address.'); return false }
+    return true
+  }
 
+  const submit = async (event: FormEvent) => {
+    event.preventDefault(); setError(null); setNotice(null); setLoading(true)
     try {
-      if (isRegistering) {
-        await register({
-          first_name: firstName,
-          last_name: lastName,
-          email: identifier,
-          phone_number: phoneNumber,
-          password,
-          role: 'Seller',
-        })
-        setSuccessMessage('Account created successfully. Please sign in.')
-        setIsRegistering(false)
-        setPassword('')
-        setPhoneNumber('')
-        return
+      if (view === 'sign-in') {
+        if (!email.trim() || !password) throw new Error('Enter your email or phone number and password.')
+        await login(email.trim(), password); onLogin(); return
       }
-
-      /**
-       * Login with email/phone and password.
-       * Backend validates user role and sets HttpOnly cookies.
-       * Frontend doesn't handle tokens - cookies are managed by browser.
-       */
-      await login(identifier, password)
-      
-      /**
-       * SECURITY: No client-side role validation.
-       * Backend endpoint validates authorization and denies access if user
-       * doesn't have appropriate role (Seller/Admin).
-       * If unauthorized, backend returns 403 and frontend cannot proceed.
-       */
-      onLogin()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : isRegistering ? 'Unable to create account' : 'Unable to sign in')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const toggleMode = () => {
-    setIsRegistering(!isRegistering)
-    setShowForgotPassword(false)
-    setError(null)
-    setSuccessMessage(null)
-    setPasswordActionMessage(null)
-  }
-
-  const handleForgotPasswordRequest = async () => {
-    if (!forgotEmail.trim()) {
-      setError('Please enter your email to request a reset link.')
-      return
-    }
-
-    setPasswordActionLoading(true)
-    setError(null)
-    setPasswordActionMessage(null)
-
-    try {
-      const data = await forgotPassword(forgotEmail.trim())
-      // backend may return uid and token for convenience; capture them if present
-      if (data && typeof data === 'object') {
-        if (data.uid) setResetUid(String(data.uid))
-        if (data.token) setResetToken(String(data.token))
+      if (view === 'sign-up') {
+        if (!validEmail()) return
+        if (password.length < 8) throw new Error('Use a password with at least 8 characters.')
+        if (password !== confirmPassword) throw new Error('Your passwords do not match.')
+        await register({ first_name: firstName.trim(), last_name: lastName.trim(), email: email.trim(), phone_number: phoneNumber.trim(), password, role: 'Seller' })
+        setPassword(''); setConfirmPassword(''); changeView('sign-in'); setNotice('Your account is ready. Sign in to continue.'); return
       }
-      setPasswordActionMessage('A password reset link has been sent to your email.')
-      setSuccessMessage('Password reset requested. Use the token you received to set a new password.')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to request a password reset.')
-    } finally {
-      setPasswordActionLoading(false)
-    }
+      if (view === 'forgot-password') {
+        if (!validEmail()) return
+        await forgotPassword(email.trim())
+        setNotice('If an account exists for this email, we have sent password reset instructions.'); return
+      }
+      if (!resetUid.trim() || !resetToken.trim()) throw new Error('Open the reset link from your email, or enter the UID and reset token.')
+      if (newPassword.length < 8) throw new Error('Use a password with at least 8 characters.')
+      if (newPassword !== confirmNewPassword) throw new Error('Your passwords do not match.')
+      await resetPassword({ uid: resetUid.trim(), token: resetToken.trim(), new_password: newPassword, confirm_password: confirmNewPassword })
+      setNewPassword(''); setConfirmNewPassword(''); changeView('sign-in'); setNotice('Password updated. You can now sign in with your new password.')
+    } catch (err) { setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.') } finally { setLoading(false) }
   }
 
-  const handleResetPassword = async () => {
-    if ((!resetUid.trim() && !forgotEmail.trim()) || !resetToken.trim() || !newPassword.trim() || !confirmPassword.trim()) {
-      setError('Please provide uid (or email), reset token, new password and confirmation.')
-      return
-    }
+  const title = view === 'sign-up' ? 'Create your account' : view === 'forgot-password' ? 'Reset your password' : view === 'reset-password' ? 'Choose a new password' : 'Welcome back'
+  const description = view === 'sign-up' ? 'Create a seller account in a few simple steps.' : view === 'forgot-password' ? 'We will send reset instructions to your email.' : view === 'reset-password' ? 'Secure your account with a new password.' : 'Sign in to manage your store, inventory and orders.'
+  const submitLabel = view === 'sign-up' ? 'Create account' : view === 'forgot-password' ? 'Send reset instructions' : view === 'reset-password' ? 'Update password' : 'Sign in'
 
-    setPasswordActionLoading(true)
-    setError(null)
-    setPasswordActionMessage(null)
-
-    try {
-      await resetPassword({
-        uid: resetUid.trim() || undefined,
-        token: resetToken.trim(),
-        new_password: newPassword,
-        confirm_password: confirmPassword,
-      })
-      setPasswordActionMessage('Password reset successful. You can sign in with your new password.')
-      setShowForgotPassword(false)
-      setIsRegistering(false)
-      setForgotEmail('')
-      setResetToken('')
-      setResetUid('')
-      setNewPassword('')
-      setConfirmPassword('')
-      setPassword('')
-      setSuccessMessage('Password changed successfully. Please sign in.')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to reset your password.')
-    } finally {
-      setPasswordActionLoading(false)
-    }
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white/80 p-8 shadow-[0_18px_40px_-22px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-        <div className="mb-8 flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-500 shadow-[0_12px_24px_-8px_rgba(99,102,241,0.18)]">
-            <ShieldCheck className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">
-              {isRegistering ? 'Create your account' : 'Seller Admin'}
-            </h1>
-            <p className="text-sm text-slate-500">
-              {isRegistering ? 'Sign up to manage your store' : 'Sign in to manage your store'}
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {isRegistering && (
-            <>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">First name</label>
-                <input
-                  value={firstName}
-                  onChange={(event) => setFirstName(event.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
-                  placeholder="First name"
-                  autoComplete="given-name"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">Last name</label>
-                <input
-                  value={lastName}
-                  onChange={(event) => setLastName(event.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
-                  placeholder="Last name"
-                  autoComplete="family-name"
-                />
-              </div>
-            </>
-          )}
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">
-              {isRegistering ? 'Email address' : 'Email or phone'}
-            </label>
-            <div className="flex items-center rounded-lg border border-slate-200 bg-white px-3">
-              <Mail className="mr-2 h-4 w-4 text-slate-400" />
-              <input
-                value={identifier}
-                onChange={(event) => setIdentifier(event.target.value)}
-                className="w-full bg-transparent py-3 text-sm text-slate-900 outline-none"
-                placeholder={isRegistering ? 'Enter your email' : 'Enter your email or phone'}
-                autoComplete={isRegistering ? 'email' : 'email'}
-              />
-            </div>
-          </div>
-
-          {isRegistering && (
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">Phone number</label>
-              <div className="flex items-center rounded-lg border border-slate-200 bg-white px-3">
-                <input
-                  value={phoneNumber}
-                  onChange={(event) => setPhoneNumber(event.target.value)}
-                  className="w-full bg-transparent py-3 text-sm text-slate-900 outline-none"
-                  placeholder="Enter your phone number"
-                  autoComplete="tel"
-                />
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Password</label>
-            <div className="flex items-center rounded-lg border border-slate-200 bg-white px-3">
-              <Lock className="mr-2 h-4 w-4 text-slate-400" />
-              <input
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                type="password"
-                className="w-full bg-transparent py-3 text-sm text-slate-900 outline-none"
-                placeholder="Enter your password"
-                autoComplete={isRegistering ? 'new-password' : 'current-password'}
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div className="rounded-lg border border-rose-500/10 bg-rose-50 px-3 py-2 text-sm text-rose-600">
-              {error}
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="rounded-lg border border-emerald-500/10 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-              {successMessage}
-            </div>
-          )}
-
-          {!showForgotPassword && (
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {loading ? (isRegistering ? 'Creating account...' : 'Signing in...') : (isRegistering ? 'Create account' : 'Sign in')}
-            </button>
-          )}
-        </form>
-
-        {showForgotPassword && (
-          <div className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <button
-              type="button"
-              onClick={() => setShowForgotPassword(false)}
-              className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Back to sign in
-            </button>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
-              <input
-                value={forgotEmail}
-                onChange={(event) => setForgotEmail(event.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
-                placeholder="Enter your email"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleForgotPasswordRequest}
-              disabled={passwordActionLoading}
-              className="w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {passwordActionLoading ? 'Sending...' : 'Send reset link'}
-            </button>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Reset token</label>
-              <input
-                value={resetToken}
-                onChange={(event) => setResetToken(event.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
-                placeholder="Paste the token from your email"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">New password</label>
-              <input
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                type="password"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
-                placeholder="Enter a new password"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Confirm password</label>
-              <input
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                type="password"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
-                placeholder="Confirm your new password"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleResetPassword}
-              disabled={passwordActionLoading}
-              className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {passwordActionLoading ? 'Resetting...' : 'Reset password'}
-            </button>
-
-            {passwordActionMessage && (
-              <div className="rounded-lg border border-emerald-500/10 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                {passwordActionMessage}
-              </div>
-            )}
-          </div>
-        )}
-
-        {!showForgotPassword && (
-          <div className="mt-4 space-y-2 text-center text-sm text-slate-400">
-            {!isRegistering && (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForgotPassword(true)
-                  setError(null)
-                  setSuccessMessage(null)
-                }}
-                className="block w-full text-center text-indigo-600 hover:text-violet-600 underline"
-              >
-                Forgot password?
-              </button>
-            )}
-
-            {isRegistering ? (
-              <>
-                Already have an account?{' '}
-                <button type="button" onClick={toggleMode} className="text-indigo-600 hover:text-violet-600 underline">
-                  Sign in
-                </button>
-              </>
-            ) : (
-              <>
-                Don't have an account?{' '}
-                <button type="button" onClick={toggleMode} className="text-indigo-600 hover:text-violet-600 underline">
-                  Sign up
-                </button>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  )
+  return <main className="relative min-h-screen overflow-hidden bg-slate-950 px-4 py-6 sm:px-6 lg:grid lg:grid-cols-2 lg:p-0">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden"><div className="absolute -left-24 top-0 h-80 w-80 rounded-full bg-emerald-400/20 blur-3xl" /><div className="absolute -right-20 bottom-0 h-96 w-96 rounded-full bg-cyan-400/15 blur-3xl" /></div>
+    <section className="relative hidden min-h-screen flex-col justify-between overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-12 text-white lg:flex">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_90%_12%,rgba(255,255,255,0.2),transparent_25%),radial-gradient(circle_at_15%_85%,rgba(6,78,59,0.55),transparent_36%)]" />
+      <div className="relative flex items-center gap-3 text-lg font-bold"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25"><ShieldCheck className="h-6 w-6" /></span>Greenrock Seller Hub</div>
+      <div className="relative max-w-lg"><span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-emerald-50 backdrop-blur"><Sparkles className="h-4 w-4" />Built for growing businesses</span><h1 className="text-5xl font-bold leading-tight tracking-tight">Keep your shop moving, wherever you are.</h1><p className="mt-6 max-w-md text-lg leading-8 text-emerald-50/90">Manage stock, orders, deliveries and customer relationships from one calm, secure workspace.</p></div>
+      <div className="relative grid grid-cols-3 gap-3 text-sm text-emerald-50/90">{['Secure access', 'Live inventory', 'Clear insights'].map((item) => <div key={item} className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">{item}</div>)}</div>
+    </section>
+    <section className="relative flex min-h-[calc(100vh-3rem)] items-center justify-center lg:min-h-screen lg:bg-white lg:p-12"><div className="w-full max-w-md rounded-3xl border border-white/15 bg-white p-6 shadow-2xl shadow-slate-950/30 sm:p-9 lg:border-slate-100 lg:shadow-xl lg:shadow-slate-200/60">
+      <div className="mb-8 flex items-center justify-between"><div className="flex items-center gap-3 lg:hidden"><span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-600 text-white"><ShieldCheck className="h-5 w-5" /></span><span className="font-bold text-slate-900">Greenrock</span></div>{(view === 'forgot-password' || view === 'reset-password') && <button type="button" onClick={() => changeView('sign-in')} className="ml-auto inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-emerald-700"><ArrowLeft className="h-4 w-4" />Back to sign in</button>}</div>
+      <div className="mb-7"><h2 className="text-3xl font-bold tracking-tight text-slate-950">{title}</h2><p className="mt-2 leading-6 text-slate-500">{description}</p></div>
+      {error && <div role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{error}</div>}{notice && <div role="status" className="mb-5 flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />{notice}</div>}
+      <form onSubmit={submit} className="space-y-5">
+        {view === 'sign-up' && <><div className="grid gap-4 sm:grid-cols-2"><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">First name <span className="font-normal text-slate-400">(optional)</span></span><span className="relative block"><UserRound className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={firstName} onChange={(event) => setFirstName(event.target.value)} className={`${inputClass} pl-11`} placeholder="Jane" autoComplete="given-name" /></span></label><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">Last name <span className="font-normal text-slate-400">(optional)</span></span><input value={lastName} onChange={(event) => setLastName(event.target.value)} className={inputClass} placeholder="Doe" autoComplete="family-name" /></label></div><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">Phone number <span className="font-normal text-slate-400">(optional)</span></span><span className="relative block"><Phone className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={`${inputClass} pl-11`} placeholder="+256 700 000 000" autoComplete="tel" /></span></label></>}
+        {(view === 'sign-in' || view === 'sign-up' || view === 'forgot-password') && <label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">{view === 'sign-in' ? 'Email or phone number' : 'Email address'}</span><span className="relative block"><Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={email} onChange={(event) => setEmail(event.target.value)} className={`${inputClass} pl-11`} placeholder={view === 'sign-in' ? 'you@example.com or +256…' : 'you@example.com'} autoComplete={view === 'sign-in' ? 'username' : 'email'} required /></span></label>}
+        {(view === 'sign-in' || view === 'sign-up') && <PasswordField label="Password" value={password} onChange={setPassword} placeholder={view === 'sign-up' ? 'At least 8 characters' : 'Enter your password'} autoComplete={view === 'sign-up' ? 'new-password' : 'current-password'} />}{view === 'sign-up' && <PasswordField label="Confirm password" value={confirmPassword} onChange={setConfirmPassword} placeholder="Enter your password again" autoComplete="new-password" />}
+        {view === 'reset-password' && <><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">User ID</span><input value={resetUid} onChange={(event) => setResetUid(event.target.value)} className={inputClass} placeholder="From your reset email" autoComplete="off" required /></label><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">Reset token</span><span className="relative block"><KeyRound className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={resetToken} onChange={(event) => setResetToken(event.target.value)} className={`${inputClass} pl-11`} placeholder="From your reset email" autoComplete="one-time-code" required /></span></label><PasswordField label="New password" value={newPassword} onChange={setNewPassword} placeholder="At least 8 characters" autoComplete="new-password" /><PasswordField label="Confirm new password" value={confirmNewPassword} onChange={setConfirmNewPassword} placeholder="Enter your new password again" autoComplete="new-password" /></>}
+        <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-4 focus:ring-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-70">{loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <>{submitLabel}<ArrowRight className="h-4 w-4" /></>}</button>
+      </form>
+      {view === 'sign-in' && <div className="mt-6 space-y-4 text-center text-sm"><button type="button" onClick={() => changeView('forgot-password')} className="font-semibold text-emerald-700 transition hover:text-emerald-800">Forgot your password?</button><p className="text-slate-500">New to Greenrock? <button type="button" onClick={() => changeView('sign-up')} className="font-bold text-slate-900 underline decoration-emerald-400 underline-offset-4">Create an account</button></p></div>}{view === 'sign-up' && <p className="mt-6 text-center text-sm text-slate-500">Already have an account? <button type="button" onClick={() => changeView('sign-in')} className="font-bold text-slate-900 underline decoration-emerald-400 underline-offset-4">Sign in</button></p>}{view === 'forgot-password' && <div className="mt-5 text-center text-sm text-slate-500"><button type="button" onClick={() => changeView('reset-password')} className="font-semibold text-emerald-700 hover:text-emerald-800">Already have a reset code?</button></div>}
+    </div></section>
+  </main>
 }

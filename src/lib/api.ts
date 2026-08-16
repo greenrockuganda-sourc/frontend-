@@ -86,6 +86,9 @@ async function request<T>(path: string, options: RequestInit = {}, retry = true)
 
   // 401 = Unauthorized (invalid/expired session)
   if (response.status === 401) {
+    if (path === '/api/auth/login/') {
+      throw new Error('Invalid email or phone number, or password.')
+    }
     notifySessionChange(false)
     throw new Error('Session expired. Please sign in again.')
   }
@@ -128,12 +131,9 @@ export async function login(identifier: string, password: string) {
       method: 'POST',
       body: JSON.stringify(payload),
     })
-    console.debug('[auth] login success', response)
     notifySessionChange(true)
     return response
   } catch (error) {
-    console.debug('[auth] login failed payload', payload)
-    console.debug('[auth] login failed error', error)
     throw error
   }
 }
@@ -169,11 +169,10 @@ export async function forgotPassword(email: string) {
 }
 
 export async function resetPassword(payload: {
-  email?: string
-  token?: string
-  otp?: string
-  password?: string
-  new_password?: string
+  uid: string
+  token: string
+  new_password: string
+  confirm_password: string
 }) {
   return request<any>('/api/auth/reset-password/', {
     method: 'POST',
