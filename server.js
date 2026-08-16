@@ -126,11 +126,23 @@ createServer(async (req, res) => {
 
       const responseHeaders = {}
       backendResponse.headers.forEach((value, name) => {
-        if (['content-encoding', 'content-length', 'transfer-encoding'].includes(name.toLowerCase())) {
+        if (['content-encoding', 'content-length', 'transfer-encoding', 'set-cookie'].includes(name.toLowerCase())) {
           return
         }
         responseHeaders[name] = value
       })
+
+      // Node exposes multiple Set-Cookie values separately. Preserve each cookie
+      // and make it host-only for the frontend domain, so browser requests sent
+      // back through this proxy include the backend session cookies.
+      const setCookies = typeof backendResponse.headers.getSetCookie === 'function'
+        ? backendResponse.headers.getSetCookie()
+        : []
+      if (setCookies.length > 0) {
+        responseHeaders['set-cookie'] = setCookies.map((cookie) =>
+          cookie.replace(/;\s*domain=[^;]*/gi, ''),
+        )
+      }
 
       const responseBuffer = Buffer.from(await backendResponse.arrayBuffer())
       res.writeHead(backendResponse.status, responseHeaders)
