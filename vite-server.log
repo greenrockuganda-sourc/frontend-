@@ -34,3 +34,440 @@ Error: connect ETIMEDOUT 69.46.46.118:443
 [2m12:32:57 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/types.ts[22m
 [2m12:33:00 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Products.tsx, /src/index.css[22m
 [2m12:33:28 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Products.tsx, /src/index.css[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mBACKEND_REQUIREMENTS.md[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mMIGRATION_GUIDE.md[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mSECURITY_HARDENING.md[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/admin/customers/[customer_id]/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/admin/customers/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/admin/dashboard/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/admin/inventory/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/admin/inventory/[product_id]/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/auth/forgot-password/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/auth/login/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/auth/refresh/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/auth/logout/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/auth/register/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/auth/reset-password/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/banners/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/brands/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/brands/[brand_id]/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/brands/[id]/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/categories/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/categories/[category_id]/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/categories/[id]/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/deliveries/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/orders/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/products/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/products/search/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/products/[product_id]/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/profile/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/receipts/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/recipes/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/recipes/[recipe_id]/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/stats/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/api/user/profile/route.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/layout.tsx[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/brands/page.tsx[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mapp_legacy/categories/page.tsx[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Settings.tsx[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/CreateBrand.tsx, /src/index.css[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcookies.txt[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mnext-shim.d.ts[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtemp_served_index.html[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtmp_create_product_with_images.js[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtmp_login_create.js[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtmp_login_create_with_logo.js[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/CreateCategory.tsx, /src/index.css[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/products/brand-form.tsx, /src/index.css[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mbuild_output.txt[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/components/products/category-form.tsx, /src/index.css[22m
+[2m12:46:28 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcomponents/ui/button.tsx[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Categories.tsx, /src/pages/Brands.tsx, /components/products/brand-form.tsx, /components/products/category-form.tsx[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcomponents/products/product-image-upload.tsx[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Categories.tsx, /src/pages/Brands.tsx, /components/products/brand-form.tsx, /components/products/category-form.tsx[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Products.tsx, /components/products/brand-form.tsx, /components/products/category-form.tsx[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mlib/django-api.ts[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mlib/product-service.ts[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mlib/utils.ts[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/InventoryStatus.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Header.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css, /src/pages/Login.tsx, /src/pages/Receipts.tsx, /src/pages/Deliveries.tsx, /src/pages/Reports.tsx, /src/pages/Dashboard.tsx, /src/pages/Settings.tsx, /src/pages/Products.tsx, /src/pages/Orders.tsx[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Brands.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mpackage.json[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mserver.js[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcomponents/products/product-form.tsx[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mcomponents/products/product-form.tsx[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/types.ts[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/InventoryStatus.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/NotificationSystem.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/RecentOrders.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/StatCard.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Header.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Sidebar.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css, /src/pages/Login.tsx, /src/pages/Receipts.tsx, /src/pages/Deliveries.tsx, /src/pages/Reports.tsx, /src/pages/Dashboard.tsx, /src/pages/Settings.tsx, /src/pages/Products.tsx, /src/pages/Orders.tsx[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Brands.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Categories.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Deliveries.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Orders.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Products.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Receipts.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Reports.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Settings.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m changed tsconfig file detected: C:\Users\Mroke\Desktop\fronend\frontend--main\tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtsconfig.json[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css, /src/pages/Login.tsx, /src/pages/Receipts.tsx, /src/pages/Deliveries.tsx, /src/pages/Reports.tsx, /src/pages/Dashboard.tsx, /src/pages/Settings.tsx, /src/pages/Products.tsx, /src/pages/Orders.tsx[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Products.tsx, /src/index.css[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mserver.js[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css, /src/pages/Login.tsx, /src/pages/Receipts.tsx, /src/pages/Deliveries.tsx, /src/pages/Reports.tsx, /src/pages/Dashboard.tsx, /src/pages/Settings.tsx, /src/pages/Products.tsx, /src/pages/Orders.tsx[22m
+[2m12:46:29 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mtemp_served_index.html[22m
+Re-optimizing dependencies because lockfile has changed
+[2m12:46:30 AM[22m [36m[1m[vite][22m[39m server restarted.
+Error: [31m  Failed to scan for dependencies from entries:
+  C:/Users/Mroke/Desktop/fronend/frontend--main/index.html
+C:/Users/Mroke/Desktop/fronend/frontend--main/temp_served_index.html
+
+  [39m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mUnexpected "<<"[0m
+
+    src/lib/api.ts:220:0:
+[37m      220 │ [32m<<[37m<<<<< HEAD
+          ╵ [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mExpected identifier but found "<"[0m
+
+    src/pages/Products.tsx:480:1:
+[37m      480 │ <[32m<[37m<<<<< HEAD
+          ╵  [32m^[0m
+
+
+    at failureErrorWithLog (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:1472:15)
+    at C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:945:25
+    at runOnEndCallbacks (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:1315:45)
+    at buildResponseToResult (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:943:7)
+    at C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:955:9
+    at new Promise (<anonymous>)
+    at requestCallbacks.on-end (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:954:54)
+    at handleRequest (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:647:17)
+    at handleIncomingPacket (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:672:7)
+    at Socket.readFromStdout (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:600:7)
+    at Socket.emit (node:events:509:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+[2m12:46:32 AM[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "@/lib/cloudinary-service" from "components/products/category-form.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/Mroke/Desktop/fronend/frontend--main/components/products/category-form.tsx[39m:5:34
+[33m  19 |  import { useEffect, useState } from "react";
+  20 |  import { categoriesApi } from "@/lib/api";
+  21 |  import { cloudinaryService } from "@/lib/cloudinary-service";
+     |                                     ^
+  22 |  import { Button } from "@/components/ui/button";
+  23 |  export default function CategoryForm({ onDone, onClose }) {[39m
+      at TransformPluginContext._formatError (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 5)
+      at async TransformPluginContext.transform (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+[2m12:46:32 AM[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "@/lib/cloudinary-service" from "components/products/brand-form.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/Mroke/Desktop/fronend/frontend--main/components/products/brand-form.tsx[39m:5:34
+[33m  19 |  import { useEffect, useState } from "react";
+  20 |  import { brandsApi } from "@/lib/api";
+  21 |  import { cloudinaryService } from "@/lib/cloudinary-service";
+     |                                     ^
+  22 |  import { Button } from "@/components/ui/button";
+  23 |  export default function BrandForm({ onDone, onClose }) {[39m
+      at TransformPluginContext._formatError (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 5)
+      at async TransformPluginContext.transform (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///C:/Users/Mroke/Desktop/fronend/frontend--main/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+[2m12:46:32 AM[22m [31m[1m[vite][22m[39m Pre-transform error: C:\Users\Mroke\Desktop\fronend\frontend--main\src\pages\Products.tsx: Unexpected token (480:1)
+
+[0m [90m 478 |[39m           [33m<[39m[33m/[39m[33mbutton[39m[33m>[39m
+ [90m 479 |[39m         [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+[31m[1m>[22m[39m[90m 480 |[39m [33m<<[39m[33m<<[39m[33m<<[39m[33m<[39m [33mHEAD[39m
+ [90m     |[39m  [31m[1m^[22m[39m
+ [90m 481 |[39m [33m===[39m[33m===[39m[33m=[39m
+ [90m 482 |[39m         [33m<[39m[33mdiv[39m className[33m=[39m[32m"flex items-center gap-3"[39m[33m>[39m
+ [90m 483 |[39m           [33m<[39m[33mbutton[39m[0m
+[2m12:46:33 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:33 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:33 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:33 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:33 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:33 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:33 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:33 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:33 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:33 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:33 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:34 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"
+[2m12:46:36 AM[22m [31m[1m[vite][22m[39m [31mInternal server error: C:\Users\Mroke\Desktop\fronend\frontend--main\src\pages\Products.tsx: Unexpected token (480:1)
+
+[0m [90m 478 |[31m           [33m<[31m[33m/[31m[33mbutton[31m[33m>[31m
+ [90m 479 |[31m         [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+[31m[1m>[22m[31m[90m 480 |[31m [33m<<[31m[33m<<[31m[33m<<[31m[33m<[31m [33mHEAD[31m
+ [90m     |[31m  [31m[1m^[22m[31m
+ [90m 481 |[31m [33m===[31m[33m===[31m[33m=[31m
+ [90m 482 |[31m         [33m<[31m[33mdiv[31m className[33m=[31m[32m"flex items-center gap-3"[31m[33m>[31m
+ [90m 483 |[31m           [33m<[31m[33mbutton[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/Mroke/Desktop/fronend/frontend--main/src/pages/Products.tsx[39m:480:1
+[33m  490|              onClick={handleAddBrand}
+  491|              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+  492|            >
+     |   ^
+  493|              Add Brand
+  494|            </button>[39m
+      at constructor (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:6620:19)
+      at TypeScriptParserMixin.unexpected (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:6640:16)
+      at TypeScriptParserMixin.jsxParseIdentifier (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:4585:12)
+      at TypeScriptParserMixin.jsxParseNamespacedName (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:4592:23)
+      at TypeScriptParserMixin.jsxParseElementName (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:4601:21)
+      at TypeScriptParserMixin.jsxParseOpeningElementAt (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:4677:22)
+      at TypeScriptParserMixin.jsxParseElementAt (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:4702:33)
+      at TypeScriptParserMixin.jsxParseElementAt (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElement (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:4765:17)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:4775:19)
+      at TypeScriptParserMixin.parseExprSubscripts (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10852:21)
+      at C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:9796:39
+      at TypeScriptParserMixin.tryParse (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:6928:20)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:9796:18)
+      at C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10821:39
+      at TypeScriptParserMixin.allowInAnd (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:12455:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10821:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:12522:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:11701:28)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:11357:23)
+      at TypeScriptParserMixin.parseExprAtom (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:4780:20)
+      at TypeScriptParserMixin.parseExprSubscripts (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10852:21)
+      at TypeScriptParserMixin.parseMaybeAssign (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:9807:20)
+      at TypeScriptParserMixin.parseExpressionBase (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10805:23)
+      at C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10801:39
+      at TypeScriptParserMixin.allowInAnd (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:12450:16)
+      at TypeScriptParserMixin.parseExpression (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:10801:17)
+      at TypeScriptParserMixin.parseReturnStatement (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:13171:28)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:12827:21)
+      at TypeScriptParserMixin.parseStatementContent (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:9529:18)
+      at TypeScriptParserMixin.parseStatementLike (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:12796:17)
+      at TypeScriptParserMixin.parseStatementListItem (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:12776:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:13345:61)
+      at TypeScriptParserMixin.parseBlockBody (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\@babel\parser\lib\index.js:13338:10)
+[2m12:46:36 AM[22m [31m[1m[vite][22m[39m [31mInternal server error: Transform failed with 1 error:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:0: ERROR: Unexpected "<<"[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mC:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts[39m:220:0
+[33m  
+  [33mUnexpected "<<"[33m
+  218|  }
+  219|  
+  220|  <<<<<<< HEAD
+     |  ^
+  221|  export async function createCategory(
+  222|    tokenOrData?: string | { category_name: string; description?: string; image_url?: string },
+  [39m
+      at failureErrorWithLog (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:1472:15)
+      at C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:755:50
+      at responseCallbacks.<computed> (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:622:9)
+      at handleIncomingPacket (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:677:12)
+      at Socket.readFromStdout (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:600:7)
+      at Socket.emit (node:events:509:28)
+      at addChunk (node:internal/streams/readable:563:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+      at Readable.push (node:internal/streams/readable:394:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+[2m12:46:48 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Brands.tsx, /src/App.tsx, /src/pages/Dashboard.tsx, /src/pages/Settings.tsx, /src/pages/Login.tsx, /src/pages/Receipts.tsx, /src/pages/Deliveries.tsx, /src/pages/Categories.tsx, /src/pages/Reports.tsx, /src/pages/Orders.tsx[22m
+[2m12:46:48 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.tsx[22m
+[2m12:46:48 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mserver.js[22m
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...
+[2m12:46:49 AM[22m [31m[1m[vite][22m[39m [31mInternal server error: Transform failed with 6 errors:
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: Multiple exports with the same name "createCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:220:22: ERROR: The symbol "createCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: Multiple exports with the same name "updateCategory"
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:233:22: ERROR: The symbol "updateCategory" has already been declared
+C:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts:244:22: ERROR: Multiple exports with the same name "deleteCategory"
+...[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mC:/Users/Mroke/Desktop/fronend/frontend--main/src/lib/api.ts[39m:220:22
+[33m  
+  [33mMultiple exports with the same name "createCategory"[33m
+  218|  }
+  219|  
+  220|  export async function createCategory(
+     |                        ^
+  221|    tokenOrData?: string | { category_name: string; description?: string; image_url?: string },
+  222|    categoryData?: { category_name: string; description?: string; image_url?: string },
+  
+  [33mThe symbol "createCategory" has already been declared[33m
+  218|  }
+  219|  
+  220|  export async function createCategory(
+     |                        ^
+  221|    tokenOrData?: string | { category_name: string; description?: string; image_url?: string },
+  222|    categoryData?: { category_name: string; description?: string; image_url?: string },
+  
+  [33mMultiple exports with the same name "updateCategory"[33m
+  231|  }
+  232|  
+  233|  export async function updateCategory(
+     |                        ^
+  234|    token: string | undefined,
+  235|    categoryId: string,
+  
+  [33mThe symbol "updateCategory" has already been declared[33m
+  231|  }
+  232|  
+  233|  export async function updateCategory(
+     |                        ^
+  234|    token: string | undefined,
+  235|    categoryId: string,
+  
+  [33mMultiple exports with the same name "deleteCategory"[33m
+  242|  }
+  243|  
+  244|  export async function deleteCategory(token: string | undefined, categoryId: string) {
+     |                        ^
+  245|    return request<any>(`/api/categories/${categoryId}/`, {
+  246|      method: 'DELETE',
+  
+  [33mThe symbol "deleteCategory" has already been declared[33m
+  242|  }
+  243|  
+  244|  export async function deleteCategory(token: string | undefined, categoryId: string) {
+     |                        ^
+  245|    return request<any>(`/api/categories/${categoryId}/`, {
+  246|      method: 'DELETE',
+  [39m
+      at failureErrorWithLog (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:1472:15)
+      at C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:755:50
+      at responseCallbacks.<computed> (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:622:9)
+      at handleIncomingPacket (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:677:12)
+      at Socket.readFromStdout (C:\Users\Mroke\Desktop\fronend\frontend--main\node_modules\esbuild\lib\main.js:600:7)
+      at Socket.emit (node:events:509:28)
+      at addChunk (node:internal/streams/readable:563:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+      at Readable.push (node:internal/streams/readable:394:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
