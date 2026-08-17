@@ -337,10 +337,8 @@ export default function Products({ onNavigate }: ProductsProps) {
         selling_price: Number(formPrice || 0),
         quantity_in_stock: Number(formStock || 0),
         reorder_level: formReorderLevel !== '' ? Number(formReorderLevel) : undefined,
-        // Keep the gallery URLs together in the same product request.
+        // The product API stores the gallery on the same product as four URL fields.
         ...(productImages.length > 0 ? {
-          images: productImages,
-          image_urls: productImages,
           image_url: productImages[0] || undefined,
           image_url_2: productImages[1] || undefined,
           image_url_3: productImages[2] || undefined,
