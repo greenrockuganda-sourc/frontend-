@@ -195,6 +195,16 @@ export default function Products({ onNavigate }: ProductsProps) {
     return normalized ? `SKU-${normalized}` : 'SKU-PRODUCT'
   }
 
+  // A product name is not unique, so it cannot safely double as its SKU.
+  const buildUniqueSku = (name: string) => {
+    const baseSku = buildAutoSku(name).slice(0, 42)
+    const uniqueSuffix = typeof crypto?.randomUUID === 'function'
+      ? crypto.randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase()
+      : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`.toUpperCase()
+
+    return `${baseSku}-${uniqueSuffix}`
+  }
+
   const uploadToCloudinaryXHR = (file: File, index: number, cloudName: string, uploadPreset: string) => new Promise<string>((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`)
@@ -379,13 +389,19 @@ export default function Products({ onNavigate }: ProductsProps) {
         throw new Error('Every selected product image must upload successfully before the product can be saved.')
       }
 
+      // Send both identifiers for a new product. The deployed API validates
+      // each of these as unique and otherwise derives a duplicate fallback.
+      const newProductIdentifier = !editingProductId ? buildUniqueSku(productName) : undefined
+
       const productData: any = {
         category_id: Number(formCategoryId),
         brand_id: Number(formBrandId),
         product_name: productName,
-        // The API assigns a collision-free SKU from the product name. Supplying
-        // a fixed client-side SKU would violate the unique database constraint
-        // when two products have the same name.
+        // New records need an explicit SKU because a product name may repeat.
+        ...(newProductIdentifier ? {
+          sku: newProductIdentifier,
+          barcode: newProductIdentifier,
+        } : {}),
         // The current backend raises a 500 for an empty description, so always
         // provide a valid default when the optional UI field is left blank.
         description: formDescription.trim() || 'No description provided.',

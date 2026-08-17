@@ -1,23 +1,8 @@
-const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '')
-const isLocalDevelopment = import.meta.env.DEV
-  && typeof window !== 'undefined'
-  && ['localhost', '127.0.0.1'].includes(window.location.hostname)
-
 // Use Vite's same-origin proxy while developing locally. This avoids browser CORS
 // failures and lets the proxy rewrite the backend session cookie for localhost.
 // Use the frontend's `/api` proxy in every environment. This makes the
 // authenticated cookie first-party instead of a cross-origin backend cookie.
 const API_BASE_URL = ''
-
-if (!API_BASE_URL && !isLocalDevelopment) {
-  // Helpful developer warning when no API base is configured
-  // Ensure you set `VITE_API_BASE_URL` to your Railway (or other) backend URL.
-  // Example: https://my-app.up.railway.app
-  // In production, set the env var in your Railway project settings.
-  // This check runs at import-time in the client bundle.
-  // eslint-disable-next-line no-console
-  console.warn('VITE_API_BASE_URL is not set — requests will use an empty base URL. Set VITE_API_BASE_URL to your Railway backend URL.')
-}
 
 /**
  * Security Note: Tokens are now managed via HttpOnly, Secure, SameSite cookies.
