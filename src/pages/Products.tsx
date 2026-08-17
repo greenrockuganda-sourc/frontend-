@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, Search, PackageOpen, Filter, X, Download } from 'lucide-react'
 import { fetchProducts, getCategories, getBrands, createProduct, updateProduct, deleteProduct } from '@/lib/api'
 import { Product, Category, Brand } from '@/types'
@@ -12,7 +12,7 @@ interface ProductsProps {
   onNavigate?: (page: string) => void
 }
 
-const MIN_PRODUCT_IMAGES = 3
+const MIN_PRODUCT_IMAGES = 1
 const MAX_PRODUCT_IMAGES = 4
 
 export default function Products({ onNavigate }: ProductsProps) {
@@ -33,6 +33,7 @@ export default function Products({ onNavigate }: ProductsProps) {
   const [formImageFiles, setFormImageFiles] = useState<File[]>([])
   const [uploadingImages, setUploadingImages] = useState(false)
   const [formImagePreviews, setFormImagePreviews] = useState<string[]>([])
+  const formImagePreviewsRef = useRef<string[]>([])
   const [imageUploadProgress, setImageUploadProgress] = useState<number[]>([])
   const [imageUploadErrors, setImageUploadErrors] = useState<string[]>([])
   const [formStatus, setFormStatus] = useState<'Available' | 'Out of Stock'>('Available')
@@ -236,38 +237,76 @@ export default function Products({ onNavigate }: ProductsProps) {
     xhr.send(form)
   })
 
+  const clearProductImages = () => {
+    formImagePreviewsRef.current.forEach((preview) => URL.revokeObjectURL(preview))
+    formImagePreviewsRef.current = []
+    setFormImageFiles([])
+    setFormImagePreviews([])
+    setImageUploadProgress([])
+    setImageUploadErrors([])
+  }
+
   const closeProductModal = () => {
     setShowForm(false)
     setFormError(null)
+    clearProductImages()
   }
 
   const handleProductImageSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files ? Array.from(event.target.files) : []
+    const file = event.target.files?.[0]
+    // Allow selecting the same file again after it has been removed.
+    event.target.value = ''
 
-    if (files.length === 0) {
+    if (!file) {
       return
     }
 
-    if (files.length < MIN_PRODUCT_IMAGES || files.length > MAX_PRODUCT_IMAGES) {
-      setFormError(`Select ${MIN_PRODUCT_IMAGES} or ${MAX_PRODUCT_IMAGES} product images.`)
-      event.target.value = ''
+    if (formImageFiles.length >= MAX_PRODUCT_IMAGES) {
+      setFormError(`A product can have up to ${MAX_PRODUCT_IMAGES} images.`)
       return
     }
 
-    const invalidFile = files.find((file) => !cloudinaryService.validateImage(file).valid)
-    if (invalidFile) {
-      const validation = cloudinaryService.validateImage(invalidFile)
-      setFormError(`${invalidFile.name}: ${validation.error ?? 'Invalid image file.'}`)
-      event.target.value = ''
+    const validation = cloudinaryService.validateImage(file)
+    if (!validation.valid) {
+      setFormError(`${file.name}: ${validation.error ?? 'Invalid image file.'}`)
       return
     }
 
-    formImagePreviews.forEach((preview) => URL.revokeObjectURL(preview))
-    const previews = files.map((file) => URL.createObjectURL(file))
-    setFormImageFiles(files)
-    setFormImagePreviews(previews)
-    setImageUploadProgress(new Array(files.length).fill(0))
-    setImageUploadErrors(new Array(files.length).fill(''))
+    const isDuplicate = formImageFiles.some((selectedFile) => (
+      selectedFile.name === file.name
+      && selectedFile.size === file.size
+      && selectedFile.lastModified === file.lastModified
+    ))
+    if (isDuplicate) {
+      setFormError('That image has already been added.')
+      return
+    }
+
+    const preview = URL.createObjectURL(file)
+    setFormImageFiles((previous) => [...previous, file])
+    setFormImagePreviews((previous) => {
+      const next = [...previous, preview]
+      formImagePreviewsRef.current = next
+      return next
+    })
+    setImageUploadProgress((previous) => [...previous, 0])
+    setImageUploadErrors((previous) => [...previous, ''])
+    setFormError(null)
+  }
+
+  const removeProductImage = (index: number) => {
+    const preview = formImagePreviewsRef.current[index]
+    if (preview) {
+      URL.revokeObjectURL(preview)
+    }
+    setFormImageFiles((previous) => previous.filter((_, imageIndex) => imageIndex !== index))
+    setFormImagePreviews((previous) => {
+      const next = previous.filter((_, imageIndex) => imageIndex !== index)
+      formImagePreviewsRef.current = next
+      return next
+    })
+    setImageUploadProgress((previous) => previous.filter((_, imageIndex) => imageIndex !== index))
+    setImageUploadErrors((previous) => previous.filter((_, imageIndex) => imageIndex !== index))
     setFormError(null)
   }
 
@@ -281,8 +320,27 @@ export default function Products({ onNavigate }: ProductsProps) {
     setIsSubmitting(true)
 
     try {
+      const productName = formName.trim()
+      if (!productName) {
+        throw new Error('Enter a product name before saving.')
+      }
+      if (!formCategoryId || !formBrandId) {
+        throw new Error('Select a category and brand before saving the product.')
+      }
+      if (formPrice === '' || !Number.isFinite(Number(formPrice)) || Number(formPrice) < 0) {
+        throw new Error('Enter a valid selling price.')
+      }
+      if (formStock === '' || !Number.isInteger(Number(formStock)) || Number(formStock) < 0) {
+        throw new Error('Enter a valid stock quantity.')
+      }
+      if (formCostPrice !== '' && (!Number.isFinite(Number(formCostPrice)) || Number(formCostPrice) < 0)) {
+        throw new Error('Enter a valid cost price.')
+      }
+      if (formReorderLevel !== '' && (!Number.isInteger(Number(formReorderLevel)) || Number(formReorderLevel) < 0)) {
+        throw new Error('Enter a valid reorder level.')
+      }
       if (!editingProductId && formImageFiles.length < MIN_PRODUCT_IMAGES) {
-        throw new Error(`Add ${MIN_PRODUCT_IMAGES} or ${MAX_PRODUCT_IMAGES} product images before saving.`)
+        throw new Error('Add at least one product image before saving.')
       }
 
       // Upload every selected image before creating/updating the one product record.
@@ -315,10 +373,7 @@ export default function Products({ onNavigate }: ProductsProps) {
         ))
       }
 
-      const generatedSku = buildAutoSku(formName)
-      if (!formCategoryId || !formBrandId) {
-        throw new Error('Select a category and brand before saving the product.')
-      }
+      const generatedSku = buildAutoSku(productName)
       const productImages = imageUrls.filter(Boolean)
 
       if (formImageFiles.length > 0 && productImages.length !== formImageFiles.length) {
@@ -328,15 +383,15 @@ export default function Products({ onNavigate }: ProductsProps) {
       const productData: any = {
         category_id: Number(formCategoryId),
         brand_id: Number(formBrandId),
-        product_name: formName,
+        product_name: productName,
         sku: generatedSku,
         // The current backend raises a 500 for an empty description, so always
         // provide a valid default when the optional UI field is left blank.
         description: formDescription.trim() || 'No description provided.',
-        cost_price: formCostPrice !== '' ? Number(formCostPrice) : undefined,
-        selling_price: Number(formPrice || 0),
-        quantity_in_stock: Number(formStock || 0),
-        reorder_level: formReorderLevel !== '' ? Number(formReorderLevel) : undefined,
+        cost_price: Number(formCostPrice || 0),
+        selling_price: Number(formPrice),
+        quantity_in_stock: Number(formStock),
+        reorder_level: Number(formReorderLevel || 0),
         // The product API stores the gallery on the same product as four URL fields.
         ...(productImages.length > 0 ? {
           image_url: productImages[0] || undefined,
@@ -400,11 +455,7 @@ export default function Products({ onNavigate }: ProductsProps) {
       setFormDescription('')
       setFormCostPrice('')
       setFormReorderLevel('')
-      setFormImageFiles([])
-      formImagePreviews.forEach((preview) => URL.revokeObjectURL(preview))
-      setFormImagePreviews([])
-      setImageUploadProgress([])
-      setImageUploadErrors([])
+      clearProductImages()
       setFormStatus('Available')
       closeProductModal()
       setEditingProductId(null)
@@ -459,17 +510,9 @@ export default function Products({ onNavigate }: ProductsProps) {
   }
 
 
-  useEffect(() => {
-    return () => {
-      formImagePreviews.forEach((p) => {
-        try {
-          URL.revokeObjectURL(p)
-        } catch {
-          // ignore failed cleanup
-        }
-      })
-    }
-  }, [formImagePreviews])
+  useEffect(() => () => {
+    formImagePreviewsRef.current.forEach((preview) => URL.revokeObjectURL(preview))
+  }, [])
 
   return (
     <div className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
@@ -579,19 +622,30 @@ export default function Products({ onNavigate }: ProductsProps) {
                   <input value={formReorderLevel === '' ? '' : formReorderLevel} onChange={(e) => setFormReorderLevel(e.target.value === '' ? '' : Number(e.target.value))} type="number" placeholder="Reorder Level" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Product images (3-4 required)</label>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Product images (up to 4)</label>
                   <input
                     type="file"
                     accept="image/*"
-                    multiple
                     onChange={handleProductImageSelection}
+                    disabled={formImageFiles.length >= MAX_PRODUCT_IMAGES || uploadingImages}
                     className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
                   />
-                  <p className="mt-1 text-xs text-slate-500">Select exactly 3 or 4 images. They are uploaded first, then their links are sent together with this product.</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Add one image at a time. {formImageFiles.length}/{MAX_PRODUCT_IMAGES} selected{editingProductId ? '' : ' (at least one is required)'}.
+                  </p>
                   <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {formImagePreviews.slice(0, 4).map((preview, idx) => (
-                      <div key={preview} className="flex flex-col items-center gap-1">
-                        <img src={preview} alt={`preview-${idx}`} className="h-20 w-20 rounded-xl object-cover shadow-sm" />
+                      <div key={preview} className="relative flex flex-col items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => removeProductImage(idx)}
+                          disabled={uploadingImages}
+                          className="absolute -right-1 -top-1 z-10 rounded-full bg-slate-800 p-1 text-white shadow hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Remove image ${idx + 1}`}
+                        >
+                          <X size={12} />
+                        </button>
+                        <img src={preview} alt={`Product image ${idx + 1}`} className="h-20 w-20 rounded-xl object-cover shadow-sm" />
                         <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-200">
                           <div className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600" style={{ width: `${imageUploadProgress[idx] ?? 0}%` }} />
                         </div>
