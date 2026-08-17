@@ -373,7 +373,6 @@ export default function Products({ onNavigate }: ProductsProps) {
         ))
       }
 
-      const generatedSku = buildAutoSku(productName)
       const productImages = imageUrls.filter(Boolean)
 
       if (formImageFiles.length > 0 && productImages.length !== formImageFiles.length) {
@@ -384,11 +383,13 @@ export default function Products({ onNavigate }: ProductsProps) {
         category_id: Number(formCategoryId),
         brand_id: Number(formBrandId),
         product_name: productName,
-        sku: generatedSku,
+        // The API assigns a collision-free SKU from the product name. Supplying
+        // a fixed client-side SKU would violate the unique database constraint
+        // when two products have the same name.
         // The current backend raises a 500 for an empty description, so always
         // provide a valid default when the optional UI field is left blank.
         description: formDescription.trim() || 'No description provided.',
-        cost_price: Number(formCostPrice || 0),
+        buying_price: Number(formCostPrice || 0),
         selling_price: Number(formPrice),
         quantity_in_stock: Number(formStock),
         reorder_level: Number(formReorderLevel || 0),
@@ -408,7 +409,7 @@ export default function Products({ onNavigate }: ProductsProps) {
         const updatedProduct: Product = {
           id: String(updated.id ?? updated.product_id ?? updated.sku ?? editingProductId),
           name: (updated.product_name ?? updated.name ?? formName) || 'Unnamed product',
-          sku: updated.sku ?? updated.barcode ?? generatedSku,
+          sku: updated.sku ?? updated.barcode ?? buildAutoSku(productName),
           price: sellingPrice,
           stock: Number(updated.quantity_in_stock ?? updated.stock ?? Number(formStock || 0)),
           category: updated.category?.category_name ?? updated.category?.name ?? (categories.find(c => c.id === formCategoryId)?.category_name ?? 'Uncategorized'),
@@ -431,7 +432,7 @@ export default function Products({ onNavigate }: ProductsProps) {
         const newProduct: Product = {
           id: String(created.id ?? created.product_id ?? created.sku ?? Date.now()),
           name: created.product_name ?? created.product_name ?? 'Unnamed product',
-          sku: created.sku ?? created.barcode ?? '',
+          sku: created.sku ?? created.barcode ?? buildAutoSku(productName),
           price: sellingPrice,
           stock: Number(created.quantity_in_stock ?? created.stock ?? 0),
           category: created.category?.category_name ?? created.category?.name ?? 'Uncategorized',

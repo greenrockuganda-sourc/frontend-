@@ -5,9 +5,9 @@ const isLocalDevelopment = import.meta.env.DEV
 
 // Use Vite's same-origin proxy while developing locally. This avoids browser CORS
 // failures and lets the proxy rewrite the backend session cookie for localhost.
-const API_BASE_URL = isLocalDevelopment
-  ? ''
-  : configuredApiBaseUrl ?? (typeof window !== 'undefined' ? window.location.origin : '')
+// Use the frontend's `/api` proxy in every environment. This makes the
+// authenticated cookie first-party instead of a cross-origin backend cookie.
+const API_BASE_URL = ''
 
 if (!API_BASE_URL && !isLocalDevelopment) {
   // Helpful developer warning when no API base is configured
