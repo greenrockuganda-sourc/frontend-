@@ -12,6 +12,9 @@ interface ProductsProps {
   onNavigate?: (page: string) => void
 }
 
+const MIN_PRODUCT_IMAGES = 3
+const MAX_PRODUCT_IMAGES = 4
+
 export default function Products({ onNavigate }: ProductsProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -238,6 +241,36 @@ export default function Products({ onNavigate }: ProductsProps) {
     setFormError(null)
   }
 
+  const handleProductImageSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files ? Array.from(event.target.files) : []
+
+    if (files.length === 0) {
+      return
+    }
+
+    if (files.length < MIN_PRODUCT_IMAGES || files.length > MAX_PRODUCT_IMAGES) {
+      setFormError(`Select ${MIN_PRODUCT_IMAGES} or ${MAX_PRODUCT_IMAGES} product images.`)
+      event.target.value = ''
+      return
+    }
+
+    const invalidFile = files.find((file) => !cloudinaryService.validateImage(file).valid)
+    if (invalidFile) {
+      const validation = cloudinaryService.validateImage(invalidFile)
+      setFormError(`${invalidFile.name}: ${validation.error ?? 'Invalid image file.'}`)
+      event.target.value = ''
+      return
+    }
+
+    formImagePreviews.forEach((preview) => URL.revokeObjectURL(preview))
+    const previews = files.map((file) => URL.createObjectURL(file))
+    setFormImageFiles(files)
+    setFormImagePreviews(previews)
+    setImageUploadProgress(new Array(files.length).fill(0))
+    setImageUploadErrors(new Array(files.length).fill(''))
+    setFormError(null)
+  }
+
   const handleProductSave = async (event: React.FormEvent) => {
     event.preventDefault()
     if (isSubmitting) {
@@ -248,7 +281,11 @@ export default function Products({ onNavigate }: ProductsProps) {
     setIsSubmitting(true)
 
     try {
-      // upload images first (if any)
+      if (!editingProductId && formImageFiles.length < MIN_PRODUCT_IMAGES) {
+        throw new Error(`Add ${MIN_PRODUCT_IMAGES} or ${MAX_PRODUCT_IMAGES} product images before saving.`)
+      }
+
+      // Upload every selected image before creating/updating the one product record.
       let imageUrls: string[] = []
       if (formImageFiles.length > 0) {
         setUploadingImages(true)
@@ -257,46 +294,36 @@ export default function Products({ onNavigate }: ProductsProps) {
         if (!cloudName || !uploadPreset) {
           throw new Error('Cloudinary upload is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.')
         }
-        const filesToUpload = formImageFiles.slice(0, 4)
+        const filesToUpload = formImageFiles
         setImageUploadProgress(new Array(filesToUpload.length).fill(0))
         setImageUploadErrors(new Array(filesToUpload.length).fill(''))
-        // Try parallel upload via cloudinaryService.uploadMultiple for speed/reliability
-        try {
-          const uploadResponses = await cloudinaryService.uploadMultiple(filesToUpload, 'seller-admin/products')
-          imageUrls = uploadResponses.map((r) => (r.secure_url || r.url)).filter(Boolean) as string[]
-        } catch (bulkErr) {
-          // If bulk upload fails, fallback to sequential XHR per-file so we can capture per-file errors
-          const results: (string | null)[] = new Array(filesToUpload.length).fill(null)
-          for (let i = 0; i < filesToUpload.length; i++) {
-            try {
-              // eslint-disable-next-line no-await-in-loop
-              const url = await uploadToCloudinaryXHR(filesToUpload[i], i, cloudName, uploadPreset)
-              results[i] = url
-              setImageUploadErrors((prev) => {
-                const next = prev.slice()
-                next[i] = ''
-                return next
-              })
-            } catch (e) {
-              setImageUploadErrors((prev) => {
-                const next = prev.slice()
-                next[i] = String(e)
-                return next
-              })
-              notifyError(`Image ${i + 1} failed to upload: ${String(e)}`)
-            }
-          }
-          imageUrls = results.filter(Boolean) as string[]
-        } finally {
-          setUploadingImages(false)
+        const uploads = await Promise.allSettled(
+          filesToUpload.map((file, index) => uploadToCloudinaryXHR(file, index, cloudName, uploadPreset))
+        )
+        const uploadErrors = uploads.map((result) => (
+          result.status === 'rejected' ? String(result.reason) : ''
+        ))
+        setImageUploadErrors(uploadErrors)
+
+        const failedImageCount = uploadErrors.filter(Boolean).length
+        if (failedImageCount > 0) {
+          throw new Error(`${failedImageCount} image${failedImageCount === 1 ? '' : 's'} failed to upload. Fix the failed image${failedImageCount === 1 ? '' : 's'} and try again.`)
         }
+
+        imageUrls = uploads.map((result) => (
+          result.status === 'fulfilled' ? result.value : ''
+        ))
       }
 
       const generatedSku = buildAutoSku(formName)
       if (!formCategoryId || !formBrandId) {
         throw new Error('Select a category and brand before saving the product.')
       }
-      const productImages = imageUrls.slice(0, 4)
+      const productImages = imageUrls.filter(Boolean)
+
+      if (formImageFiles.length > 0 && productImages.length !== formImageFiles.length) {
+        throw new Error('Every selected product image must upload successfully before the product can be saved.')
+      }
 
       const productData: any = {
         category_id: Number(formCategoryId),
@@ -310,7 +337,7 @@ export default function Products({ onNavigate }: ProductsProps) {
         selling_price: Number(formPrice || 0),
         quantity_in_stock: Number(formStock || 0),
         reorder_level: formReorderLevel !== '' ? Number(formReorderLevel) : undefined,
-        // Keep every Cloudinary URL attached to the same product so the backend can persist a full product gallery.
+        // Keep the gallery URLs together in the same product request.
         ...(productImages.length > 0 ? {
           images: productImages,
           image_urls: productImages,
@@ -376,6 +403,10 @@ export default function Products({ onNavigate }: ProductsProps) {
       setFormCostPrice('')
       setFormReorderLevel('')
       setFormImageFiles([])
+      formImagePreviews.forEach((preview) => URL.revokeObjectURL(preview))
+      setFormImagePreviews([])
+      setImageUploadProgress([])
+      setImageUploadErrors([])
       setFormStatus('Available')
       closeProductModal()
       setEditingProductId(null)
@@ -550,22 +581,15 @@ export default function Products({ onNavigate }: ProductsProps) {
                   <input value={formReorderLevel === '' ? '' : formReorderLevel} onChange={(e) => setFormReorderLevel(e.target.value === '' ? '' : Number(e.target.value))} type="number" placeholder="Reorder Level" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Upload images (up to 4)</label>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Product images (3-4 required)</label>
                   <input
                     type="file"
                     accept="image/*"
                     multiple
-                    onChange={(e) => {
-                      const files = e.target.files ? Array.from(e.target.files) : []
-                      const chosen = files.slice(0, 4)
-                      formImagePreviews.forEach((p) => URL.revokeObjectURL(p))
-                      const previews = chosen.map((f) => URL.createObjectURL(f))
-                      setFormImageFiles(chosen)
-                      setFormImagePreviews(previews)
-                      setImageUploadProgress(new Array(previews.length).fill(0))
-                    }}
+                    onChange={handleProductImageSelection}
                     className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
                   />
+                  <p className="mt-1 text-xs text-slate-500">Select exactly 3 or 4 images. They are uploaded first, then their links are sent together with this product.</p>
                   <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {formImagePreviews.slice(0, 4).map((preview, idx) => (
                       <div key={preview} className="flex flex-col items-center gap-1">
@@ -577,26 +601,6 @@ export default function Products({ onNavigate }: ProductsProps) {
                         {imageUploadErrors[idx] ? (
                           <div className="text-center text-xs text-indigo-600">
                             <div className="max-w-[80px] truncate">{imageUploadErrors[idx]}</div>
-                            <button type="button" onClick={async () => {
-                              setImageUploadErrors((prev) => { const next = prev.slice(); next[idx] = ''; return next })
-                              setImageUploadProgress((prev) => { const next = prev.slice(); next[idx] = 0; return next })
-                              setUploadingImages(true)
-                              try {
-                                const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-                                const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-                                if (!cloudName || !uploadPreset) {
-                                  throw new Error('Cloudinary upload is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.')
-                                }
-                                const uploadSingle = (_file: File, index: number) => uploadToCloudinaryXHR(_file, index, cloudName, uploadPreset)
-                                await uploadSingle(formImageFiles[idx], idx)
-                                setImageUploadErrors((prev) => { const next = prev.slice(); next[idx] = ''; return next })
-                              } catch (err) {
-                                setImageUploadErrors((prev) => { const next = prev.slice(); next[idx] = String(err); return next })
-                                notifyError(`Image ${idx + 1} failed to upload: ${String(err)}`)
-                              } finally {
-                                setUploadingImages(false)
-                              }
-                            }} className="text-xs text-indigo-600">Retry</button>
                           </div>
                         ) : null}
                       </div>
