@@ -24,17 +24,7 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
   const [arrivalStatus, setArrivalStatus] = useState<string | null>(null)
   const [sendingArrival, setSendingArrival] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
-export default function Header({ onMenuClick, user, token, onLogout, onProfileClick, pageTitle }: HeaderProps) {
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [notifications, setNotifications] = useState<any[]>([])
-  const [showNewArrivalForm, setShowNewArrivalForm] = useState(false)
-  const [arrivalTitle, setArrivalTitle] = useState('New arrival at Glow')
-  const [arrivalMessage, setArrivalMessage] = useState('')
-  const [arrivalStatus, setArrivalStatus] = useState<string | null>(null)
-  const [sendingArrival, setSendingArrival] = useState(false)
-  const menuRef = useRef<HTMLDivElement | null>(null)
->>>>>>> Stashed changes
+ 
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -164,15 +154,6 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
             )}
           </div>
 
-<<<<<<< Updated upstream
-          <button
-            onClick={() => onProfileClick?.()}
-            className="inline-flex rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-            aria-label="Settings"
-          >
-            <Settings size={18} />
-          </button>
-=======
           <div className="relative">
             <button onClick={openNotifications} className="relative rounded-lg p-2.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900" aria-label="Notifications" aria-expanded={showNotifications}>
               <Bell size={19} />
@@ -204,7 +185,6 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
               </div>
             )}
           </div>
->>>>>>> Stashed changes
 
           <div className="relative">
             <button
