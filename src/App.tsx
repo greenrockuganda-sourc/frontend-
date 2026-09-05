@@ -144,6 +144,10 @@ export default function App() {
     }
   }
 
+  // Ensure `accessToken` is defined to avoid runtime ReferenceError in the bundle.
+  // Tokens are handled via HttpOnly cookies on the backend; client may not need a raw token.
+  const accessToken: string | null = null
+
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />
   }
