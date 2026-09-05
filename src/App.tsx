@@ -190,6 +190,7 @@ export default function App() {
         <Header
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           user={user}
+          token={accessToken}
           onLogout={handleLogout}
           onProfileClick={() => handleNavigate('settings')}
           notifications={notifications}

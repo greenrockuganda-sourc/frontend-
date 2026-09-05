@@ -1,3 +1,10 @@
+# Glow landing page (frontend-)
+
+Place the files in `frontend-/app/glow` into your Next.js App Router project. If you use the Pages Router, copy `frontend-/pages/glow.tsx` instead and move the shared components into `components/glow`.
+
+Place the production APK at: `frontend-/public/downloads/glow.apk`.
+
+Set `NEXT_PUBLIC_EAS_BUILD_URL` to the EAS build details URL (optional). `BuildStatus` will use it when the build is in progress.
 # Professional Seller Dashboard - React + Vite
 
 A fully responsive, professional-grade seller and admin dashboard built with React 19, Vite, TypeScript, and Tailwind CSS. Includes complete order management, inventory tracking, delivery management, and professional receipt generation with automatic issuance.
