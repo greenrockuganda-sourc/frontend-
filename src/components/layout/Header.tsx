@@ -1,28 +1,29 @@
-<<<<<<< Updated upstream
-import { Menu, Bell, User, LogOut, Settings } from 'lucide-react'
-import { useState } from 'react'
-=======
-import { Menu, Bell, User, LogOut, ChevronDown, Search } from 'lucide-react'
+import { Menu, Bell, User, LogOut, Settings, ChevronDown, Search } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchNotifications, markNotificationRead, sendNewArrivalNotification } from '@/lib/api'
->>>>>>> Stashed changes
 
 interface HeaderProps {
   onMenuClick: () => void
   user?: any
-  token: string
+  token?: string
   onLogout: () => void
   onProfileClick?: () => void
   notifications?: Array<{ id: string; type: string; title: string; message?: string }>
   onDismissNotification?: (id: string) => void
   addNotification?: (n: { type: 'success' | 'error' | 'warning' | 'info'; title: string; message?: string; duration?: number }) => string
+  pageTitle?: string
 }
 
-<<<<<<< Updated upstream
-export default function Header({ onMenuClick, user, onLogout, onProfileClick, notifications = [], onDismissNotification, addNotification }: HeaderProps) {
+export default function Header({ onMenuClick, user, token, onLogout, onProfileClick, notifications: initialNotifications = [], onDismissNotification, addNotification, pageTitle }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-=======
+  const [notifications, setNotifications] = useState<any[]>(Array.isArray(initialNotifications) ? initialNotifications : [])
+  const [showNewArrivalForm, setShowNewArrivalForm] = useState(false)
+  const [arrivalTitle, setArrivalTitle] = useState('New arrival at Glow')
+  const [arrivalMessage, setArrivalMessage] = useState('')
+  const [arrivalStatus, setArrivalStatus] = useState<string | null>(null)
+  const [sendingArrival, setSendingArrival] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
 export default function Header({ onMenuClick, user, token, onLogout, onProfileClick, pageTitle }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
