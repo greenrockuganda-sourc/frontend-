@@ -730,3 +730,16 @@ input, select, textarea {
     scroll-behavior: auto !important;
   }
 }
+
+/* Ensure images render fully and are not cropped by default */
+img, picture, video {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* Utility to force full-image rendering when needed */
+.show-full-image {
+  object-fit: contain !important;
+}
