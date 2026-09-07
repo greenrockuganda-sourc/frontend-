@@ -1,14 +1,13 @@
-import { useEffect, useState } from 'react'
-import { Download, Printer, Mail, Eye, PackageOpen } from 'lucide-react'
-import { fetchReceipts, sendReceiptEmail, downloadReceiptPdf } from '@/lib/api'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Download, Eye, Mail, PackageOpen, Printer, Search, X } from 'lucide-react'
+import { downloadReceiptPdf, fetchReceipts, sendReceiptEmail } from '@/lib/api'
+import { downloadBlob } from '@/lib/file-download'
+import { notifyError, notifySuccess } from '@/lib/notify'
 import { Receipt } from '@/types'
+import ErrorMessage from '@/components/ErrorMessage'
 import { SkeletonTable } from '@/components/Skeleton'
 
 const formatCurrency = (value: number) => `UGX ${value.toFixed(2)}`
-
-interface ReceiptsProps {
-  token: string
-}
 
 const formatReceiptDate = (value: string | null | undefined) => {
   if (!value) return ''
@@ -16,289 +15,141 @@ const formatReceiptDate = (value: string | null | undefined) => {
   const dateOnly = text.split('T')[0]
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) return dateOnly
   const parsed = new Date(text)
-  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().split('T')[0]
-  return text
+  return Number.isNaN(parsed.getTime()) ? text : parsed.toISOString().split('T')[0]
 }
 
-export default function Receipts({ token }: ReceiptsProps) {
+export default function Receipts() {
   const [receipts, setReceipts] = useState<Receipt[]>([])
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [actionMessage, setActionMessage] = useState<string | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
   const [busyReceipt, setBusyReceipt] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const loadReceipts = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await fetchReceipts()
+      const list = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []
+      setReceipts(list.map((receipt: any) => ({
+        id: String(receipt.id ?? receipt.receipt_id ?? 'N/A'),
+        receiptNumber: String(receipt.receipt_number ?? receipt.receiptNumber ?? receipt.id ?? 'N/A'),
+        orderNumber: String(receipt.order_number ?? receipt.orderNumber ?? receipt.order_id ?? receipt.orderId ?? 'N/A'),
+        customer: receipt.customer ?? receipt.customer_name ?? 'Guest',
+        salon: receipt.salon_name ?? receipt.salon?.name ?? receipt.shop_name ?? receipt.business_name ?? receipt.store_name ?? 'Unknown salon',
+        amount: Number(receipt.amount ?? receipt.total_amount ?? 0),
+        date: formatReceiptDate(receipt.date ?? receipt.receipt_date ?? receipt.created_at),
+        items: (Array.isArray(receipt.items) ? receipt.items : []).map((item: any) => ({
+          product_name: item.product_name ?? item.name ?? 'Item',
+          quantity: Number(item.quantity ?? 0),
+          unit_price: Number(item.unit_price ?? item.price ?? 0),
+          subtotal: Number(item.subtotal ?? item.amount ?? 0),
+        })),
+      })))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load receipts.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    let active = true
+    void loadReceipts()
+  }, [loadReceipts])
 
-    const loadReceipts = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const data = await fetchReceipts(token)
-        if (!active) return
+  const filteredReceipts = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase()
+    if (!query) return receipts
+    return receipts.filter((receipt) => [receipt.receiptNumber, receipt.orderNumber, receipt.customer, receipt.salon ?? '', receipt.date]
+      .some((value) => value.toLowerCase().includes(query)))
+  }, [receipts, searchTerm])
 
-        const receiptsArray = Array.isArray(data?.results)
-          ? data.results
-          : Array.isArray(data)
-            ? data
-            : []
+  const totalIssued = receipts.reduce((sum, receipt) => sum + receipt.amount, 0)
 
-        const normalizedReceipts = receiptsArray.map((receipt: any) => ({
-          id: String(receipt.id ?? receipt.receipt_id ?? 'N/A'),
-          receiptNumber: receipt.receipt_number ?? receipt.receiptNumber ?? `${receipt.id ?? 'N/A'}`,
-          orderNumber: receipt.order_number ?? receipt.orderNumber ?? receipt.order_id ?? receipt.orderId ?? 'N/A',
-          customer: receipt.customer ?? receipt.customer_name ?? 'Guest',
-          amount: Number(receipt.amount ?? receipt.total_amount ?? 0),
-          date: formatReceiptDate(receipt.date ?? receipt.receipt_date ?? receipt.created_at ?? ''),
-          items: (Array.isArray(receipt.items) ? receipt.items : []).map((item: any) => ({
-            product_name: item.product_name ?? item.name ?? 'Item',
-            quantity: Number(item.quantity ?? 0),
-            unit_price: Number(item.unit_price ?? item.price ?? 0),
-            subtotal: Number(item.subtotal ?? item.amount ?? 0),
-          })),
-        }))
-        setReceipts(normalizedReceipts)
-      } catch (err) {
-        if (active) setError(err instanceof Error ? err.message : 'Unable to load receipts.')
-      } finally {
-        if (active) setLoading(false)
-      }
+  const handleDownload = async (receipt: Receipt) => {
+    setBusyReceipt(receipt.id)
+    try {
+      downloadBlob(await downloadReceiptPdf(receipt.id), `${receipt.receiptNumber}.pdf`)
+      notifySuccess('Receipt downloaded successfully')
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Unable to download receipt PDF.')
+    } finally {
+      setBusyReceipt(null)
     }
+  }
 
-    loadReceipts()
-    return () => { active = false }
-  }, [token])
+  const handleEmail = async (receipt: Receipt) => {
+    setBusyReceipt(receipt.id)
+    try {
+      await sendReceiptEmail(receipt.id)
+      notifySuccess('Receipt email sent successfully')
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Unable to send receipt email.')
+    } finally {
+      setBusyReceipt(null)
+    }
+  }
 
   const handlePrint = () => window.print()
 
-  const handleDownload = async (receiptId: string, receiptNumber: string) => {
-    setActionMessage(null)
-    setActionError(null)
-    setBusyReceipt(receiptId)
-
-    try {
-      const blob = await downloadReceiptPdf(token, receiptId)
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `${receiptNumber}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      URL.revokeObjectURL(url)
-      setActionMessage('Receipt PDF downloaded successfully.')
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Unable to download receipt PDF.')
-    } finally { setBusyReceipt(null) }
-  }
-
-  const handleEmail = async (receiptId: string) => {
-    setActionMessage(null)
-    setActionError(null)
-    setBusyReceipt(receiptId)
-
-    try {
-      await sendReceiptEmail(token, receiptId)
-      setActionMessage('Receipt email sent successfully.')
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Unable to send receipt email.')
-    } finally { setBusyReceipt(null) }
-  }
+  const isBusy = (receipt: Receipt) => busyReceipt === receipt.id
 
   return (
     <div className="page-container">
       <div className="mb-6 sm:mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Receipts</h2>
-        <p className="text-gray-500 mt-1">Manage and download receipts</p>
+        <p className="mt-1 text-gray-500">View, download, print, or email completed receipts.</p>
       </div>
 
-      {error && <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">{error}</div>}
-      {actionMessage && <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">{actionMessage}</div>}
-      {actionError && <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">{actionError}</div>}
+      {error ? <div className="mb-6"><ErrorMessage message={error} onRetry={() => void loadReceipts()} /></div> : null}
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Receipts issued</p><p className="mt-2 text-2xl font-bold text-gray-900">{receipts.length}</p></div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Total receipted</p><p className="mt-2 text-2xl font-bold text-gray-900">{formatCurrency(totalIssued)}</p></div>
+        <div className="relative"><Search size={18} className="absolute left-3 top-3 text-gray-400" /><input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search receipt, order, or customer" className="h-full min-h-20 w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></div>
+      </div>
+
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
         <div className="overflow-x-auto">
           <table className="responsive-table w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Receipt</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Items</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Qty</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Cost Each</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
+            <thead className="border-b border-gray-200 bg-gray-50"><tr>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Receipt</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Order</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Salon</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Customer</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Total</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Date</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Actions</th>
+            </tr></thead>
             <tbody className="divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan={9}>
-                    <div className="px-4">
-                      <SkeletonTable rows={5} columns={9} />
-                    </div>
-                  </td>
+              {loading ? <tr><td colSpan={6}><div className="px-4"><SkeletonTable rows={5} columns={6} /></div></td></tr> : null}
+              {!loading && filteredReceipts.length === 0 ? <tr><td colSpan={7}><div className="flex flex-col items-center justify-center px-4 py-12"><PackageOpen size={48} className="mb-3 text-gray-400" /><p className="text-sm font-medium text-gray-900">{receipts.length ? 'No matching receipts' : 'No receipts found'}</p><p className="mt-1 text-sm text-gray-500">{receipts.length ? 'Try another receipt number, order, customer, or date.' : 'Receipts appear after an order is completed.'}</p></div></td></tr> : null}
+              {!loading && filteredReceipts.map((receipt) => (
+                <tr key={receipt.id} className="transition-colors hover:bg-gray-50">
+                  <td data-label="Receipt" className="px-6 py-4 text-sm font-medium text-blue-600">{receipt.receiptNumber}</td>
+                  <td data-label="Order" className="px-6 py-4 text-sm text-gray-900">{receipt.orderNumber}</td>
+                  <td data-label="Salon" className="px-6 py-4 text-sm text-gray-900">{receipt.salon ?? 'Unknown salon'}</td>
+                  <td data-label="Customer" className="px-6 py-4 text-sm text-gray-900">{receipt.customer}</td>
+                  <td data-label="Total" className="px-6 py-4 text-sm font-medium text-gray-900">{formatCurrency(receipt.amount)}</td>
+                  <td data-label="Date" className="px-6 py-4 text-sm text-gray-500">{receipt.date}</td>
+                  <td data-label="Actions" className="px-6 py-4 text-sm"><div className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={() => setSelectedReceipt(receipt)} className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"><Eye size={14} />Preview</button>
+                    <button type="button" onClick={() => void handleDownload(receipt)} disabled={isBusy(receipt)} className="rounded-md p-2 text-blue-600 hover:text-blue-800 disabled:opacity-50" title="Download receipt" aria-label="Download receipt"><Download size={18} /></button>
+                    <button type="button" onClick={() => void handleEmail(receipt)} disabled={isBusy(receipt)} className="rounded-md p-2 text-blue-600 hover:text-blue-800 disabled:opacity-50" title="Email receipt" aria-label="Email receipt"><Mail size={18} /></button>
+                  </div></td>
                 </tr>
-              ) : !loading && receipts.length === 0 ? (
-                <tr>
-                  <td colSpan={9}>
-                    <div className="flex flex-col items-center justify-center px-4 py-12">
-                      <PackageOpen size={48} className="text-gray-400 mb-3" />
-                      <p className="text-sm font-medium text-gray-900">No receipts found</p>
-                      <p className="text-sm text-gray-500 mt-1">Receipts will appear here after orders are completed.</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                receipts.map((receipt) => (
-                  <tr key={receipt.id} className="hover:bg-gray-50 transition-colors">
-                    <td data-label="Receipt" className="px-6 py-4 text-sm font-medium text-blue-600">{receipt.receiptNumber}</td>
-                    <td data-label="Order" className="px-6 py-4 text-sm text-gray-900">{receipt.orderNumber}</td>
-                    <td data-label="Customer" className="px-6 py-4 text-sm text-gray-900">{receipt.customer}</td>
-                    <td data-label="Items" className="px-6 py-4 text-sm text-gray-900">
-                      <div className="space-y-1">
-                        {Array.isArray(receipt.items) && receipt.items.length > 0 ? receipt.items.map((item, index) => (
-                          <div key={`${receipt.id}-${index}`} className="font-medium">{item.product_name}</div>
-                        )) : <span className="text-gray-400">No items</span>}
-                      </div>
-                    </td>
-                    <td data-label="Qty" className="px-6 py-4 text-sm text-gray-900">
-                      <div className="space-y-1">
-                        {Array.isArray(receipt.items) && receipt.items.length > 0 ? receipt.items.map((item, index) => (
-                          <div key={`${receipt.id}-qty-${index}`}>{item.quantity}</div>
-                        )) : <span className="text-gray-400">—</span>}
-                      </div>
-                    </td>
-                    <td data-label="Cost Each" className="px-6 py-4 text-sm text-gray-900">
-                      <div className="space-y-1">
-                        {Array.isArray(receipt.items) && receipt.items.length > 0 ? receipt.items.map((item, index) => (
-                          <div key={`${receipt.id}-price-${index}`}>{formatCurrency(item.unit_price)}</div>
-                        )) : <span className="text-gray-400">—</span>}
-                      </div>
-                    </td>
-                    <td data-label="Total" className="px-6 py-4 text-sm font-medium text-gray-900">
-                      <div className="space-y-1">
-                        {Array.isArray(receipt.items) && receipt.items.length > 0 ? receipt.items.map((item, index) => (
-                          <div key={`${receipt.id}-sub-${index}`}>{formatCurrency(item.subtotal)}</div>
-                        )) : <span className="text-gray-400">—</span>}
-                      </div>
-                      <div className="mt-2 border-t border-gray-200 pt-2">{formatCurrency(receipt.amount)}</div>
-                    </td>
-                    <td data-label="Date" className="px-6 py-4 text-sm text-gray-500">{receipt.date}</td>
-                    <td data-label="Actions" className="px-6 py-4 text-sm">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          onClick={() => setSelectedReceipt(receipt)}
-                          className="inline-flex items-center gap-1 rounded border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
-                          title="Preview"
-                        >
-                          <Eye size={14} />
-                          <span>Preview</span>
-                        </button>
-                        <button onClick={() => handlePrint()} className="text-blue-600 hover:text-blue-800 p-2" title="Print">
-                          <Printer size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDownload(receipt.id, receipt.receiptNumber)}
-                          className="text-blue-600 hover:text-blue-800 p-2"
-                          title="Download"
-                          disabled={busyReceipt === receipt.id}
-                        >
-                          <Download size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleEmail(receipt.id)}
-                          className="text-blue-600 hover:text-blue-800 p-2"
-                          title="Email"
-                          disabled={busyReceipt === receipt.id}
-                        >
-                          <Mail size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {selectedReceipt && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full p-4 sm:p-8 max-h-[90vh] overflow-y-auto receipt-container slide-up">
-            <div className="flex justify-between items-center mb-6 no-print">
-              <h3 className="text-xl font-bold text-gray-900">Receipt {selectedReceipt.receiptNumber}</h3>
-              <button onClick={() => setSelectedReceipt(null)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-            </div>
-
-            <div className="border border-gray-300 p-6">
-              <div className="text-center mb-6 border-b border-gray-300 pb-4">
-                <h2 className="text-2xl font-bold text-gray-900">RECEIPT</h2>
-                <p className="text-gray-600">Receipt #{selectedReceipt.receiptNumber}</p>
-              </div>
-
-              <div className="mb-6 space-y-2">
-                <p className="text-sm text-gray-600"><strong>Receipt:</strong> {selectedReceipt.receiptNumber}</p>
-                <p className="text-sm text-gray-600"><strong>Order:</strong> {selectedReceipt.orderNumber}</p>
-                <p className="text-sm text-gray-600"><strong>Customer:</strong> {selectedReceipt.customer}</p>
-                <p className="text-sm text-gray-600"><strong>Date:</strong> {selectedReceipt.date}</p>
-              </div>
-
-              <div className="mb-6 overflow-hidden rounded border border-gray-300">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Item</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Qty</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Cost each</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Array.isArray(selectedReceipt.items) && selectedReceipt.items.length > 0 ? selectedReceipt.items.map((item, index) => (
-                      <tr key={`${selectedReceipt.id}-${index}`} className="border-t border-gray-200">
-                        <td className="px-3 py-2">{item.product_name}</td>
-                        <td className="px-3 py-2">{item.quantity}</td>
-                        <td className="px-3 py-2">{formatCurrency(item.unit_price)}</td>
-                        <td className="px-3 py-2">{formatCurrency(item.subtotal)}</td>
-                      </tr>
-                    )) : (
-                      <tr className="border-t border-gray-200">
-                        <td className="px-3 py-2" colSpan={4}>No items available.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="text-right border-t border-gray-300 pt-4">
-                <p className="text-lg font-bold text-gray-900">Total: {formatCurrency(selectedReceipt.amount)}</p>
-              </div>
-
-              <div className="text-center mt-6 text-xs text-gray-600 border-t border-gray-300 pt-4">
-                <p>Thank you for your business.</p>
-                <p>This receipt was generated from the admin API.</p>
-              </div>
-            </div>
-
-            <div className="flex gap-2 mt-6 no-print">
-              <button onClick={() => handlePrint()} className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Print Receipt</button>
-              <button
-                onClick={() => handleDownload(selectedReceipt.id, selectedReceipt.receiptNumber)}
-                className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-                disabled={busyReceipt === selectedReceipt.id}
-              >
-                Download PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {selectedReceipt ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"><div className="receipt-container max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-8">
+        <div className="no-print mb-6 flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Receipt preview</p><h3 className="text-xl font-bold text-gray-900">{selectedReceipt.receiptNumber}</h3></div><button type="button" onClick={() => setSelectedReceipt(null)} className="rounded p-2 text-gray-500 hover:text-gray-700" aria-label="Close receipt"><X size={20} /></button></div>
+        <article className="thermal-receipt border border-slate-200 bg-white p-5 text-slate-800 sm:p-8"><header className="border-b-2 border-slate-900 pb-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.3em] text-blue-600">Seller Dashboard</p><h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">SALES RECEIPT</h2><p className="mt-2 text-sm text-slate-500">Thank you for your order</p></header><div className="grid grid-cols-2 gap-x-6 gap-y-2 border-b border-slate-200 py-5 text-sm"><p><span className="block text-xs font-semibold uppercase tracking-wide text-slate-400">Receipt</span><span className="font-semibold">{selectedReceipt.receiptNumber}</span></p><p><span className="block text-xs font-semibold uppercase tracking-wide text-slate-400">Date</span><span className="font-semibold">{selectedReceipt.date}</span></p><p><span className="block text-xs font-semibold uppercase tracking-wide text-slate-400">Order</span><span className="font-semibold">{selectedReceipt.orderNumber}</span></p><p><span className="block text-xs font-semibold uppercase tracking-wide text-slate-400">Salon</span><span className="font-semibold">{selectedReceipt.salon ?? 'Unknown salon'}</span></p><p><span className="block text-xs font-semibold uppercase tracking-wide text-slate-400">Customer</span><span className="font-semibold">{selectedReceipt.customer}</span></p></div><div className="py-5"><div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-slate-300 pb-2 text-xs font-bold uppercase tracking-wide text-slate-500"><span>Item</span><span>Qty × price</span><span>Subtotal</span></div>{selectedReceipt.items?.length ? selectedReceipt.items.map((item, index) => <div key={`${selectedReceipt.id}-${index}`} className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-dashed border-slate-200 py-3 text-sm"><span className="font-medium">{item.product_name}</span><span className="text-right text-slate-600">{item.quantity} × {formatCurrency(item.unit_price)}</span><span className="text-right font-semibold">{formatCurrency(item.subtotal)}</span></div>) : <p className="py-3 text-sm text-slate-500">No items available.</p>}</div><div className="ml-auto max-w-xs space-y-2 border-t-2 border-slate-900 pt-4 text-sm"><div className="flex justify-between text-slate-600"><span>Items subtotal</span><span>{formatCurrency(selectedReceipt.items?.reduce((sum, item) => sum + item.subtotal, 0) ?? selectedReceipt.amount)}</span></div><div className="flex justify-between text-xl font-black text-slate-950"><span>Total</span><span>{formatCurrency(selectedReceipt.amount)}</span></div></div><footer className="mt-8 border-t border-slate-200 pt-4 text-center text-xs text-slate-500">Keep this receipt for your records.<br />Powered by Seller Dashboard</footer></article>
+        <div className="no-print mt-6 flex flex-wrap gap-2"><button type="button" onClick={handlePrint} className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"><Printer size={16} />Print to Bluetooth / printer</button><button type="button" onClick={() => void handleDownload(selectedReceipt)} disabled={isBusy(selectedReceipt)} className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"><Download size={16} />Download PDF</button><button type="button" onClick={() => void handleEmail(selectedReceipt)} disabled={isBusy(selectedReceipt)} className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"><Mail size={16} />Email</button></div><p className="no-print mt-3 text-xs text-gray-500">Choose your paired Bluetooth receipt printer in the print dialog.</p>
+      </div></div> : null}
     </div>
   )
 }

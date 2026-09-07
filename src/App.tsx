@@ -182,7 +182,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen w-full overflow-x-hidden bg-white">
+    <div className="flex h-screen w-full overflow-hidden bg-white">
       <Sidebar
         currentPage={currentPage}
         onNavigate={handleNavigate}
@@ -190,7 +190,7 @@ export default function App() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden min-h-0">
         <Header
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           user={user}
@@ -201,7 +201,7 @@ export default function App() {
           onDismissNotification={dismissNotification}
           addNotification={addNotification}
         />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           {loadingProfile && (
             <div className="px-4 py-3 text-sm text-slate-600">Loading your account details...</div>
           )}

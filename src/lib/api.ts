@@ -123,7 +123,17 @@ export async function login(identifier: string, password: string) {
   }
 }
 
-export async function register(userData: { first_name: string; last_name: string; email: string; phone_number: string; password: string; role?: string }) {
+export async function register(userData: {
+  first_name: string
+  last_name: string
+  salon_name?: string
+  shop_name?: string
+  business_name?: string
+  email: string
+  phone_number: string
+  password: string
+  role?: string
+}) {
   return request<any>('/api/auth/register/', {
     method: 'POST',
     body: JSON.stringify(userData),
@@ -188,8 +198,43 @@ export async function fetchDashboard() {
 }
 
 export async function fetchProducts(search = '') {
-  const query = search ? `?search=${encodeURIComponent(search)}` : ''
-  return request<any>(`/api/products/${query}`, {})
+  const params = new URLSearchParams()
+  if (search) {
+    params.set('search', search)
+  }
+  params.set('page_size', '1000')
+
+  const firstPage = await request<any>(`/api/products/?${params.toString()}`, {})
+  const firstResults = Array.isArray(firstPage?.results) ? firstPage.results : Array.isArray(firstPage) ? firstPage : []
+
+  if (!firstPage || !firstPage.next || firstResults.length === 0) {
+    return firstPage
+  }
+
+  const allResults = [...firstResults]
+  let nextUrl = firstPage.next
+
+  while (nextUrl) {
+    const nextUrlObj = new URL(nextUrl, window.location.origin)
+    const nextPath = `${nextUrlObj.pathname}${nextUrlObj.search}`
+    const page = await request<any>(nextPath, {})
+    const pageResults = Array.isArray(page?.results) ? page.results : Array.isArray(page) ? page : []
+    allResults.push(...pageResults)
+
+    if (!page?.next || pageResults.length === 0) {
+      break
+    }
+
+    nextUrl = page.next
+  }
+
+  return {
+    ...firstPage,
+    count: allResults.length,
+    next: null,
+    previous: null,
+    results: allResults,
+  }
 }
 
 export async function searchProducts(query: string) {
@@ -321,7 +366,7 @@ export async function createBrand(data: { brand_name: string; logo?: string }) {
 }
 
 export async function createReceipt(orderId: string) {
-  return request<any>(`/api/orders/${orderId}/receipt/`, {
+  return request<any>(`/api/orders/${encodeURIComponent(orderId)}/receipt/`, {
     method: 'POST',
   })
 }
@@ -347,18 +392,28 @@ export async function deleteProduct(productId: string) {
 }
 
 export async function getOrderDetails(orderId: string) {
-  return request<any>(`/api/admin/orders/${orderId}/`, {})
+  return request<any>(`/api/admin/orders/${encodeURIComponent(orderId)}/`, {})
+}
+
+export function getReceiptId(receipt: any): string | null {
+  const receiptId = receipt?.id ?? receipt?.receipt_id ?? receipt?.receipt?.id
+  if (receiptId !== undefined && receiptId !== null && receiptId !== '') {
+    return String(receiptId)
+  }
+
+  const match = String(receipt?.pdf_url ?? '').match(/\/api\/admin\/receipts\/([^/]+)\/pdf\//)
+  return match?.[1] ?? null
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {
-  return request<any>(`/api/admin/orders/${orderId}/status/`, {
+  return request<any>(`/api/admin/orders/${encodeURIComponent(orderId)}/status/`, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
   })
 }
 
 export async function updateDelivery(deliveryId: string, deliveryStatus: string) {
-  return request<any>(`/api/admin/deliveries/${deliveryId}/`, {
+  return request<any>(`/api/admin/deliveries/${encodeURIComponent(deliveryId)}/`, {
     method: 'PATCH',
     body: JSON.stringify({ delivery_status: deliveryStatus }),
   })

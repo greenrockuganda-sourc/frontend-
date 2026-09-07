@@ -30,7 +30,7 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
       )}
 
       <aside className={`
-        fixed left-0 top-0 z-40 flex h-full w-[85vw] max-w-xs flex-col border-r border-slate-200/80 bg-white/80 backdrop-blur-xl shadow-2xl transition-transform duration-200 ease-out lg:relative lg:z-0 lg:w-72 lg:translate-x-0 lg:shadow-none
+        fixed left-0 top-0 z-40 flex h-screen w-[85vw] max-w-xs flex-col border-r border-slate-200/80 bg-white/80 backdrop-blur-xl shadow-2xl transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:z-10 lg:w-72 lg:translate-x-0 lg:shadow-none
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="flex items-center justify-between border-b border-slate-200/80 p-5 sm:p-6">

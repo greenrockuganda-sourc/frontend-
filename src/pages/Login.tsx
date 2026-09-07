@@ -16,6 +16,7 @@ export default function Login({ onLogin }: LoginProps) {
   const [view, setView] = useState<AuthView>('sign-in')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [salonName, setSalonName] = useState('')
   const [email, setEmail] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [password, setPassword] = useState('')
@@ -51,10 +52,22 @@ export default function Login({ onLogin }: LoginProps) {
       }
       if (view === 'sign-up') {
         if (!validEmail()) return
+        const trimmedSalonName = salonName.trim()
+        if (!trimmedSalonName) throw new Error('Enter your salon name.')
         if (password.length < 8) throw new Error('Use a password with at least 8 characters.')
         if (password !== confirmPassword) throw new Error('Your passwords do not match.')
-        await register({ first_name: firstName.trim(), last_name: lastName.trim(), email: email.trim(), phone_number: phoneNumber.trim(), password, role: 'Seller' })
-        setPassword(''); setConfirmPassword(''); changeView('sign-in'); setNotice('Your account is ready. Sign in to continue.'); return
+        await register({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          salon_name: trimmedSalonName,
+          shop_name: trimmedSalonName,
+          business_name: trimmedSalonName,
+          email: email.trim(),
+          phone_number: phoneNumber.trim(),
+          password,
+          role: 'Seller',
+        })
+        setPassword(''); setConfirmPassword(''); setSalonName(''); changeView('sign-in'); setNotice('Your account is ready. Sign in to continue.'); return
       }
       if (view === 'forgot-password') {
         if (!validEmail()) return
@@ -86,7 +99,7 @@ export default function Login({ onLogin }: LoginProps) {
       <div className="mb-7"><h2 className="text-3xl font-bold tracking-tight text-slate-950">{title}</h2><p className="mt-2 leading-6 text-slate-500">{description}</p></div>
       {error && <div role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{error}</div>}{notice && <div role="status" className="mb-5 flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />{notice}</div>}
       <form onSubmit={submit} className="space-y-5">
-        {view === 'sign-up' && <><div className="grid gap-4 sm:grid-cols-2"><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">First name <span className="font-normal text-slate-400">(optional)</span></span><input value={firstName} onChange={(event) => setFirstName(event.target.value)} className={inputClass} placeholder="Jane" autoComplete="given-name" /></label><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">Last name <span className="font-normal text-slate-400">(optional)</span></span><input value={lastName} onChange={(event) => setLastName(event.target.value)} className={inputClass} placeholder="Doe" autoComplete="family-name" /></label></div><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">Phone number <span className="font-normal text-slate-400">(optional)</span></span><input value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={inputClass} placeholder="+256 700 000 000" autoComplete="tel" /></label></>}
+        {view === 'sign-up' && <><div className="grid gap-4 sm:grid-cols-2"><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">First name <span className="font-normal text-slate-400">(optional)</span></span><input value={firstName} onChange={(event) => setFirstName(event.target.value)} className={inputClass} placeholder="Jane" autoComplete="given-name" /></label><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">Last name <span className="font-normal text-slate-400">(optional)</span></span><input value={lastName} onChange={(event) => setLastName(event.target.value)} className={inputClass} placeholder="Doe" autoComplete="family-name" /></label></div><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">Salon name</span><input value={salonName} onChange={(event) => setSalonName(event.target.value)} className={inputClass} placeholder="Greenrock Salon" autoComplete="organization" required /></label><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">Phone number <span className="font-normal text-slate-400">(optional)</span></span><input value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={inputClass} placeholder="+256 700 000 000" autoComplete="tel" /></label></>}
         {(view === 'sign-in' || view === 'sign-up' || view === 'forgot-password') && <label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">{view === 'sign-in' ? 'Email or phone number' : 'Email address'}</span><input value={email} onChange={(event) => setEmail(event.target.value)} className={inputClass} placeholder={view === 'sign-in' ? 'you@example.com or +256…' : 'you@example.com'} autoComplete={view === 'sign-in' ? 'username' : 'email'} required /></label>}
         {(view === 'sign-in' || view === 'sign-up') && <PasswordField label="Password" value={password} onChange={setPassword} placeholder={view === 'sign-up' ? 'At least 8 characters' : 'Enter your password'} autoComplete={view === 'sign-up' ? 'new-password' : 'current-password'} />}{view === 'sign-up' && <PasswordField label="Confirm password" value={confirmPassword} onChange={setConfirmPassword} placeholder="Enter your password again" autoComplete="new-password" />}
         {view === 'reset-password' && <><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">User ID</span><input value={resetUid} onChange={(event) => setResetUid(event.target.value)} className={inputClass} placeholder="From your reset email" autoComplete="off" required /></label><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">Reset token</span><input value={resetToken} onChange={(event) => setResetToken(event.target.value)} className={inputClass} placeholder="From your reset email" autoComplete="one-time-code" required /></label><PasswordField label="New password" value={newPassword} onChange={setNewPassword} placeholder="At least 8 characters" autoComplete="new-password" /><PasswordField label="Confirm new password" value={confirmNewPassword} onChange={setConfirmNewPassword} placeholder="Enter your new password again" autoComplete="new-password" /></>}

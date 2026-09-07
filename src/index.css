@@ -693,6 +693,11 @@ input, select, textarea {
    ============================================ */
 
 @media print {
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
+  }
+
   body {
     background: white;
     margin: 0;
@@ -708,9 +713,29 @@ input, select, textarea {
   }
 
   .receipt-container {
-    max-width: 100%;
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 80mm !important;
+    max-width: 80mm !important;
     margin: 0;
     padding: 0;
+    box-shadow: none !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .receipt-container,
+  .receipt-container * {
+    visibility: visible;
+  }
+
+  .thermal-receipt {
+    border: 0 !important;
+    padding: 0 !important;
+    font-size: 11px;
   }
 
   .mobile-bottom-nav {

@@ -2,6 +2,7 @@ export interface UserProfile {
   id: string
   first_name: string
   last_name: string
+  salon_name?: string
   email: string
   phone_number?: string
   role: string
@@ -39,9 +40,13 @@ export interface Brand {
 export interface Order {
   id: string
   customer: string
+  salon?: string
+  user?: string
+  location?: string
   amount: number
   status: string
   date: string
+  receiptId?: string
   items?: Array<{
     product_name: string
     quantity: number
@@ -53,10 +58,13 @@ export interface Order {
 export interface Delivery {
   id: string
   orderId: string
+  salonName?: string
+  userName?: string
   driver: string
   address: string
   status: string
   receiptIssued: boolean
+  receiptId?: string
 }
 
 export interface Receipt {
@@ -64,6 +72,7 @@ export interface Receipt {
   receiptNumber: string
   orderNumber: string
   customer: string
+  salon?: string
   amount: number
   date: string
   items?: Array<{

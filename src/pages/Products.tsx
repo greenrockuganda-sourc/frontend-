@@ -42,7 +42,6 @@ export default function Products({ onNavigate }: ProductsProps) {
   
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [visibleProducts, setVisibleProducts] = useState(25)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -78,7 +77,6 @@ export default function Products({ onNavigate }: ProductsProps) {
   useEffect(() => {
     const handler = window.setTimeout(() => {
       setDebouncedSearch(searchTerm)
-      setVisibleProducts(25)
     }, 400)
     return () => {
       window.clearTimeout(handler)
@@ -913,7 +911,7 @@ export default function Products({ onNavigate }: ProductsProps) {
                   </td>
                 </tr>
               ) : (
-                filteredProducts.slice(0, visibleProducts).map((product: Product) => (
+                filteredProducts.map((product: Product) => (
                   <tr key={product.id} className="hover:bg-gray-50 transition-colors">
                     <td data-label="Product" className="px-6 py-4 text-sm">
                       <div className="font-medium text-gray-900">{product.name}</div>
@@ -956,18 +954,6 @@ export default function Products({ onNavigate }: ProductsProps) {
           </table>
         </div>
       </div>
-      {filteredProducts.length > visibleProducts && (
-        <div className="mt-4 flex justify-center">
-          <button
-            type="button"
-            onClick={() => setVisibleProducts((prev) => prev + 25)}
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-          >
-            Load more products
-          </button>
-        </div>
-      )}
-
       <ConfirmationModal
         open={Boolean(pendingDeleteProduct)}
         title="Confirm delete"
