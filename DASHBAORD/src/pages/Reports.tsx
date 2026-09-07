@@ -63,10 +63,10 @@ export default function Reports({ token }: ReportsProps) {
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <p className="text-xs uppercase tracking-wide text-gray-500">Status breakdown</p>
             <div className="mt-3 space-y-2 text-sm text-gray-700">
-              {Array.isArray(report.orders_by_status) ? report.orders_by_status.map((item: any, index: number) => {
+              {(report.orders_by_status ?? []).map((item: any, index: number) => {
                 const status = Object.keys(item)[0]
                 return <div key={index}>{status}: {item[status]}</div>
-              }) : null}
+              })}
             </div>
           </div>
         </div>
@@ -86,13 +86,13 @@ export default function Reports({ token }: ReportsProps) {
                 </tr>
               </thead>
               <tbody>
-                {Array.isArray(report.orders) ? report.orders.map((item: any) => (
+                {(report.orders ?? []).map((item: any) => (
                   <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3">{item.order_number || item.id}</td>
                     <td className="px-4 py-3">{item.status}</td>
-                    <td className="px-4 py-3">UGX {item.amount != null ? item.amount.toFixed(2) : '0.00'}</td>
+                    <td className="px-4 py-3">UGX {item.amount?.toFixed(2) ?? '0.00'}</td>
                   </tr>
-                )) : null}
+                ))}
               </tbody>
             </table>
           </div>
@@ -113,13 +113,13 @@ export default function Reports({ token }: ReportsProps) {
                 </tr>
               </thead>
               <tbody>
-                {Array.isArray(report.products) ? report.products.map((item: any, index: number) => (
+                {(report.products ?? []).map((item: any, index: number) => (
                   <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3">{item.product_name}</td>
                     <td className="px-4 py-3">{item.stock}</td>
                     <td className="px-4 py-3">{item.status}</td>
                   </tr>
-                )) : null}
+                ))}
               </tbody>
             </table>
           </div>
@@ -141,14 +141,14 @@ export default function Reports({ token }: ReportsProps) {
                 </tr>
               </thead>
               <tbody>
-                {Array.isArray(report.categories) ? report.categories.map((item: any, index: number) => (
+                {(report.categories ?? []).map((item: any, index: number) => (
                   <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3">{item.category_name}</td>
                     <td className="px-4 py-3">{item.total_orders ?? 0}</td>
                     <td className="px-4 py-3">{item.total_quantity ?? 0}</td>
                     <td className="px-4 py-3">UGX {(item.total_revenue ?? 0).toFixed(2)}</td>
                   </tr>
-                )) : null}
+                ))}
               </tbody>
             </table>
           </div>
@@ -169,13 +169,13 @@ export default function Reports({ token }: ReportsProps) {
                 </tr>
               </thead>
               <tbody>
-                {Array.isArray(report.customers) ? report.customers.map((item: any, index: number) => (
+                {(report.customers ?? []).map((item: any, index: number) => (
                   <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3">{item.customer_name}</td>
                     <td className="px-4 py-3">{item.orders}</td>
                     <td className="px-4 py-3">UGX {item.total_spend?.toFixed(2) ?? '0.00'}</td>
                   </tr>
-                )) : null}
+                ))}
               </tbody>
             </table>
           </div>
@@ -188,10 +188,18 @@ export default function Reports({ token }: ReportsProps) {
 
   const handleDownloadReport = async (format: 'csv' | 'excel') => {
     try {
-      const params: Record<string, string> = {}
-      if (startDate) params.start_date = startDate
-      if (endDate) params.end_date = endDate
-      const blob = await downloadReport(token, reportType, params, format)
+      const url = new URL(`${import.meta.env.VITE_API_BASE_URL ?? ''}/api/admin/reports/${reportType}/`)
+      if (startDate) url.searchParams.set('start_date', startDate)
+      if (endDate) url.searchParams.set('end_date', endDate)
+      url.searchParams.set('format', format)
+      const response = await fetch(url.toString(), {
+        headers: new Headers({ Authorization: `Bearer ${token}` }),
+      })
+      if (!response.ok) {
+        const message = await response.text()
+        throw new Error(message || 'Unable to download report.')
+      }
+      const blob = await response.blob()
       const extension = format === 'excel' ? 'xlsx' : 'csv'
       const filename = `${reportType}-report.${extension}`
       const tempUrl = window.URL.createObjectURL(blob)
