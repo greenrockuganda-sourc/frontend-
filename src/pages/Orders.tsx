@@ -39,7 +39,7 @@ const statusColors: Record<string, string> = {
 const statusOptions = ['Pending', 'Confirmed', 'Processing', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled']
 
 interface OrdersProps {
-  token: string
+  token?: string
 }
 
 export default function Orders({ token }: OrdersProps) {

@@ -118,23 +118,6 @@ export async function logout() {
   })
 }
 
-export async function register(userData: {
-  first_name?: string
-  last_name?: string
-  salon_name?: string
-  shop_name?: string
-  business_name?: string
-  email: string
-  phone_number: string
-  password: string
-  role?: string
-}) {
-  return request<any>('/api/auth/register/', {
-    method: 'POST',
-    body: JSON.stringify(userData),
-  })
-}
-
 export async function forgotPassword(email: string) {
   return request<any>('/api/auth/forgot-password/', {
     method: 'POST',
@@ -149,7 +132,14 @@ export async function resetPassword(payload: { uid: string; token: string; new_p
   })
 }
 
-export async function fetchProfile(token: string) {
+export async function register(userData: { first_name: string; last_name: string; email: string; phone_number: string; password: string; role?: string }) {
+  return request<any>('/api/auth/register/', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  })
+}
+
+export async function fetchProfile(token?: string) {
   return request<any>('/api/user/profile/', {}, token)
 }
 
@@ -169,11 +159,11 @@ export async function fetchProducts(token: string, search = '') {
   return request<any>(`/api/products/${query}`, {}, token)
 }
 
-export async function fetchOrders(token: string) {
+export async function fetchOrders(token?: string) {
   return request<any>('/api/admin/orders/', {}, token)
 }
 
-export async function fetchDeliveries(token: string) {
+export async function fetchDeliveries(token?: string) {
   return request<any>('/api/admin/deliveries/', {}, token)
 }
 

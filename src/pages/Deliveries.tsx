@@ -6,7 +6,7 @@ import { Delivery } from '@/types'
 import Skeleton, { SkeletonTable } from '@/components/Skeleton'
 
 interface DeliveriesProps {
-  token: string
+  token?: string
 }
 
 export default function Deliveries({ token }: DeliveriesProps) {
