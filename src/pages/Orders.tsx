@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Download, Eye, PackageOpen, Search, Filter } from 'lucide-react'
-import { createReceipt, downloadReceiptPdf, fetchOrders, getOrderDetails, getReceiptId, updateOrderStatus } from '@/lib/api'
+import { Download, Eye, Edit2, Filter, PackageOpen, Search } from 'lucide-react'
+import { fetchOrders, getOrderDetails, updateOrderStatus } from '@/lib/api'
 import { notifyError, notifySuccess } from '@/lib/notify'
-import { downloadBlob } from '@/lib/file-download'
 import { Order } from '@/types'
 import { SkeletonTable } from '@/components/Skeleton'
 import ErrorMessage from '@/components/ErrorMessage'
-import ConfirmationModal from '@/components/ConfirmationModal'
 
 const validRanges = ['7d', '30d', '90d', 'all'] as const
 
@@ -21,91 +19,54 @@ const getRangeStartDate = (range: RangeKey) => {
 }
 
 const readOrdersRangeFromUrl = (): RangeKey => {
-  if (typeof window === 'undefined') return '7d'
+  if (typeof window === 'undefined') return 'all'
   const params = new URLSearchParams(window.location.search)
   const value = params.get('ordersRange')
-  return validRanges.includes(value as RangeKey) ? (value as RangeKey) : '7d'
+  return validRanges.includes(value as RangeKey) ? (value as RangeKey) : 'all'
 }
 
 const statusColors: Record<string, string> = {
-  delivered: 'bg-emerald-100 text-emerald-800',
-  pending: 'bg-amber-100 text-amber-800',
-  shipped: 'bg-violet-100 text-violet-800',
-  cancelled: 'bg-rose-100 text-rose-800',
-  confirmed: 'bg-sky-100 text-sky-800',
-  processing: 'bg-indigo-100 text-indigo-800',
-  packed: 'bg-purple-100 text-purple-800',
-  'out for delivery': 'bg-cyan-100 text-cyan-800',
+  delivered: 'bg-blue-100 text-blue-800',
+  pending: 'bg-blue-100 text-blue-800',
+  shipped: 'bg-blue-100 text-blue-800',
+  cancelled: 'bg-blue-100 text-blue-800',
+  confirmed: 'bg-blue-100 text-blue-800',
+  processing: 'bg-blue-100 text-blue-800',
+  packed: 'bg-blue-100 text-blue-800',
+  'out for delivery': 'bg-blue-100 text-blue-800',
 }
 
 const statusOptions = ['Pending', 'Confirmed', 'Processing', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled']
 
-const pickText = (...values: any[]) => {
-  for (const value of values) {
-    if (value === null || value === undefined || value === '') continue
-    if (typeof value === 'string' && !value.trim()) continue
-    return String(value)
-  }
-  return ''
+interface OrdersProps {
+  token: string
 }
 
-const resolveSalonName = (record: any) => pickText(
-  record?.salon_name,
-  record?.salon?.name,
-  record?.shop_name,
-  record?.business_name,
-  record?.store_name,
-  record?.store?.name,
-  record?.seller_name,
-  record?.seller?.name,
-  record?.user?.salon_name,
-  record?.user?.shop_name,
-  record?.customer?.salon_name,
-  record?.customer?.shop_name,
-  record?.business?.name,
-  'Unknown salon'
-)
-
-const resolveUserName = (record: any) => pickText(
-  record?.user_name,
-  record?.user?.name,
-  record?.user?.full_name,
-  record?.customer_name,
-  record?.customer,
-  record?.buyer_name,
-  record?.buyer?.name,
-  record?.buyer?.full_name,
-  [record?.user?.first_name, record?.user?.last_name].filter(Boolean).join(' ') || undefined,
-  'Guest'
-)
-
-const resolveLocation = (record: any) => pickText(
-  record?.location,
-  record?.delivery_address,
-  record?.address,
-  record?.shipping_address,
-  record?.customer_address,
-  record?.user?.address,
-  record?.user?.delivery_address,
-  record?.user?.shipping_address,
-  record?.order_address,
-  record?.delivery_location,
-  record?.salon_location,
-  record?.user_location,
-  'Not provided'
-)
-
-export default function Orders() {
+export default function Orders({ token }: OrdersProps) {
+  const sanitizeError = (raw: unknown) => {
+    const text = typeof raw === 'string' ? raw : raw instanceof Error ? raw.message : String(raw)
+    // If server returned an HTML error page, strip tags and show concise message
+    if (/<!doctype html>|<html|<head|<body/i.test(text)) {
+      const stripped = text.replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      // Prefer meaningful phrases
+      if (/not found/i.test(stripped)) return 'Requested resource not found.'
+      if (/error/i.test(stripped)) return 'Server returned an error.'
+      return stripped || 'Request failed.'
+    }
+    return text || 'Request failed.'
+  }
   const [orders, setOrders] = useState<Order[]>([])
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [orderPendingApproval, setOrderPendingApproval] = useState<Order | null>(null)
   const [statusDraft, setStatusDraft] = useState('Pending')
   const [range, setRange] = useState<RangeKey>(readOrdersRangeFromUrl)
   const [visibleOrders, setVisibleOrders] = useState(20)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
-  const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
 
@@ -116,7 +77,7 @@ export default function Orders() {
       try {
         setLoading(true)
         setError(null)
-        const data = await fetchOrders()
+        const data = await fetchOrders(token)
         if (!active) {
           return
         }
@@ -132,29 +93,21 @@ export default function Orders() {
               }))
             : []
 
-          const customerName = resolveUserName(order)
-          const salonName = resolveSalonName(order)
-          const locationValue = resolveLocation(order)
-
           return {
             id: String(order.order_id ?? order.id ?? 'N/A'),
-            customer: customerName,
-            salon: salonName,
-            user: customerName,
-            location: locationValue,
+            customer: order.customer_name ?? order.customer ?? 'Guest',
             amount: Number(order.total_amount ?? order.amount ?? 0),
             status: String(order.order_status ?? order.status ?? 'pending').toLowerCase(),
             date: order.created_at?.slice(0, 10) ?? order.date ?? '',
-            receiptId: getReceiptId(order),
             items,
           }
         })
 
         setOrders(normalizedOrders)
       } catch (err) {
-        if (active) {
-          setError(err instanceof Error ? err.message : 'Unable to load orders.')
-        }
+          if (active) {
+            setError(sanitizeError(err instanceof Error ? err.message : err))
+          }
       } finally {
         if (active) {
           setLoading(false)
@@ -166,7 +119,7 @@ export default function Orders() {
     return () => {
       active = false
     }
-  }, [])
+  }, [token])
 
   const filteredOrders = useMemo(() => {
     const rangeStart = getRangeStartDate(range)
@@ -186,9 +139,6 @@ export default function Orders() {
       filtered = filtered.filter((order) =>
         order.id.toLowerCase().includes(term) ||
         order.customer.toLowerCase().includes(term) ||
-        (order.salon ?? '').toLowerCase().includes(term) ||
-        (order.user ?? '').toLowerCase().includes(term) ||
-        (order.location ?? '').toLowerCase().includes(term) ||
         order.status.toLowerCase().includes(term)
       )
     }
@@ -203,9 +153,20 @@ export default function Orders() {
 
   const visibleOrderRows = useMemo(() => filteredOrders.slice(0, visibleOrders), [filteredOrders, visibleOrders])
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  }
+
   const handleExportCsv = () => {
     const rows: string[] = []
-    rows.push('Order ID,Customer,Salon Name,User Name,Status,Date,Amount,Item,Qty,Cost Each,Subtotal')
+    rows.push('Order ID,Customer,Status,Date,Amount,Item,Qty,Cost Each,Subtotal')
 
     filteredOrders.forEach((order) => {
       if (order.items?.length) {
@@ -213,8 +174,6 @@ export default function Orders() {
           rows.push([
             order.id,
             order.customer,
-            order.salon ?? '',
-            order.user ?? '',
             order.status,
             order.date,
             order.amount.toFixed(2),
@@ -228,8 +187,6 @@ export default function Orders() {
         rows.push([
           order.id,
           order.customer,
-          order.salon ?? '',
-          order.user ?? '',
           order.status,
           order.date,
           order.amount.toFixed(2),
@@ -242,13 +199,20 @@ export default function Orders() {
     })
 
     const blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
-    downloadBlob(blob, `orders-${range}.csv`)
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `orders-${range}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
     notifySuccess('Orders exported to CSV')
   }
 
   const handleExportExcel = () => {
     const rows: string[] = []
-    rows.push('Order ID,Customer,Salon Name,User Name,Status,Date,Amount,Item,Qty,Cost Each,Subtotal')
+    rows.push('Order ID,Customer,Status,Date,Amount,Item,Qty,Cost Each,Subtotal')
 
     filteredOrders.forEach((order) => {
       if (order.items?.length) {
@@ -256,8 +220,6 @@ export default function Orders() {
           rows.push([
             order.id,
             order.customer,
-            order.salon ?? '',
-            order.user ?? '',
             order.status,
             order.date,
             order.amount.toFixed(2),
@@ -271,8 +233,6 @@ export default function Orders() {
         rows.push([
           order.id,
           order.customer,
-          order.salon ?? '',
-          order.user ?? '',
           order.status,
           order.date,
           order.amount.toFixed(2),
@@ -292,7 +252,7 @@ export default function Orders() {
   const handleViewOrder = async (orderId: string) => {
     setError(null)
     try {
-      const data = await getOrderDetails(orderId)
+      const data = await getOrderDetails(token, orderId)
       const detailsItems = Array.isArray(data?.items)
         ? data.items.map((item: any) => ({
             product_name: item.product_name ?? 'Item',
@@ -302,22 +262,18 @@ export default function Orders() {
           }))
         : []
 
-      const selectedStatus = String(data?.order_status ?? data?.status ?? 'Pending')
+      const selectedStatus = String(data?.order_status ?? 'Pending')
       setSelectedOrder({
-        id: String(data.order_id ?? data.id ?? orderId),
-        customer: resolveUserName(data),
-        salon: resolveSalonName(data),
-        user: resolveUserName(data),
-        location: resolveLocation(data),
+        id: String(data.id ?? orderId),
+        customer: data.customer ?? 'Guest',
         amount: Number(data.total_amount ?? data.amount ?? 0),
         status: selectedStatus.toLowerCase(),
         date: data.created_at?.slice(0, 10) ?? data.date ?? '',
-        receiptId: getReceiptId(data),
         items: detailsItems,
       })
-      setStatusDraft(statusOptions.find((option) => option.toLowerCase() === selectedStatus.toLowerCase()) ?? 'Pending')
+      setStatusDraft(selectedStatus)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load order details.')
+      setError(sanitizeError(err instanceof Error ? err.message : err))
     }
   }
 
@@ -328,9 +284,9 @@ export default function Orders() {
     }
 
     setError(null)
-    setUpdatingOrderId(orderId)
+    setIsUpdatingStatus(true)
     try {
-      await updateOrderStatus(orderId, normalizedStatus)
+      await updateOrderStatus(token, orderId, normalizedStatus)
       const normalizedValue = normalizedStatus.toLowerCase()
       setOrders((prev) => prev.map((order) => (
         order.id === orderId ? { ...order, status: normalizedValue } : order
@@ -339,69 +295,26 @@ export default function Orders() {
         setSelectedOrder((prev) => prev ? { ...prev, status: normalizedValue } : prev)
         setStatusDraft(normalizedStatus)
       }
-      if (normalizedValue === 'confirmed' && !orders.find((order) => order.id === orderId)?.receiptId) {
-        try {
-          const receiptId = getReceiptId(await createReceipt(orderId))
-          if (!receiptId) throw new Error('No receipt ID was returned.')
-          setOrders((prev) => prev.map((order) => order.id === orderId ? { ...order, receiptId } : order))
-          setSelectedOrder((prev) => prev?.id === orderId ? { ...prev, receiptId } : prev)
-          notifySuccess(`Order confirmed and receipt #${receiptId} generated`)
-        } catch (receiptError) {
-          const receiptMessage = receiptError instanceof Error ? receiptError.message : 'Unable to generate the receipt.'
-          setError(`Order confirmed, but the receipt could not be generated: ${receiptMessage}`)
-          notifyError(`Order confirmed, but receipt generation failed: ${receiptMessage}`)
-        }
-      } else {
-        notifySuccess(`Order status updated to ${normalizedStatus}`)
-      }
+      notifySuccess(`Order status updated to ${normalizedStatus}`)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to update order status.'
+      const message = sanitizeError(err instanceof Error ? err.message : err)
       setError(message)
       notifyError(message)
     } finally {
-      setUpdatingOrderId(null)
+      setIsUpdatingStatus(false)
     }
   }
 
-  const handleDownloadReceipt = async (orderId: string) => {
-    setError(null)
-    setDownloadingOrderId(orderId)
-    try {
-      const existingReceiptId = orders.find((order) => order.id === orderId)?.receiptId
-      const receiptId = existingReceiptId ?? getReceiptId(await createReceipt(orderId))
-      if (!receiptId) {
-        throw new Error('Receipt could not be created for this order.')
-      }
-
-      if (!existingReceiptId) {
-        setOrders((prev) => prev.map((order) => order.id === orderId ? { ...order, receiptId } : order))
-        setSelectedOrder((prev) => prev?.id === orderId ? { ...prev, receiptId } : prev)
-      }
-
-      const blob = await downloadReceiptPdf(String(receiptId))
-      downloadBlob(blob, `receipt-${orderId}.pdf`)
-      notifySuccess('Receipt downloaded successfully')
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to download receipt.'
-      setError(message)
-      notifyError(message)
-    } finally {
-      setDownloadingOrderId(null)
-    }
+  const handleQuickStatusChange = async (orderId: string, nextStatus: 'Confirmed' | 'Out for Delivery') => {
+    await handleUpdateOrderStatus(orderId, nextStatus)
   }
 
   const closeOrderDetails = () => {
     setSelectedOrder(null)
   }
 
-  const handleApproveOrder = () => {
-    if (!orderPendingApproval) return
-    void handleUpdateOrderStatus(orderPendingApproval.id, 'Confirmed')
-    setOrderPendingApproval(null)
-  }
-
   return (
-    <div className="page-container">
+    <div className="p-3 sm:p-6 lg:p-8">
       <div className="mb-6 sm:mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Orders</h2>
@@ -466,7 +379,7 @@ export default function Orders() {
           </select>
         </div>
       </div>
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+      <div className="mb-6 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-gray-500">Shown orders</p>
           <p className="mt-2 text-2xl font-semibold text-gray-900">{filteredOrders.length}</p>
@@ -478,10 +391,6 @@ export default function Orders() {
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-gray-500">Average order</p>
           <p className="mt-2 text-2xl font-semibold text-gray-900">UGX {filteredOrders.length ? (filteredOrders.reduce((sum, order) => sum + order.amount, 0) / filteredOrders.length).toFixed(2) : '0.00'}</p>
-        </div>
-        <div className="rounded-lg border border-amber-100 bg-amber-50 p-4 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-amber-700">Awaiting approval</p>
-          <p className="mt-2 text-2xl font-semibold text-amber-950">{filteredOrders.filter((order) => order.status === 'pending').length}</p>
         </div>
       </div>
 
@@ -503,7 +412,6 @@ export default function Orders() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Salon name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Items</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
@@ -514,15 +422,15 @@ export default function Orders() {
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={7}>
                     <div className="px-4">
-                      <SkeletonTable rows={5} columns={9} />
+                      <SkeletonTable rows={5} columns={7} />
                     </div>
                   </td>
                 </tr>
               ) : !loading && filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={7}>
                     <div className="flex flex-col items-center justify-center px-4 py-12">
                       <PackageOpen size={48} className="text-gray-400 mb-3" />
                       <p className="text-sm font-medium text-gray-900">No orders yet</p>
@@ -535,7 +443,6 @@ export default function Orders() {
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                     <td data-label="Order ID" className="px-6 py-4 text-sm font-medium text-blue-600">{order.id}</td>
                     <td data-label="Customer" className="px-6 py-4 text-sm text-gray-900">{order.customer}</td>
-                    <td data-label="Salon name" className="px-6 py-4 text-sm text-gray-900">{order.salon ?? 'Unknown salon'}</td>
                     <td data-label="Items" className="px-6 py-4 text-sm text-gray-500 max-w-xs">
                       {order.items?.length ? (
                         <div className="space-y-1">
@@ -558,24 +465,30 @@ export default function Orders() {
                     </td>
                     <td data-label="Date" className="px-6 py-4 text-sm text-gray-500">{order.date}</td>
                     <td data-label="Actions" className="px-6 py-4 text-sm">
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {order.status !== 'confirmed' && (
+                          <button
+                            type="button"
+                            onClick={() => handleQuickStatusChange(order.id, 'Confirmed')}
+                            className="rounded bg-green-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+                          >
+                            Confirm
+                          </button>
+                        )}
+                        {order.status !== 'out for delivery' && order.status !== 'delivered' && order.status !== 'cancelled' && (
+                          <button
+                            type="button"
+                            onClick={() => handleQuickStatusChange(order.id, 'Out for Delivery')}
+                            className="rounded bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                          >
+                            Ship
+                          </button>
+                        )}
                         <button onClick={() => handleViewOrder(order.id)} className="text-blue-600 hover:text-blue-800 p-2" title="View">
                           <Eye size={18} />
                         </button>
-                        {order.status === 'pending' ? (
-                          <button
-                            type="button"
-                            onClick={() => setOrderPendingApproval(order)}
-                            disabled={updatingOrderId === order.id}
-                            className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            title="Approve order"
-                          >
-                            <Check size={15} />
-                            {updatingOrderId === order.id ? 'Approving...' : 'Approve'}
-                          </button>
-                        ) : null}
-                        <button onClick={() => handleDownloadReceipt(order.id)} disabled={downloadingOrderId === order.id} className="text-blue-600 hover:text-blue-800 disabled:opacity-50 p-2" title="Download receipt">
-                          <Download size={18} />
+                        <button onClick={() => handleViewOrder(order.id)} className="text-blue-600 hover:text-blue-800 p-2" title="Edit">
+                          <Edit2 size={18} />
                         </button>
                       </div>
                     </td>
@@ -591,7 +504,7 @@ export default function Orders() {
         <div className="mt-4 flex justify-center">
           <button
             type="button"
-            onClick={() => setVisibleOrders((count) => Math.min(count + 20, filteredOrders.length))}
+            onClick={handleExportCsv}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
           >
             Load more orders
@@ -617,14 +530,6 @@ export default function Orders() {
                   <p className="font-medium text-gray-900">{selectedOrder.customer}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase">Salon name</p>
-                  <p className="font-medium text-gray-900">{selectedOrder.salon ?? 'Unknown salon'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase">Location</p>
-                  <p className="font-medium text-gray-900">{selectedOrder.location ?? 'Not provided'}</p>
-                </div>
-                <div>
                   <p className="text-xs text-gray-500 uppercase">Amount</p>
                   <p className="font-medium text-gray-900">UGX {selectedOrder.amount.toFixed(2)}</p>
                 </div>
@@ -637,6 +542,25 @@ export default function Orders() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <label className="text-sm font-medium text-gray-700">Quick actions</label>
+                {selectedOrder.status !== 'confirmed' && (
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStatusChange(selectedOrder.id, 'Confirmed')}
+                    className="rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
+                  >
+                    Confirm order
+                  </button>
+                )}
+                {selectedOrder.status !== 'out for delivery' && selectedOrder.status !== 'delivered' && selectedOrder.status !== 'cancelled' && (
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStatusChange(selectedOrder.id, 'Out for Delivery')}
+                    className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    Ship order
+                  </button>
+                )}
                 <label className="text-sm font-medium text-gray-700">Update status</label>
                 <select
                   value={statusDraft}
@@ -651,27 +575,10 @@ export default function Orders() {
                 </select>
                 <button
                   onClick={() => handleUpdateOrderStatus(selectedOrder.id, statusDraft)}
-                  disabled={updatingOrderId === selectedOrder.id}
+                  disabled={isUpdatingStatus}
                   className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {updatingOrderId === selectedOrder.id ? 'Saving...' : 'Save status'}
-                </button>
-                {selectedOrder.status === 'pending' ? (
-                  <button
-                    type="button"
-                    onClick={() => setOrderPendingApproval(selectedOrder)}
-                    disabled={updatingOrderId === selectedOrder.id}
-                    className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {updatingOrderId === selectedOrder.id ? 'Approving...' : 'Confirm & generate receipt'}
-                  </button>
-                ) : null}
-                <button
-                  onClick={() => handleDownloadReceipt(selectedOrder.id)}
-                  disabled={downloadingOrderId === selectedOrder.id}
-                  className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {downloadingOrderId === selectedOrder.id ? 'Preparing...' : 'Download receipt'}
+                  {isUpdatingStatus ? 'Saving...' : 'Save status'}
                 </button>
               </div>
 
@@ -697,14 +604,6 @@ export default function Orders() {
           </div>
         </div>
       )}
-      <ConfirmationModal
-        open={Boolean(orderPendingApproval)}
-        title="Confirm this order?"
-        description={orderPendingApproval ? `This will confirm order ${orderPendingApproval.id} for ${orderPendingApproval.customer} and generate its receipt.` : ''}
-        confirmText="Confirm order"
-        onConfirm={handleApproveOrder}
-        onCancel={() => setOrderPendingApproval(null)}
-      />
     </div>
   )
 }
