@@ -30,6 +30,7 @@ async function refreshAccessToken() {
 
   const response = await fetch(`${API_BASE_URL}/api/auth/refresh/`, {
     method: 'POST',
+    credentials: 'include',
     headers: new Headers({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ refresh: refreshToken }),
   })
@@ -59,10 +60,20 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
     headers.set('Content-Type', 'application/json')
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  })
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      credentials: 'include',
+      headers,
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (/failed to fetch|fetch failed|network|load failed|ECONNREFUSED|connect/i.test(message)) {
+      throw new Error('The backend server is not responding. Start the API service and try again.')
+    }
+    throw new Error('Unable to reach the server. Please try again.')
+  }
 
   const contentType = response.headers.get('content-type') || ''
   if (response.ok) {
@@ -190,6 +201,7 @@ export async function downloadReport(token: string, reportType: string, params?:
   let accessToken = token
   let response = await fetch(url, {
     method: 'GET',
+    credentials: 'include',
     headers: new Headers({ Authorization: `Bearer ${accessToken}` }),
   })
 
@@ -198,6 +210,7 @@ export async function downloadReport(token: string, reportType: string, params?:
       accessToken = await refreshAccessToken()
       response = await fetch(url, {
         method: 'GET',
+        credentials: 'include',
         headers: new Headers({ Authorization: `Bearer ${accessToken}` }),
       })
     } catch (err) {

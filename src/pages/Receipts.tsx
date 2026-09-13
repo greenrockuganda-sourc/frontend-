@@ -6,6 +6,8 @@ import { notifyError, notifySuccess } from '@/lib/notify'
 import { Receipt } from '@/types'
 import ErrorMessage from '@/components/ErrorMessage'
 import { SkeletonTable } from '@/components/Skeleton'
+import { ReceiptTemplate } from '../../components/receipts/receipt-template'
+import type { Receipt as TemplateReceipt } from '@/lib/types'
 
 const formatCurrency = (value: number) => `UGX ${value.toFixed(2)}`
 
@@ -16,6 +18,36 @@ const formatReceiptDate = (value: string | null | undefined) => {
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) return dateOnly
   const parsed = new Date(text)
   return Number.isNaN(parsed.getTime()) ? text : parsed.toISOString().split('T')[0]
+}
+
+const readLocalReceipts = (): Receipt[] => {
+  if (typeof window === 'undefined') return []
+
+  try {
+    const raw = localStorage.getItem('glow-local-receipts')
+    if (!raw) return []
+
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.map((entry: any) => ({
+      id: String(entry.id ?? `local-${entry.orderNumber ?? Math.random()}`),
+      receiptNumber: String(entry.receiptNumber ?? `RCP-${Date.now()}`),
+      orderNumber: String(entry.orderNumber ?? 'N/A'),
+      customer: String(entry.customer ?? 'Customer'),
+      salon: String(entry.salon ?? 'Arkles Barber'),
+      amount: Number(entry.amount ?? 0),
+      date: formatReceiptDate(entry.date ?? new Date().toISOString()),
+      items: Array.isArray(entry.items) ? entry.items.map((item: any) => ({
+        product_name: String(item.product_name ?? item.name ?? 'Item'),
+        quantity: Number(item.quantity ?? 0),
+        unit_price: Number(item.unit_price ?? item.price ?? 0),
+        subtotal: Number(item.subtotal ?? ((Number(item.quantity ?? 0)) * (Number(item.unit_price ?? item.price ?? 0)))),
+      })) : [],
+    }))
+  } catch {
+    return []
+  }
 }
 
 export default function Receipts() {
@@ -32,7 +64,7 @@ export default function Receipts() {
       setError(null)
       const data = await fetchReceipts()
       const list = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []
-      setReceipts(list.map((receipt: any) => ({
+      const remoteReceipts = list.map((receipt: any) => ({
         id: String(receipt.id ?? receipt.receipt_id ?? 'N/A'),
         receiptNumber: String(receipt.receipt_number ?? receipt.receiptNumber ?? receipt.id ?? 'N/A'),
         orderNumber: String(receipt.order_number ?? receipt.orderNumber ?? receipt.order_id ?? receipt.orderId ?? 'N/A'),
@@ -46,7 +78,15 @@ export default function Receipts() {
           unit_price: Number(item.unit_price ?? item.price ?? 0),
           subtotal: Number(item.subtotal ?? item.amount ?? 0),
         })),
-      })))
+      }))
+
+      const localReceipts = readLocalReceipts()
+      const mergedReceipts = [...remoteReceipts, ...localReceipts]
+      const dedupedReceipts = mergedReceipts.filter((receipt, index, entries) =>
+        entries.findIndex((candidate) => candidate.receiptNumber === receipt.receiptNumber || candidate.id === receipt.id) === index
+      )
+
+      setReceipts(dedupedReceipts)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load receipts.')
     } finally {
@@ -94,6 +134,31 @@ export default function Receipts() {
   const handlePrint = () => window.print()
 
   const isBusy = (receipt: Receipt) => busyReceipt === receipt.id
+
+  const convertToTemplateReceipt = (receipt: Receipt): TemplateReceipt => ({
+    id: receipt.id,
+    receiptNumber: receipt.receiptNumber,
+    orderId: receipt.orderNumber,
+    customerId: receipt.id,
+    customerName: receipt.customer,
+    customerEmail: '',
+    customerPhone: '',
+    salon: receipt.salon ?? 'Arkles Barber',
+    items: (receipt.items ?? []).map((item, index) => ({
+      id: `${receipt.id}-${index}`,
+      productId: `${receipt.id}-${index}`,
+      productName: item.product_name,
+      quantity: Number(item.quantity ?? 0),
+      price: Number(item.unit_price ?? 0),
+      total: Number(item.subtotal ?? (Number(item.quantity ?? 0) * Number(item.unit_price ?? 0))),
+    })),
+    subtotal: (receipt.items ?? []).reduce((sum, item) => sum + Number(item.subtotal ?? (Number(item.quantity ?? 0) * Number(item.unit_price ?? 0))), 0) || receipt.amount,
+    tax: 0,
+    shipping: 0,
+    total: receipt.amount,
+    paymentMethod: 'Mobile Money',
+    issuedAt: receipt.date ? new Date(`${receipt.date}T12:00:00`).toISOString() : new Date().toISOString(),
+  } as TemplateReceipt)
 
   return (
     <div className="page-container">
@@ -145,11 +210,12 @@ export default function Receipts() {
         </div>
       </div>
 
-      {selectedReceipt ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"><div className="receipt-container max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-8">
-        <div className="no-print mb-6 flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Receipt preview</p><h3 className="text-xl font-bold text-gray-900">{selectedReceipt.receiptNumber}</h3></div><button type="button" onClick={() => setSelectedReceipt(null)} className="rounded p-2 text-gray-500 hover:text-gray-700" aria-label="Close receipt"><X size={20} /></button></div>
-        <article className="thermal-receipt border border-slate-200 bg-white p-5 text-slate-800 sm:p-8"><header className="border-b-2 border-slate-900 pb-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.3em] text-blue-600">Seller Dashboard</p><h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">SALES RECEIPT</h2><p className="mt-2 text-sm text-slate-500">Thank you for your order</p></header><div className="grid grid-cols-2 gap-x-6 gap-y-2 border-b border-slate-200 py-5 text-sm"><p><span className="block text-xs font-semibold uppercase tracking-wide text-slate-400">Receipt</span><span className="font-semibold">{selectedReceipt.receiptNumber}</span></p><p><span className="block text-xs font-semibold uppercase tracking-wide text-slate-400">Date</span><span className="font-semibold">{selectedReceipt.date}</span></p><p><span className="block text-xs font-semibold uppercase tracking-wide text-slate-400">Order</span><span className="font-semibold">{selectedReceipt.orderNumber}</span></p><p><span className="block text-xs font-semibold uppercase tracking-wide text-slate-400">Salon</span><span className="font-semibold">{selectedReceipt.salon ?? 'Unknown salon'}</span></p><p><span className="block text-xs font-semibold uppercase tracking-wide text-slate-400">Customer</span><span className="font-semibold">{selectedReceipt.customer}</span></p></div><div className="py-5"><div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-slate-300 pb-2 text-xs font-bold uppercase tracking-wide text-slate-500"><span>Item</span><span>Qty × price</span><span>Subtotal</span></div>{selectedReceipt.items?.length ? selectedReceipt.items.map((item, index) => <div key={`${selectedReceipt.id}-${index}`} className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-dashed border-slate-200 py-3 text-sm"><span className="font-medium">{item.product_name}</span><span className="text-right text-slate-600">{item.quantity} × {formatCurrency(item.unit_price)}</span><span className="text-right font-semibold">{formatCurrency(item.subtotal)}</span></div>) : <p className="py-3 text-sm text-slate-500">No items available.</p>}</div><div className="ml-auto max-w-xs space-y-2 border-t-2 border-slate-900 pt-4 text-sm"><div className="flex justify-between text-slate-600"><span>Items subtotal</span><span>{formatCurrency(selectedReceipt.items?.reduce((sum, item) => sum + item.subtotal, 0) ?? selectedReceipt.amount)}</span></div><div className="flex justify-between text-xl font-black text-slate-950"><span>Total</span><span>{formatCurrency(selectedReceipt.amount)}</span></div></div><footer className="mt-8 border-t border-slate-200 pt-4 text-center text-xs text-slate-500">Keep this receipt for your records.<br />Powered by Seller Dashboard</footer></article>
-        <div className="no-print mt-6 flex flex-wrap gap-2"><button type="button" onClick={handlePrint} className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"><Printer size={16} />Print to Bluetooth / printer</button><button type="button" onClick={() => void handleDownload(selectedReceipt)} disabled={isBusy(selectedReceipt)} className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"><Download size={16} />Download PDF</button><button type="button" onClick={() => void handleEmail(selectedReceipt)} disabled={isBusy(selectedReceipt)} className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"><Mail size={16} />Email</button></div><p className="no-print mt-3 text-xs text-gray-500">Choose your paired Bluetooth receipt printer in the print dialog.</p>
-      </div></div> : null}
+      {selectedReceipt ? (
+        <ReceiptTemplate
+          receipt={convertToTemplateReceipt(selectedReceipt)}
+          onClose={() => setSelectedReceipt(null)}
+        />
+      ) : null}
     </div>
   )
 }

@@ -31,9 +31,9 @@ export default function App() {
 
   const [currentPage, setCurrentPage] = useState<Page>(readInitialPage)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(true) // Assume authenticated until proven otherwise
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
-  const [loadingProfile, setLoadingProfile] = useState(true)
+  const [loadingProfile, setLoadingProfile] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
   const { notifications, dismissNotification, addNotification } = useNotifications()
 

@@ -277,6 +277,33 @@ export default function Orders({ token }: OrdersProps) {
     }
   }
 
+  const persistDeliveredOrderReceipt = (order: Order) => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const saved = JSON.parse(localStorage.getItem('glow-local-receipts') ?? '[]') as Array<Record<string, any>>
+    const nextReceiptNumber = `RCP-${String(saved.length + 2).padStart(6, '0')}`
+    const receipt = {
+      id: `local-${order.id}`,
+      receiptNumber: nextReceiptNumber,
+      orderNumber: order.id,
+      customer: order.customer,
+      salon: order.salon || 'Arkles Barber',
+      amount: Number(order.amount ?? 0),
+      date: order.date || new Date().toISOString().split('T')[0],
+      items: (order.items ?? []).map((item) => ({
+        product_name: item.product_name,
+        quantity: Number(item.quantity ?? 0),
+        unit_price: Number(item.unit_price ?? 0),
+        subtotal: Number(item.subtotal ?? ((Number(item.unit_price ?? 0)) * (Number(item.quantity ?? 0)))),
+      })),
+    }
+
+    const filtered = saved.filter((entry: any) => entry.orderNumber !== order.id)
+    localStorage.setItem('glow-local-receipts', JSON.stringify([...filtered, receipt]))
+  }
+
   const handleUpdateOrderStatus = async (orderId: string, nextStatus: string) => {
     const normalizedStatus = nextStatus.trim()
     if (!normalizedStatus) {
@@ -295,6 +322,12 @@ export default function Orders({ token }: OrdersProps) {
         setSelectedOrder((prev) => prev ? { ...prev, status: normalizedValue } : prev)
         setStatusDraft(normalizedStatus)
       }
+      if (normalizedValue === 'delivered') {
+        const orderToPersist = orders.find((order) => order.id === orderId) ?? selectedOrder
+        if (orderToPersist) {
+          persistDeliveredOrderReceipt(orderToPersist)
+        }
+      }
       notifySuccess(`Order status updated to ${normalizedStatus}`)
     } catch (err) {
       const message = sanitizeError(err instanceof Error ? err.message : err)
@@ -307,6 +340,10 @@ export default function Orders({ token }: OrdersProps) {
 
   const handleQuickStatusChange = async (orderId: string, nextStatus: 'Confirmed' | 'Out for Delivery') => {
     await handleUpdateOrderStatus(orderId, nextStatus)
+  }
+
+  const handleLoadMoreOrders = () => {
+    setVisibleOrders((current) => current + 20)
   }
 
   const closeOrderDetails = () => {
@@ -504,7 +541,7 @@ export default function Orders({ token }: OrdersProps) {
         <div className="mt-4 flex justify-center">
           <button
             type="button"
-            onClick={handleExportCsv}
+            onClick={handleLoadMoreOrders}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
           >
             Load more orders

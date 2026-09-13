@@ -197,6 +197,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
           </table>
         </div>
       </div>
+
     </div>
   )
 }

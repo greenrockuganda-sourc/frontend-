@@ -1,334 +1,8 @@
 'use client'
 
-import { Receipt } from '@/lib/types'
-import { Download, Mail, Printer, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useRef } from 'react'
-import html2canvas from 'html2canvas'
-import jsPDF from 'jspdf'
-
-interface ReceiptTemplateProps {
-  receipt: Receipt
-  onClose: () => void
-}
-
-const formatCurrency = (value: number) => `UGX ${value.toFixed(2)}`
-
-export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
-  const receiptRef = useRef<HTMLDivElement>(null)
-
-  const handlePrint = () => {
-    window.print()
-  }
-
-  const handleDownloadPDF = async () => {
-    if (!receiptRef.current) return
-
-    try {
-      const canvas = await html2canvas(receiptRef.current, {
-        scale: 2,
-        useCORS: true,
-      })
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      })
-
-      const imgWidth = 210
-      const pageHeight = 297
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      let heightLeft = imgHeight
-      let position = 0
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
-      }
-
-      pdf.save(`receipt-${receipt.receiptNumber}.pdf`)
-    } catch (error) {
-      console.error('Failed to download PDF:', error)
-    }
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    })
-  }
-
-  const formatOrderDateTime = (dateString: string) => {
-    const date = new Date(dateString)
-    return {
-      day: date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-      time: date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-    }
-  }
-
-  const orderDate = formatOrderDateTime(receipt.issuedAt)
-  const displayName = receipt.customerName || 'Customer'
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="w-full max-w-[1100px] max-h-[90vh] overflow-y-auto rounded-[20px] bg-[#eef3f7] shadow-2xl print:max-h-none print:rounded-none print:shadow-none">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-white/90 p-5 backdrop-blur-sm no-print">
-          <h2 className="text-xl font-bold text-slate-900">Receipt Preview</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        <div className="flex gap-2 border-b border-border bg-[#f4f7fa] p-4 no-print">
-          <Button variant="default" size="sm" onClick={handleDownloadPDF} className="gap-2">
-            <Download className="h-4 w-4" />
-            Download PDF
-          </Button>
-          <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
-            <Printer className="h-4 w-4" />
-            Print
-          </Button>
-        </div>
-
-        <div ref={receiptRef} className="bg-[#edf2f5] p-0 text-slate-900">
-          <div className="bg-[#0d2d48] px-8 pt-7 pb-5 text-white">
-            <div className="flex items-start justify-between gap-5">
-              <div>
-                <div className="text-[62px] font-black tracking-[-0.08em] leading-none">GLOW</div>
-                <div className="mt-2 text-[12px] font-semibold uppercase tracking-[0.18em] text-slate-300">
-                  Salon supplies, delivered.
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 pt-2">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#f97316] shadow-lg shadow-orange-500/20">
-                  <svg viewBox="0 0 24 24" className="h-7 w-7 fill-none stroke-white stroke-[2]" aria-hidden="true">
-                    <path d="M3 4h2l2.4 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L19 7H7" />
-                    <circle cx="10" cy="17.5" r="1.5" />
-                    <circle cx="17" cy="17.5" r="1.5" />
-                  </svg>
-                </div>
-                <div className="text-right">
-                  <div className="text-[15px] font-bold text-[#ffb267]">Professional Products</div>
-                  <div className="text-[15px] font-semibold text-slate-200">for a Brighter You</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#edf2f5] px-8 py-7">
-            <div className="mb-6 flex items-start justify-between gap-8">
-              <div className="flex-1">
-                <div className="mb-4 flex items-center gap-3">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f97316] text-lg font-bold text-white shadow-[0_10px_20px_rgba(249,115,22,0.25)]">
-                    ✓
-                  </span>
-                  <span className="text-[18px] font-extrabold uppercase tracking-[0.12em] text-[#0d2d48]">Receipt</span>
-                </div>
-
-                <h2 className="text-[50px] font-black leading-[1.05] tracking-[-0.06em] text-slate-900">
-                  Thank you
-                  <span className="block text-[#f97316]">for your purchase!</span>
-                </h2>
-
-                <p className="mt-4 max-w-[540px] text-[18px] leading-8 text-slate-600">
-                  Your order has been received and is being processed. We appreciate your trust in Glow.
-                </p>
-              </div>
-
-              <div className="w-[320px] rounded-[18px] border border-[#dfe7ef] bg-[#edf3f7] p-5 shadow-sm">
-                <div className="mb-4 text-[18px] font-extrabold text-slate-900">Your Receipt</div>
-                <div className="mb-3 flex items-center gap-3 text-[14px] text-slate-700">
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#dfeaf3] text-[#0d2d48] text-[11px]">●</span>
-                  <span className="font-medium">Glow Salon Supplies</span>
-                </div>
-                <div className="mb-3 flex items-center gap-3 text-[14px] text-slate-700">
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#dfeaf3] text-[#0d2d48] text-[11px]">●</span>
-                  <span>Kampala, Uganda</span>
-                </div>
-                <div className="mb-4 flex items-center gap-3 text-[14px] text-slate-700">
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#dfeaf3] text-[#0d2d48] text-[11px]">●</span>
-                  <span>+256 700 123 456</span>
-                </div>
-                <div className="mb-4 flex items-center gap-3 text-[14px] text-slate-700">
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#dfeaf3] text-[#0d2d48] text-[11px]">●</span>
-                  <span>support@glow.ug</span>
-                </div>
-
-                <div className="ml-auto flex h-[110px] w-[110px] items-center justify-center rounded-[12px] bg-white p-2 shadow-inner ring-1 ring-slate-200">
-                  <div className="grid h-full w-full grid-cols-5 gap-[3px] bg-slate-900 p-[8px]">
-                    {Array.from({ length: 25 }, (_, index) => (
-                      <span
-                        key={index}
-                        className={`block h-[6px] w-[6px] ${index % 2 === 0 ? 'bg-slate-900' : 'bg-white'}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-3 text-center text-[12px] font-semibold text-slate-700">
-                  Scan for<br />order updates
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 rounded-[18px] bg-[#dfeaf3] p-4 text-slate-700">
-              <div className="flex items-center gap-3 rounded-[12px] bg-[#edf4f9] p-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#dfeaf3] text-[18px]">🧾</span>
-                <div>
-                  <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">Order Number</div>
-                  <div className="mt-1 text-[18px] font-extrabold text-slate-900">#{receipt.receiptNumber}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-[12px] bg-[#edf4f9] p-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#dfeaf3] text-[18px]">📅</span>
-                <div>
-                  <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">Order Date</div>
-                  <div className="mt-1 text-[16px] font-extrabold text-slate-900">{orderDate.day}</div>
-                  <div className="text-[12px] text-slate-600">{orderDate.time}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-[12px] bg-[#edf4f9] p-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#dfeaf3] text-[18px]">💳</span>
-                <div>
-                  <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">Payment Method</div>
-                  <div className="mt-1 text-[18px] font-extrabold text-slate-900">{receipt.paymentMethod || 'Mobile Money'}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-7 overflow-hidden rounded-[14px] border border-[#dfe7ef] bg-white">
-              <div className="grid grid-cols-[1.6fr_0.5fr_0.7fr_0.7fr] bg-[#0d2d48] px-4 py-3 text-[12px] font-bold uppercase tracking-[0.12em] text-white">
-                <div>Item</div>
-                <div className="text-center">Qty</div>
-                <div className="text-right">Unit Price</div>
-                <div className="text-right">Total</div>
-              </div>
-
-              {receipt.items && receipt.items.length > 0 ? (
-                receipt.items.map((item, index) => (
-                  <div key={`${item.id || index}`} className="grid grid-cols-[1.6fr_0.5fr_0.7fr_0.7fr] border-t border-[#e5edf4] px-4 py-4 text-[15px] text-slate-700 last:border-b-0">
-                    <div>
-                      <div className="font-extrabold text-slate-900">{item.productName}</div>
-                      <div className="mt-2 text-[12px] text-slate-500">
-                        {item.productName.includes('Hair') ? 'Hair Care' : 'Professional Grade'}
-                      </div>
-                    </div>
-                    <div className="text-center font-semibold text-slate-700">{item.quantity}</div>
-                    <div className="text-right font-semibold text-slate-700">{formatCurrency(item.price)}</div>
-                    <div className="text-right font-semibold text-slate-800">{formatCurrency(item.total)}</div>
-                  </div>
-                ))
-              ) : (
-                <div className="px-4 py-5 text-slate-500">No item details available.</div>
-              )}
-
-              <div className="border-t border-[#e5edf4] bg-[#f8fafc] px-5 py-4 text-[15px] text-slate-700">
-                <div className="ml-auto max-w-[260px] space-y-2 text-right">
-                  <div className="flex items-center justify-between">
-                    <span>Subtotal (3 items)</span>
-                    <span className="font-semibold text-slate-800">{formatCurrency(receipt.subtotal)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Delivery Fee</span>
-                    <span className="font-semibold text-slate-800">{formatCurrency(receipt.shipping)}</span>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between rounded-[10px] bg-[#f7d6ad] px-4 py-3 text-[22px] font-extrabold text-slate-900">
-                    <span>Total Paid</span>
-                    <span>{formatCurrency(receipt.total)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-7 grid grid-cols-2 gap-5">
-              <div className="rounded-[14px] border border-[#dfe7ef] bg-[#dfeaf3] p-5">
-                <div className="mb-3 flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f97316] text-[18px]">🚚</span>
-                  <span className="text-[20px] font-extrabold text-slate-900">Delivery Information</span>
-                </div>
-                <div className="mt-3 text-[16px] font-bold text-slate-900">Estimated Delivery Date</div>
-                <div className="mt-1 text-[20px] font-black text-slate-900">{formatDate(receipt.issuedAt)}</div>
-                <div className="mt-3 inline-block rounded-full bg-[#dbeafe] px-3 py-1 text-[12px] font-bold uppercase tracking-[0.12em] text-sky-800">
-                  Processing
-                </div>
-                <p className="mt-4 text-[14px] leading-6 text-slate-600">
-                  You’ll receive a notification once your order is out for delivery.
-                </p>
-              </div>
-
-              <div className="rounded-[14px] border border-[#dfe7ef] bg-[#dfeaf3] p-5">
-                <div className="mb-3 flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f97316] text-[18px]">🧾</span>
-                  <span className="text-[20px] font-extrabold text-slate-900">Order Summary</span>
-                </div>
-
-                <div className="space-y-3 text-[15px] text-slate-700">
-                  <div className="flex items-center justify-between">
-                    <span>Items Total</span>
-                    <span className="font-semibold text-slate-800">{formatCurrency(receipt.subtotal)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Delivery Fee</span>
-                    <span className="font-semibold text-slate-800">{formatCurrency(receipt.shipping)}</span>
-                  </div>
-                  <div className="mt-4 border-t border-slate-300 pt-3 text-[22px] font-extrabold text-slate-900">
-                    <div className="flex items-center justify-between">
-                      <span>Total Paid</span>
-                      <span>{formatCurrency(receipt.total)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 flex items-center justify-between gap-5 rounded-[16px] bg-[#0d2d48] px-6 py-5 text-white">
-              <div className="flex items-center gap-3">
-                <span className="text-[18px] font-extrabold">Need help?</span>
-                <span className="text-[14px] text-slate-300">Our support team is here for you.</span>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-end gap-5 text-[14px] text-slate-200">
-                <span>+256 700 123 456</span>
-                <span>support@glow.ug</span>
-                <span>Mon - Fri, 8AM - 6PM</span>
-              </div>
-            </div>
-
-            <div className="mt-8 flex items-center justify-between border-t border-slate-300 pt-6">
-              <div className="text-[48px] font-black tracking-[-0.08em] text-slate-900">GLOW</div>
-              <div className="flex items-center gap-6 text-[14px] font-medium text-slate-700">
-                <span>Quality Products</span>
-                <span>Secure Payments</span>
-                <span>Fast Delivery</span>
-              </div>
-            </div>
-
-            <div className="mt-3 text-center text-[12px] text-slate-500">
-              © 2025 Glow. All rights reserved.<br />
-              Professional products. Better results.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-'use client'
-
-import { Receipt } from '@/lib/types'
-import { Download, Mail, Printer, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Receipt } from '../../lib/types'
+import { Download, Printer, X } from 'lucide-react'
+import { Button } from '../ui/button'
 import { useMemo, useRef } from 'react'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
@@ -338,7 +12,18 @@ interface ReceiptTemplateProps {
   onClose: () => void
 }
 
-const formatCurrency = (value: number) => `UGX ${value.toFixed(2)}`
+const formatCurrency = (value: number) => `UGX ${Number(value || 0).toFixed(2)}`
+
+const formatReceiptDate = (dateString: string) => {
+  if (!dateString) return '—'
+  const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return dateString
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
 
 export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
@@ -346,6 +31,11 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
     const payload = String(receipt.receiptNumber || 'receipt').trim() || 'receipt'
     return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(payload)}`
   }, [receipt.receiptNumber])
+
+  const salonName = (receipt as any).salon || (receipt as any).salonName || 'Arkles Barber'
+  const customerName = receipt.customerName || (receipt as any).customer || 'Customer'
+  const orderId = receipt.orderId || 'ORD-0000000'
+  const itemSubtotal = receipt.items.reduce((sum, item) => sum + Number(item.total || 0), 0) || receipt.subtotal || 0
 
   const handlePrint = () => {
     window.print()
@@ -388,36 +78,17 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    })
-  }
-
-  const formatOrderDateTime = (dateString: string) => {
-    const date = new Date(dateString)
-    return {
-      day: date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-      time: date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-    }
-  }
-
-  const orderDate = formatOrderDateTime(receipt.issuedAt)
-  const displayName = receipt.customerName || 'Customer'
-
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="w-full max-w-[1100px] max-h-[90vh] overflow-y-auto rounded-[20px] bg-[#eef3f7] shadow-2xl print:max-h-none print:rounded-none print:shadow-none">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-white/90 p-5 backdrop-blur-sm no-print">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="max-h-[90vh] w-full max-w-[980px] overflow-y-auto rounded-[20px] bg-[#edf5fa] shadow-2xl print:max-h-none print:rounded-none print:shadow-none">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/90 p-5 backdrop-blur-sm no-print">
           <h2 className="text-xl font-bold text-slate-900">Receipt Preview</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
 
-        <div className="flex gap-2 border-b border-border bg-[#f4f7fa] p-4 no-print">
+        <div className="flex gap-2 border-b border-slate-200 bg-[#f4f7fa] p-4 no-print">
           <Button variant="default" size="sm" onClick={handleDownloadPDF} className="gap-2">
             <Download className="h-4 w-4" />
             Download PDF
@@ -428,220 +99,184 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
           </Button>
         </div>
 
-        <div ref={receiptRef} className="bg-[#edf2f5] p-0 text-slate-900">
-          <div className="bg-[#0d2d48] px-8 pt-7 pb-5 text-white">
-            <div className="flex items-start justify-between gap-5">
-              <div>
-                <div className="text-[62px] font-black tracking-[-0.08em] leading-none">GLOW</div>
-                <div className="mt-2 text-[12px] font-semibold uppercase tracking-[0.18em] text-slate-300">
-                  Salon supplies, delivered.
-                </div>
-              </div>
+        <div ref={receiptRef} className="bg-[#edf4fa] p-2 text-slate-900 sm:p-4">
+          <div className="mx-auto w-full max-w-[700px] overflow-hidden rounded-[24px] bg-[#edf4fa] shadow-[0_18px_45px_rgba(13,45,72,0.15)]">
+            <div className="relative overflow-hidden bg-[#0d2d48] px-4 pb-8 pt-6 text-white sm:px-6 sm:pb-9 sm:pt-7 lg:px-8 lg:pb-10 lg:pt-8">
+              <div className="absolute -left-14 bottom-[-60px] h-36 w-36 rounded-full bg-[#f97316]/20 blur-2xl" />
+              <div className="absolute -right-10 top-0 h-36 w-36 rounded-full bg-[#f97316]/15 blur-2xl" />
 
-              <div className="flex items-center gap-4 pt-2">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#f97316] shadow-lg shadow-orange-500/20">
-                  <svg viewBox="0 0 24 24" className="h-7 w-7 fill-none stroke-white stroke-[2]" aria-hidden="true">
-                    <path d="M3 4h2l2.4 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L19 7H7" />
-                    <circle cx="10" cy="17.5" r="1.5" />
-                    <circle cx="17" cy="17.5" r="1.5" />
-                  </svg>
-                </div>
-                <div className="text-right">
-                  <div className="text-[15px] font-bold text-[#ffb267]">Professional Products</div>
-                  <div className="text-[15px] font-semibold text-slate-200">for a Brighter You</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#edf2f5] px-8 py-7">
-            <div className="mb-6 flex items-start justify-between gap-8">
-              <div className="flex-1">
-                <div className="mb-4 flex items-center gap-3">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f97316] text-lg font-bold text-white shadow-[0_10px_20px_rgba(249,115,22,0.25)]">
-                    ✓
-                  </span>
-                  <span className="text-[18px] font-extrabold uppercase tracking-[0.12em] text-[#0d2d48]">Receipt</span>
+              <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <div className="text-[2.1rem] font-black leading-[0.8] tracking-[-0.08em] text-white sm:text-[3.5rem] lg:text-[4.8rem]">GLOW</div>
+                  <div className="mt-1 text-[0.5rem] font-bold uppercase tracking-[0.3em] text-[#dfeaf7] sm:text-[0.62rem]">SALON SUPPLIES</div>
+                  <div className="mt-2 text-[0.46rem] font-semibold uppercase tracking-[0.24em] text-[#dfeaf7] sm:text-[0.56rem]">BEAUTY • CARE • CONFIDENCE</div>
                 </div>
 
-                <h2 className="text-[50px] font-black leading-[1.05] tracking-[-0.06em] text-slate-900">
-                  Thank you
-                  <span className="block text-[#f97316]">for your purchase!</span>
-                </h2>
-
-                <p className="mt-4 max-w-[540px] text-[18px] leading-8 text-slate-600">
-                  Your order has been received and is being processed. We appreciate your trust in Glow.
-                </p>
-              </div>
-
-              <div className="w-[320px] rounded-[18px] border border-[#dfe7ef] bg-[#edf3f7] p-5 shadow-sm">
-                <div className="mb-4 text-[18px] font-extrabold text-slate-900">Your Receipt</div>
-                <div className="mb-3 flex items-center gap-3 text-[14px] text-slate-700">
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#dfeaf3] text-[#0d2d48] text-[11px]">●</span>
-                  <span className="font-medium">Glow Salon Supplies</span>
-                </div>
-                <div className="mb-3 flex items-center gap-3 text-[14px] text-slate-700">
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#dfeaf3] text-[#0d2d48] text-[11px]">●</span>
-                  <span>Kampala, Uganda</span>
-                </div>
-                <div className="mb-4 flex items-center gap-3 text-[14px] text-slate-700">
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#dfeaf3] text-[#0d2d48] text-[11px]">●</span>
-                  <span>+256 700 123 456</span>
-                </div>
-                <div className="mb-4 flex items-center gap-3 text-[14px] text-slate-700">
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#dfeaf3] text-[#0d2d48] text-[11px]">●</span>
-                  <span>support@glow.ug</span>
-                </div>
-
-                <img
-                  src={qrCodeUrl}
-                  alt={`QR code for receipt ${receipt.receiptNumber}`}
-                  className="ml-auto flex h-[110px] w-[110px] items-center justify-center rounded-[12px] bg-white p-2 shadow-inner ring-1 ring-slate-200 object-contain"
-                />
-
-                <div className="mt-3 text-center text-[12px] font-semibold text-slate-700">
-                  Scan for<br />order updates
+                <div className="max-w-[22rem] text-left lg:text-right">
+                  <div
+                    className="leading-[0.9] tracking-[-0.04em] text-[#f7b46f] text-[1.7rem] sm:text-[2.4rem] lg:text-[3.2rem]"
+                    style={{ fontFamily: '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive' }}
+                  >
+                    Thank you
+                  </div>
+                  <div
+                    className="leading-[0.9] tracking-[-0.04em] text-[#f7b46f] text-[1.7rem] sm:text-[2.4rem] lg:text-[3.2rem]"
+                    style={{ fontFamily: '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive' }}
+                  >
+                    for your order!
+                  </div>
+                  <div className="mt-2 text-sm text-[#dfeaf7]">Your support helps us keep providing quality beauty products.</div>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 rounded-[18px] bg-[#dfeaf3] p-4 text-slate-700">
-              <div className="flex items-center gap-3 rounded-[12px] bg-[#edf4f9] p-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#dfeaf3] text-[18px]">🧾</span>
-                <div>
-                  <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">Order Number</div>
-                  <div className="mt-1 text-[18px] font-extrabold text-slate-900">#{receipt.receiptNumber}</div>
+            <div className="bg-[#edf4fa] px-3 pb-5 pt-5 sm:px-4 sm:pb-6 sm:pt-6">
+              <div className="flex flex-col gap-3 rounded-[18px] border border-[#dfeaf3] bg-[#f7fbff] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f97316] text-lg text-white shadow-[0_10px_20px_rgba(249,115,22,0.25)]">🧾</div>
+                  <div className="min-w-0">
+                    <div className="text-[1.7rem] font-extrabold uppercase tracking-[-0.04em] text-[#0d2d48] sm:text-[2rem]">Receipt</div>
+                    <div className="hidden text-[13px] font-semibold text-[#4e6d89] sm:block">Salon Supplies • Order Confirmation</div>
+                  </div>
+                </div>
+
+                <div className="rounded-[14px] border border-[#f4b870] bg-[#f9d5a8] px-4 py-3 text-left shadow-[0_8px_18px_rgba(249,115,22,0.18)] sm:min-w-[220px]">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#0d2d48]">Order ID</div>
+                  <div className="mt-1 break-all text-[1.3rem] font-black tracking-tight text-[#0d2d48] sm:text-[1.6rem]">{receipt.receiptNumber}</div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-[12px] bg-[#edf4f9] p-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#dfeaf3] text-[18px]">📅</span>
-                <div>
-                  <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">Order Date</div>
-                  <div className="mt-1 text-[16px] font-extrabold text-slate-900">{orderDate.day}</div>
-                  <div className="text-[12px] text-slate-600">{orderDate.time}</div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="flex min-w-0 items-center gap-3 rounded-[16px] border border-[#dfeaf3] bg-[#f4f9fc] p-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f97316] text-lg text-white">📅</div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#576f89]">Date</div>
+                    <div className="mt-1 text-[14px] font-extrabold text-[#0d2d48] sm:text-[15px]">{formatReceiptDate(receipt.issuedAt)}</div>
+                  </div>
+                </div>
+
+                <div className="flex min-w-0 items-center gap-3 rounded-[16px] border border-[#dfeaf3] bg-[#f4f9fc] p-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f97316] text-lg text-white">🧾</div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#576f89]">Order</div>
+                    <div className="mt-1 truncate text-[12px] font-extrabold text-[#0d2d48] sm:text-[14px]">{orderId}</div>
+                  </div>
+                </div>
+
+                <div className="flex min-w-0 items-center gap-3 rounded-[16px] border border-[#dfeaf3] bg-[#f4f9fc] p-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f97316] text-lg text-white">👤</div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#576f89]">Customer</div>
+                    <div className="mt-1 break-words text-[14px] font-extrabold text-[#0d2d48] sm:text-[16px]">{customerName}</div>
+                  </div>
+                </div>
+
+                <div className="rounded-[16px] border border-[#dfeaf3] bg-[#f4f9fc] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#576f89]">Scan to verify</div>
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f97316] text-[12px] font-bold text-white">✓</div>
+                  </div>
+                  <div className="mt-3 flex justify-center">
+                    <img src={qrCodeUrl} alt={`QR code for receipt ${receipt.receiptNumber}`} className="h-[96px] w-[96px] rounded-[12px] border border-[#dfeaf3] bg-white p-2 object-contain sm:h-[110px] sm:w-[110px]" />
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-[12px] bg-[#edf4f9] p-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#dfeaf3] text-[18px]">💳</span>
-                <div>
-                  <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">Payment Method</div>
-                  <div className="mt-1 text-[18px] font-extrabold text-slate-900">{receipt.paymentMethod || 'Mobile Money'}</div>
+              <div className="mt-5 flex min-w-0 items-center gap-3 rounded-[16px] border border-[#dfeaf3] bg-[#f4f9fc] p-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f97316] text-lg text-white">🏬</div>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#576f89]">Salon</div>
+                  <div className="mt-1 break-words text-[16px] font-extrabold text-[#0d2d48] sm:text-[18px]">{salonName}</div>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-7 overflow-hidden rounded-[14px] border border-[#dfe7ef] bg-white">
-              <div className="grid grid-cols-[1.6fr_0.5fr_0.7fr_0.7fr] bg-[#0d2d48] px-4 py-3 text-[12px] font-bold uppercase tracking-[0.12em] text-white">
-                <div>Item</div>
-                <div className="text-center">Qty</div>
-                <div className="text-right">Unit Price</div>
-                <div className="text-right">Total</div>
-              </div>
+              <div className="mt-6 overflow-hidden rounded-[18px] border border-[#dfeaf3] bg-white">
+                <div className="grid grid-cols-[1.8fr_1.2fr_0.8fr] bg-[#0d2d48] px-3 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-white sm:px-4 sm:text-[12px]">
+                  <div>Item</div>
+                  <div className="text-center">Qty × Price</div>
+                  <div className="text-right">Total</div>
+                </div>
 
-              {receipt.items && receipt.items.length > 0 ? (
-                receipt.items.map((item, index) => (
-                  <div key={`${item.id || index}`} className="grid grid-cols-[1.6fr_0.5fr_0.7fr_0.7fr] border-t border-[#e5edf4] px-4 py-4 text-[15px] text-slate-700 last:border-b-0">
-                    <div>
-                      <div className="font-extrabold text-slate-900">{item.productName}</div>
-                      <div className="mt-2 text-[12px] text-slate-500">
-                        {item.productName.includes('Hair') ? 'Hair Care' : 'Professional Grade'}
+                {receipt.items && receipt.items.length > 0 ? (
+                  receipt.items.map((item, index) => (
+                    <div key={`${item.id || index}`} className="grid grid-cols-[1.8fr_1.2fr_0.8fr] items-center gap-2 border-t border-[#e5edf4] px-3 py-4 text-[13px] text-slate-700 last:border-b-0 sm:px-4 sm:text-[15px]">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#dfeaf3] bg-[#f7fafc] text-sm text-[#0d2d48] sm:h-10 sm:w-10">📄</div>
+                        <div className="min-w-0 break-words font-extrabold text-[#0d2d48]">{item.productName}</div>
                       </div>
+                      <div className="text-center font-semibold text-slate-700">
+                        {item.quantity} × {formatCurrency(item.price)}
+                      </div>
+                      <div className="text-right font-extrabold text-[#0d2d48]">{formatCurrency(item.total)}</div>
                     </div>
-                    <div className="text-center font-semibold text-slate-700">{item.quantity}</div>
-                    <div className="text-right font-semibold text-slate-700">{formatCurrency(item.price)}</div>
-                    <div className="text-right font-semibold text-slate-800">{formatCurrency(item.total)}</div>
-                  </div>
-                ))
-              ) : (
-                <div className="px-4 py-5 text-slate-500">No item details available.</div>
-              )}
+                  ))
+                ) : (
+                  <div className="px-4 py-5 text-slate-500">No item details available.</div>
+                )}
+              </div>
 
-              <div className="border-t border-[#e5edf4] bg-[#f8fafc] px-5 py-4 text-[15px] text-slate-700">
-                <div className="ml-auto max-w-[260px] space-y-2 text-right">
-                  <div className="flex items-center justify-between">
-                    <span>Subtotal (3 items)</span>
-                    <span className="font-semibold text-slate-800">{formatCurrency(receipt.subtotal)}</span>
+              <div className="mt-6 overflow-hidden rounded-[18px] bg-[#0d2d48] px-4 py-5 sm:px-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 text-[#fff4e6]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#ffb15d] bg-[#123a5a] text-lg text-[#ffb15d]">💰</div>
+                    <div className="text-[1.2rem] font-extrabold tracking-[-0.04em] text-[#fffaf5] sm:text-[1.7rem]">Total</div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span>Delivery Fee</span>
-                    <span className="font-semibold text-slate-800">{formatCurrency(receipt.shipping)}</span>
+                  <div className="text-right text-[1.4rem] font-black tracking-[-0.04em] text-[#ff9b3d] sm:text-[2rem]">
+                    {formatCurrency(receipt.total || itemSubtotal || receipt.subtotal || 0)}
                   </div>
-                  <div className="mt-3 flex items-center justify-between rounded-[10px] bg-[#f7d6ad] px-4 py-3 text-[22px] font-extrabold text-slate-900">
-                    <span>Total Paid</span>
-                    <span>{formatCurrency(receipt.total)}</span>
-                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center gap-4 rounded-[16px] border border-[#dfeaf3] bg-[#eaf8f4] p-3 text-[#0d2d48] sm:p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1b8f73] text-lg text-white">✓</div>
+                <div className="min-w-0">
+                  <div className="text-[1rem] font-extrabold sm:text-[1.2rem]">Payment Successful</div>
+                  <div className="text-[13px] text-slate-600 sm:text-[14px]">Thank you for choosing Glow Salon Supplies!</div>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-3 rounded-[18px] border border-[#dfeaf3] bg-[#edf4fa] p-3 sm:grid-cols-3 sm:p-4">
+                <div className="flex items-center justify-center gap-3 text-center text-[#0d2d48]">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#f97316] text-sm text-[#f97316] sm:h-10 sm:w-10">✓</div>
+                  <span className="text-[13px] font-extrabold sm:text-[15px]">Quality Products</span>
+                </div>
+                <div className="flex items-center justify-center gap-3 text-center text-[#0d2d48]">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#f97316] text-sm text-[#f97316] sm:h-10 sm:w-10">✦</div>
+                  <span className="text-[13px] font-extrabold sm:text-[15px]">Trusted Brand</span>
+                </div>
+                <div className="flex items-center justify-center gap-3 text-center text-[#0d2d48]">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#f97316] text-sm text-[#f97316] sm:h-10 sm:w-10">★</div>
+                  <span className="text-[13px] font-extrabold sm:text-[15px]">Your Beauty, Our Priority</span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-7 grid grid-cols-2 gap-5">
-              <div className="rounded-[14px] border border-[#dfe7ef] bg-[#dfeaf3] p-5">
-                <div className="mb-3 flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f97316] text-[18px]">🚚</span>
-                  <span className="text-[20px] font-extrabold text-slate-900">Delivery Information</span>
-                </div>
-                <div className="mt-3 text-[16px] font-bold text-slate-900">Estimated Delivery Date</div>
-                <div className="mt-1 text-[20px] font-black text-slate-900">{formatDate(receipt.issuedAt)}</div>
-                <div className="mt-3 inline-block rounded-full bg-[#dbeafe] px-3 py-1 text-[12px] font-bold uppercase tracking-[0.12em] text-sky-800">
-                  Processing
-                </div>
-                <p className="mt-4 text-[14px] leading-6 text-slate-600">
-                  You’ll receive a notification once your order is out for delivery.
-                </p>
-              </div>
+            <div className="relative overflow-hidden bg-[#0d2d48] px-4 pb-7 pt-7 text-white sm:px-6 sm:pb-8 sm:pt-8 lg:px-8 lg:pb-10 lg:pt-9">
+              <div className="absolute left-0 top-0 h-full w-full bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.3),_transparent_32%)]" />
+              <div className="absolute -left-14 bottom-[-34px] h-20 w-24 rounded-[50%] bg-[#f97316]" />
+              <div className="absolute -right-14 bottom-[-34px] h-20 w-24 rounded-[50%] bg-[#f97316]" />
 
-              <div className="rounded-[14px] border border-[#dfe7ef] bg-[#dfeaf3] p-5">
-                <div className="mb-3 flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f97316] text-[18px]">🧾</span>
-                  <span className="text-[20px] font-extrabold text-slate-900">Order Summary</span>
+              <div className="relative flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                <div
+                  className="text-[2rem] font-black leading-none tracking-[-0.04em] text-[#f7b46f] sm:text-[2.8rem]"
+                  style={{ fontFamily: '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive' }}
+                >
+                  Glow Salon Supplies
                 </div>
 
-                <div className="space-y-3 text-[15px] text-slate-700">
-                  <div className="flex items-center justify-between">
-                    <span>Items Total</span>
-                    <span className="font-semibold text-slate-800">{formatCurrency(receipt.subtotal)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Delivery Fee</span>
-                    <span className="font-semibold text-slate-800">{formatCurrency(receipt.shipping)}</span>
-                  </div>
-                  <div className="mt-4 border-t border-slate-300 pt-3 text-[22px] font-extrabold text-slate-900">
-                    <div className="flex items-center justify-between">
-                      <span>Total Paid</span>
-                      <span>{formatCurrency(receipt.total)}</span>
-                    </div>
-                  </div>
+                <div className="grid gap-2 text-[12px] font-medium text-slate-200 sm:grid-cols-3 sm:items-center sm:text-[13px]">
+                  <div className="flex items-center gap-2"><span>📞</span><span>+256 700 123 456</span></div>
+                  <div className="flex items-center gap-2"><span>✉</span><span>support@glow.ug</span></div>
+                  <div className="flex items-center gap-2"><span>📍</span><span>Kampala, Uganda</span></div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm sm:h-10 sm:w-10">f</div>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm sm:h-10 sm:w-10">◎</div>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm sm:h-10 sm:w-10">x</div>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm sm:h-10 sm:w-10">▶</div>
                 </div>
               </div>
-            </div>
-
-            <div className="mt-8 flex items-center justify-between gap-5 rounded-[16px] bg-[#0d2d48] px-6 py-5 text-white">
-              <div className="flex items-center gap-3">
-                <span className="text-[18px] font-extrabold">Need help?</span>
-                <span className="text-[14px] text-slate-300">Our support team is here for you.</span>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-end gap-5 text-[14px] text-slate-200">
-                <span>+256 700 123 456</span>
-                <span>support@glow.ug</span>
-                <span>Mon - Fri, 8AM - 6PM</span>
-              </div>
-            </div>
-
-            <div className="mt-8 flex items-center justify-between border-t border-slate-300 pt-6">
-              <div className="text-[48px] font-black tracking-[-0.08em] text-slate-900">GLOW</div>
-              <div className="flex items-center gap-6 text-[14px] font-medium text-slate-700">
-                <span>Quality Products</span>
-                <span>Secure Payments</span>
-                <span>Fast Delivery</span>
-              </div>
-            </div>
-
-            <div className="mt-3 text-center text-[12px] text-slate-500">
-              © 2025 Glow. All rights reserved.<br />
-              Professional products. Better results.
             </div>
           </div>
         </div>
