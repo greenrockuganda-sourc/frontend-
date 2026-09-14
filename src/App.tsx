@@ -144,9 +144,9 @@ export default function App() {
     }
   }
 
-  // Ensure `accessToken` is defined to avoid runtime ReferenceError in the bundle.
-  // Tokens are handled via HttpOnly cookies on the backend; client may not need a raw token.
-  const accessToken: string | null = null
+  // Use the stored access token when available so authenticated actions (including order status changes)
+  // continue to work while the backend may also rely on cookie-based auth.
+  const accessToken: string | null = typeof window !== 'undefined' ? localStorage.getItem('access') : null
 
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />

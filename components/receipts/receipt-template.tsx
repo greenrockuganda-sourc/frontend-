@@ -4,7 +4,6 @@ import { Receipt } from '../../lib/types'
 import { Download, Printer, X } from 'lucide-react'
 import { Button } from '../ui/button'
 import { useMemo, useRef } from 'react'
-import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 
 interface ReceiptTemplateProps {
@@ -38,49 +37,228 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
   const itemSubtotal = receipt.items.reduce((sum, item) => sum + Number(item.total || 0), 0) || receipt.subtotal || 0
 
   const handlePrint = () => {
-    window.print()
+    const printWindow = window.open('', '_blank', 'width=420,height=900')
+    if (!printWindow) {
+      window.print()
+      return
+    }
+
+    const receiptItems = receipt.items?.length
+      ? receipt.items.map((item) => `
+        <tr>
+          <td>${item.productName || 'Item'}</td>
+          <td>${item.quantity || 0}</td>
+          <td>${formatCurrency(Number(item.total || 0))}</td>
+        </tr>
+      `).join('')
+      : '<tr><td colspan="3">No item details available.</td></tr>'
+
+    const printMarkup = `<!doctype html>
+      <html>
+        <head>
+          <title>Receipt</title>
+          <style>
+            * { box-sizing: border-box; }
+            body {
+              margin: 0;
+              padding: 12px;
+              background: #fff;
+              font-family: Arial, sans-serif;
+              color: #0f172a;
+            }
+            .receipt {
+              width: 80mm;
+              margin: 0 auto;
+              border: 1px solid #e2e8f0;
+              padding: 10px;
+            }
+            h1 { font-size: 22px; margin: 0; text-align: center; }
+            .meta { font-size: 11px; line-height: 1.5; margin: 10px 0; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            td { border-top: 1px solid #e2e8f0; padding: 5px 0; vertical-align: top; }
+            .total { margin-top: 10px; font-size: 14px; font-weight: bold; text-align: right; }
+          </style>
+        </head>
+        <body>
+          <div class="receipt">
+            <h1>GLOW</h1>
+            <div class="meta">
+              <div>Receipt: ${receipt.receiptNumber || '—'}</div>
+              <div>Customer: ${customerName}</div>
+              <div>Date: ${formatReceiptDate(receipt.issuedAt)}</div>
+            </div>
+            <table>
+              <tbody>${receiptItems}</tbody>
+            </table>
+            <div class="total">Total: ${formatCurrency(receipt.total || itemSubtotal || receipt.subtotal || 0)}</div>
+          </div>
+        </body>
+      </html>
+    `
+
+    printWindow.document.write(printMarkup)
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
+      printWindow.close()
+    }, 250)
   }
 
-  const handleDownloadPDF = async () => {
-    if (!receiptRef.current) return
-
+  const handleDownloadPDF = () => {
     try {
-      const canvas = await html2canvas(receiptRef.current, {
-        scale: 2,
-        useCORS: true,
-      })
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF({
+      const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4',
+        format: [80, 220],
       })
 
-      const imgWidth = 210
-      const pageHeight = 297
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      let heightLeft = imgHeight
-      let position = 0
+      const pageWidth = 80
+      const margin = 5
+      let y = 8
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
+      doc.setFillColor(13, 45, 72)
+      doc.roundedRect(0, 0, pageWidth, 36, 0, 0, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(22)
+      doc.setFont('helvetica', 'bold')
+      doc.text('GLOW', pageWidth / 2, 12, { align: 'center' })
+      doc.setFontSize(7)
+      doc.setFont('helvetica', 'normal')
+      doc.text('SALON SUPPLIES', pageWidth / 2, 18, { align: 'center' })
+      doc.text('BEAUTY • CARE • CONFIDENCE', pageWidth / 2, 23, { align: 'center' })
+      doc.setTextColor(247, 180, 111)
+      doc.setFont('helvetica', 'bold')
+      doc.text('THANK YOU', pageWidth / 2, 32, { align: 'center' })
 
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
+      y = 42
+      doc.setTextColor(15, 23, 42)
+      doc.setFillColor(248, 250, 252)
+      doc.roundedRect(margin, y, pageWidth - margin * 2, 18, 2, 2, 'F')
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.text('RECEIPT', margin + 2, y + 6)
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(String(receipt.receiptNumber || '—'), margin + 2, y + 12)
+      doc.setFillColor(249, 213, 168)
+      doc.roundedRect(pageWidth - 32, y + 1, 26, 13, 2, 2, 'F')
+      doc.setTextColor(13, 45, 72)
+      doc.setFontSize(7)
+      doc.setFont('helvetica', 'bold')
+      doc.text('TOTAL', pageWidth - 30, y + 6, { align: 'center' })
+      doc.setFontSize(7)
+      doc.text(`${formatCurrency(receipt.total || itemSubtotal || receipt.subtotal || 0)}`, pageWidth - 30, y + 11, { align: 'center' })
+
+      y = 64
+      doc.setTextColor(15, 23, 42)
+      doc.setFontSize(7)
+      doc.text(`Date: ${formatReceiptDate(receipt.issuedAt)}`, margin, y)
+      y += 5
+      doc.text(`Customer: ${customerName}`, margin, y)
+      y += 5
+      doc.text(`Order: ${orderId}`, margin, y)
+      y += 8
+
+      doc.setDrawColor(203, 213, 225)
+      doc.setLineWidth(0.25)
+      doc.line(margin, y, pageWidth - margin, y)
+      y += 4
+
+      const items = receipt.items && receipt.items.length > 0 ? receipt.items : []
+      if (items.length === 0) {
+        doc.setFontSize(8)
+        doc.text('No item details available.', margin, y)
+        y += 8
+      } else {
+        items.forEach((item) => {
+          const name = String(item.productName || 'Item').slice(0, 20)
+          const qty = String(item.quantity || 0)
+          const total = formatCurrency(Number(item.total || 0))
+          doc.setFontSize(7)
+          doc.text(name, margin, y)
+          doc.text(`${qty} x`, pageWidth - 22, y)
+          doc.text(total, pageWidth - margin, y, { align: 'right' })
+          y += 5
+        })
       }
 
-      pdf.save(`receipt-${receipt.receiptNumber}.pdf`)
+      y += 4
+      doc.line(margin, y, pageWidth - margin, y)
+      y += 7
+
+      doc.setFillColor(13, 45, 72)
+      doc.roundedRect(margin, y, pageWidth - margin * 2, 12, 2, 2, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.text('TOTAL', margin + 2, y + 7)
+      doc.text(formatCurrency(receipt.total || itemSubtotal || receipt.subtotal || 0), pageWidth - margin - 2, y + 7, { align: 'right' })
+
+      y += 16
+      doc.setTextColor(15, 23, 42)
+      doc.setFontSize(7)
+      doc.text('Payment Successful', margin, y)
+      y += 5
+      doc.text('Thank you for choosing Glow Salon Supplies!', margin, y)
+      y += 10
+
+      doc.setDrawColor(13, 45, 72)
+      doc.setLineWidth(0.3)
+      doc.line(margin, y, pageWidth - margin, y)
+      y += 6
+      doc.setFontSize(6.5)
+      doc.text('+256 700 123 456', margin, y)
+      doc.text('support@glow.ug', pageWidth / 2, y)
+      y += 4
+      doc.text('Kampala, Uganda', margin, y)
+
+      const filename = `receipt-${String(receipt.receiptNumber || 'receipt').replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-_]/g, '')}.pdf`
+
+      try {
+        const pdfBlob = doc.output('blob')
+        const url = URL.createObjectURL(pdfBlob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      } catch {
+        doc.save(filename)
+      }
     } catch (error) {
       console.error('Failed to download PDF:', error)
+      window.alert('The PDF could not be generated. Please try again.')
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-[980px] overflow-y-auto rounded-[20px] bg-[#edf5fa] shadow-2xl print:max-h-none print:rounded-none print:shadow-none">
+    <>
+      <style>{`
+        @media print {
+          body { background: #ffffff !important; }
+          .no-print { display: none !important; }
+          .receipt-modal-shell {
+            width: 80mm !important;
+            max-width: 80mm !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: transparent !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .receipt-print-wrap {
+            max-width: 80mm !important;
+            width: 80mm !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="receipt-modal-shell max-h-[90vh] w-full max-w-[420px] overflow-y-auto rounded-[20px] bg-[#edf5fa] shadow-2xl print:max-h-none print:rounded-none print:shadow-none print:max-w-none">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/90 p-5 backdrop-blur-sm no-print">
           <h2 className="text-xl font-bold text-slate-900">Receipt Preview</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -100,33 +278,37 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
         </div>
 
         <div ref={receiptRef} className="bg-[#edf4fa] p-2 text-slate-900 sm:p-4">
-          <div className="mx-auto w-full max-w-[700px] overflow-hidden rounded-[24px] bg-[#edf4fa] shadow-[0_18px_45px_rgba(13,45,72,0.15)]">
+          <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-[18px] bg-[#edf4fa] shadow-[0_18px_45px_rgba(13,45,72,0.15)] print:max-w-[80mm] print:rounded-none print:shadow-none">
             <div className="relative overflow-hidden bg-[#0d2d48] px-4 pb-8 pt-6 text-white sm:px-6 sm:pb-9 sm:pt-7 lg:px-8 lg:pb-10 lg:pt-8">
               <div className="absolute -left-14 bottom-[-60px] h-36 w-36 rounded-full bg-[#f97316]/20 blur-2xl" />
               <div className="absolute -right-10 top-0 h-36 w-36 rounded-full bg-[#f97316]/15 blur-2xl" />
 
-              <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0">
-                  <div className="text-[2.1rem] font-black leading-[0.8] tracking-[-0.08em] text-white sm:text-[3.5rem] lg:text-[4.8rem]">GLOW</div>
-                  <div className="mt-1 text-[0.5rem] font-bold uppercase tracking-[0.3em] text-[#dfeaf7] sm:text-[0.62rem]">SALON SUPPLIES</div>
-                  <div className="mt-2 text-[0.46rem] font-semibold uppercase tracking-[0.24em] text-[#dfeaf7] sm:text-[0.56rem]">BEAUTY • CARE • CONFIDENCE</div>
+              <div className="relative flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 text-left">
+                  <div className="text-[1.8rem] font-black leading-[0.85] tracking-[-0.08em] text-white sm:text-[2.5rem]">GLOW</div>
+                  <div className="mt-1 text-[0.46rem] font-bold uppercase tracking-[0.24em] text-[#dfeaf7] sm:text-[0.55rem]">SALON SUPPLIES</div>
+                  <div className="mt-2 text-[0.42rem] font-semibold uppercase tracking-[0.2em] text-[#dfeaf7] sm:text-[0.5rem]">BEAUTY • CARE • CONFIDENCE</div>
                 </div>
 
-                <div className="max-w-[22rem] text-left lg:text-right">
-                  <div
-                    className="leading-[0.9] tracking-[-0.04em] text-[#f7b46f] text-[1.7rem] sm:text-[2.4rem] lg:text-[3.2rem]"
-                    style={{ fontFamily: '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive' }}
-                  >
-                    Thank you
-                  </div>
-                  <div
-                    className="leading-[0.9] tracking-[-0.04em] text-[#f7b46f] text-[1.7rem] sm:text-[2.4rem] lg:text-[3.2rem]"
-                    style={{ fontFamily: '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive' }}
-                  >
-                    for your order!
-                  </div>
-                  <div className="mt-2 text-sm text-[#dfeaf7]">Your support helps us keep providing quality beauty products.</div>
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[16px] border border-white/20 bg-white/10 p-2 shadow-[0_8px_20px_rgba(15,23,42,0.25)] backdrop-blur-sm sm:h-24 sm:w-24">
+                  <img src={qrCodeUrl} alt={`QR code for receipt ${receipt.receiptNumber}`} className="h-full w-full rounded-[10px] bg-white p-1 object-contain" />
                 </div>
+              </div>
+
+              <div className="relative mt-5 max-w-full text-left">
+                <div
+                  className="leading-[0.95] tracking-[-0.04em] text-[#f7b46f] text-[1.3rem] sm:text-[1.8rem]"
+                  style={{ fontFamily: '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive' }}
+                >
+                  Thank you
+                </div>
+                <div
+                  className="leading-[0.95] tracking-[-0.04em] text-[#f7b46f] text-[1.3rem] sm:text-[1.8rem]"
+                  style={{ fontFamily: '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive' }}
+                >
+                  for your order!
+                </div>
+                <div className="mt-2 text-[0.7rem] leading-4 text-[#dfeaf7]">Your support helps us keep providing quality beauty products.</div>
               </div>
             </div>
 
@@ -135,23 +317,23 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f97316] text-lg text-white shadow-[0_10px_20px_rgba(249,115,22,0.25)]">🧾</div>
                   <div className="min-w-0">
-                    <div className="text-[1.7rem] font-extrabold uppercase tracking-[-0.04em] text-[#0d2d48] sm:text-[2rem]">Receipt</div>
-                    <div className="hidden text-[13px] font-semibold text-[#4e6d89] sm:block">Salon Supplies • Order Confirmation</div>
+                    <div className="text-[1.4rem] font-extrabold uppercase tracking-[-0.04em] text-[#0d2d48] sm:text-[1.7rem]">Receipt</div>
+                    <div className="hidden text-[11px] font-semibold text-[#4e6d89] sm:block">Salon Supplies • Order Confirmation</div>
                   </div>
                 </div>
 
-                <div className="rounded-[14px] border border-[#f4b870] bg-[#f9d5a8] px-4 py-3 text-left shadow-[0_8px_18px_rgba(249,115,22,0.18)] sm:min-w-[220px]">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#0d2d48]">Order ID</div>
-                  <div className="mt-1 break-all text-[1.3rem] font-black tracking-tight text-[#0d2d48] sm:text-[1.6rem]">{receipt.receiptNumber}</div>
+                <div className="rounded-[14px] border border-[#f4b870] bg-[#f9d5a8] px-3 py-2 text-left shadow-[0_8px_18px_rgba(249,115,22,0.18)] sm:min-w-[180px]">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0d2d48]">Order ID</div>
+                  <div className="mt-1 break-all text-[1rem] font-black tracking-tight text-[#0d2d48] sm:text-[1.2rem]">{receipt.receiptNumber}</div>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 <div className="flex min-w-0 items-center gap-3 rounded-[16px] border border-[#dfeaf3] bg-[#f4f9fc] p-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f97316] text-lg text-white">📅</div>
                   <div className="min-w-0">
                     <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#576f89]">Date</div>
-                    <div className="mt-1 text-[14px] font-extrabold text-[#0d2d48] sm:text-[15px]">{formatReceiptDate(receipt.issuedAt)}</div>
+                    <div className="mt-1 text-[13px] font-extrabold leading-snug text-[#0d2d48] sm:text-[14px]">{formatReceiptDate(receipt.issuedAt)}</div>
                   </div>
                 </div>
 
@@ -159,7 +341,7 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f97316] text-lg text-white">🧾</div>
                   <div className="min-w-0">
                     <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#576f89]">Order</div>
-                    <div className="mt-1 truncate text-[12px] font-extrabold text-[#0d2d48] sm:text-[14px]">{orderId}</div>
+                    <div className="mt-1 break-all text-[11px] font-extrabold leading-snug text-[#0d2d48] sm:text-[12px]">{orderId}</div>
                   </div>
                 </div>
 
@@ -167,17 +349,7 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f97316] text-lg text-white">👤</div>
                   <div className="min-w-0">
                     <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#576f89]">Customer</div>
-                    <div className="mt-1 break-words text-[14px] font-extrabold text-[#0d2d48] sm:text-[16px]">{customerName}</div>
-                  </div>
-                </div>
-
-                <div className="rounded-[16px] border border-[#dfeaf3] bg-[#f4f9fc] p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#576f89]">Scan to verify</div>
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f97316] text-[12px] font-bold text-white">✓</div>
-                  </div>
-                  <div className="mt-3 flex justify-center">
-                    <img src={qrCodeUrl} alt={`QR code for receipt ${receipt.receiptNumber}`} className="h-[96px] w-[96px] rounded-[12px] border border-[#dfeaf3] bg-white p-2 object-contain sm:h-[110px] sm:w-[110px]" />
+                    <div className="mt-1 break-words text-[12px] font-extrabold leading-snug text-[#0d2d48] sm:text-[13px]">{customerName}</div>
                   </div>
                 </div>
               </div>
@@ -256,7 +428,7 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
               <div className="absolute -left-14 bottom-[-34px] h-20 w-24 rounded-[50%] bg-[#f97316]" />
               <div className="absolute -right-14 bottom-[-34px] h-20 w-24 rounded-[50%] bg-[#f97316]" />
 
-              <div className="relative flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div className="relative flex flex-col gap-4">
                 <div
                   className="text-[2rem] font-black leading-none tracking-[-0.04em] text-[#f7b46f] sm:text-[2.8rem]"
                   style={{ fontFamily: '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive' }}
@@ -264,10 +436,10 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
                   Glow Salon Supplies
                 </div>
 
-                <div className="grid gap-2 text-[12px] font-medium text-slate-200 sm:grid-cols-3 sm:items-center sm:text-[13px]">
-                  <div className="flex items-center gap-2"><span>📞</span><span>+256 700 123 456</span></div>
-                  <div className="flex items-center gap-2"><span>✉</span><span>support@glow.ug</span></div>
-                  <div className="flex items-center gap-2"><span>📍</span><span>Kampala, Uganda</span></div>
+                <div className="grid gap-2 text-[11px] font-medium text-slate-200 sm:text-[12px]">
+                  <div className="flex items-center gap-2 break-words"><span className="w-4 shrink-0 text-center">📞</span><span>+256 700 123 456</span></div>
+                  <div className="flex items-center gap-2 break-words"><span className="w-4 shrink-0 text-center">✉</span><span>support@glow.ug</span></div>
+                  <div className="flex items-center gap-2 break-words"><span className="w-4 shrink-0 text-center">📍</span><span>Kampala, Uganda</span></div>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -281,6 +453,7 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

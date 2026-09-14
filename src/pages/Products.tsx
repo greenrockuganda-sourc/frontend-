@@ -48,6 +48,64 @@ export default function Products({ onNavigate }: ProductsProps) {
   const [brandFilter, setBrandFilter] = useState('')
   const [stockFilter, setStockFilter] = useState('all')
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+
+  const resolveCategoryName = (value: any, fallbackId?: string) => {
+    if (typeof value === 'string' && value.trim()) {
+      return value
+    }
+
+    if (value && typeof value === 'object') {
+      const name = value.category_name ?? value.name ?? value.categoryName ?? value.title
+      if (name) {
+        return String(name)
+      }
+    }
+
+    if (fallbackId) {
+      const found = categories.find((category) => String(category.id) === String(fallbackId))
+      if (found?.category_name) {
+        return found.category_name
+      }
+    }
+
+    if (typeof value === 'number' || typeof value === 'string') {
+      const found = categories.find((category) => String(category.id) === String(value))
+      if (found?.category_name) {
+        return found.category_name
+      }
+    }
+
+    return 'Uncategorized'
+  }
+
+  const resolveBrandName = (value: any, fallbackId?: string) => {
+    if (typeof value === 'string' && value.trim()) {
+      return value
+    }
+
+    if (value && typeof value === 'object') {
+      const name = value.brand_name ?? value.name ?? value.brandName ?? value.title
+      if (name) {
+        return String(name)
+      }
+    }
+
+    if (fallbackId) {
+      const found = brands.find((brand) => String(brand.id) === String(fallbackId))
+      if (found?.brand_name) {
+        return found.brand_name
+      }
+    }
+
+    if (typeof value === 'number' || typeof value === 'string') {
+      const found = brands.find((brand) => String(brand.id) === String(value))
+      if (found?.brand_name) {
+        return found.brand_name
+      }
+    }
+
+    return 'Unbranded'
+  }
   
   const filteredProducts = useMemo(() => {
     let filtered = products
@@ -104,19 +162,21 @@ export default function Products({ onNavigate }: ProductsProps) {
         const normalizedProducts = productsArray.map((product: any) => {
           const costPrice = Number(product.cost_price ?? product.buying_price ?? product.costPrice ?? 0)
           const sellingPrice = Number(product.price ?? product.selling_price ?? product.sellingPrice ?? 0)
-          // Normalize category to a string — API may return an object or a string
-          const categoryString = product.category?.category_name ?? product.category?.name ?? (typeof product.category === 'string' ? product.category : '')
-          const brandString = product.brand?.brand_name ?? product.brand?.name ?? (typeof product.brand === 'string' ? product.brand : '')
+          const categoryId = product.category_id ?? product.category?.id ?? product.categoryId ?? ''
+          const brandId = product.brand_id ?? product.brand?.id ?? product.brandId ?? ''
+          const categoryString = resolveCategoryName(product.category ?? product.category_name ?? product.categoryName ?? '', String(categoryId || ''))
+          const brandString = resolveBrandName(product.brand ?? product.brand_name ?? product.brandName ?? '', String(brandId || ''))
+
           return {
             id: String(product.id ?? product.product_id ?? product.sku ?? ''),
             name: product.name ?? product.product_name ?? 'Unnamed product',
             sku: product.sku ?? product.barcode ?? '',
             price: sellingPrice,
             stock: Number(product.stock ?? product.quantity_in_stock ?? 0),
-            category: categoryString || 'Uncategorized',
-            categoryId: String(product.category?.id ?? product.category_id ?? ''),
-            brand: brandString || 'Unbranded',
-            brandId: String(product.brand?.id ?? product.brand_id ?? ''),
+            category: categoryString,
+            categoryId: String(categoryId || ''),
+            brand: brandString,
+            brandId: String(brandId || ''),
             description: product.description ?? '',
             costPrice,
             profit: sellingPrice - costPrice,
@@ -169,6 +229,14 @@ export default function Products({ onNavigate }: ProductsProps) {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    setProducts((prev) => prev.map((product) => ({
+      ...product,
+      category: resolveCategoryName(product.categoryId || product.category, product.categoryId || ''),
+      brand: resolveBrandName(product.brandId || product.brand, product.brandId || ''),
+    })))
+  }, [categories, brands])
 
   const getCloudinaryFolder = (file: File) => {
     const folderPrefix = import.meta.env.VITE_CLOUDINARY_UPLOAD_FOLDER?.trim()
@@ -420,16 +488,18 @@ export default function Products({ onNavigate }: ProductsProps) {
           const updated = await updateProduct(editingProductId, productData)
         const sellingPrice = Number(updated.selling_price ?? updated.price ?? Number(formPrice || 0))
         const costPrice = Number(updated.cost_price ?? updated.buying_price ?? updated.costPrice ?? Number(formCostPrice || 0))
+        const updatedCategoryId = String(updated.category_id ?? updated.category?.id ?? formCategoryId)
+        const updatedBrandId = String(updated.brand_id ?? updated.brand?.id ?? formBrandId)
         const updatedProduct: Product = {
           id: String(updated.id ?? updated.product_id ?? updated.sku ?? editingProductId),
           name: (updated.product_name ?? updated.name ?? formName) || 'Unnamed product',
           sku: updated.sku ?? updated.barcode ?? buildAutoSku(productName),
           price: sellingPrice,
           stock: Number(updated.quantity_in_stock ?? updated.stock ?? Number(formStock || 0)),
-          category: updated.category?.category_name ?? updated.category?.name ?? (categories.find(c => c.id === formCategoryId)?.category_name ?? 'Uncategorized'),
-          categoryId: String(updated.category?.id ?? updated.category_id ?? formCategoryId),
-          brand: updated.brand?.brand_name ?? updated.brand?.name ?? (brands.find(b => b.id === formBrandId)?.brand_name ?? 'Unbranded'),
-          brandId: String(updated.brand?.id ?? updated.brand_id ?? formBrandId),
+          category: resolveCategoryName(updated.category ?? updated.category_name ?? updated.categoryName ?? '', updatedCategoryId),
+          categoryId: updatedCategoryId,
+          brand: resolveBrandName(updated.brand ?? updated.brand_name ?? updated.brandName ?? '', updatedBrandId),
+          brandId: updatedBrandId,
           description: updated.description ?? formDescription,
           costPrice,
           profit: sellingPrice - costPrice,
@@ -443,16 +513,18 @@ export default function Products({ onNavigate }: ProductsProps) {
           const created = await createProduct(productData)
         const sellingPrice = Number(created.selling_price ?? created.price ?? 0)
         const costPrice = Number(created.cost_price ?? created.buying_price ?? created.costPrice ?? 0)
+        const createdCategoryId = String(created.category_id ?? created.category?.id ?? formCategoryId)
+        const createdBrandId = String(created.brand_id ?? created.brand?.id ?? formBrandId)
         const newProduct: Product = {
           id: String(created.id ?? created.product_id ?? created.sku ?? Date.now()),
           name: created.product_name ?? created.product_name ?? 'Unnamed product',
           sku: created.sku ?? created.barcode ?? buildAutoSku(productName),
           price: sellingPrice,
           stock: Number(created.quantity_in_stock ?? created.stock ?? 0),
-          category: created.category?.category_name ?? created.category?.name ?? 'Uncategorized',
-          categoryId: String(created.category?.id ?? created.category_id ?? formCategoryId),
-          brand: created.brand?.brand_name ?? created.brand?.name ?? (brands.find(b => b.id === formBrandId)?.brand_name ?? 'Unbranded'),
-          brandId: String(created.brand?.id ?? created.brand_id ?? formBrandId),
+          category: resolveCategoryName(created.category ?? created.category_name ?? created.categoryName ?? '', createdCategoryId),
+          categoryId: createdCategoryId,
+          brand: resolveBrandName(created.brand ?? created.brand_name ?? created.brandName ?? '', createdBrandId),
+          brandId: createdBrandId,
           description: created.description ?? formDescription,
           costPrice,
           profit: sellingPrice - costPrice,

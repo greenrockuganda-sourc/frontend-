@@ -43,6 +43,8 @@ interface OrdersProps {
 }
 
 export default function Orders({ token }: OrdersProps) {
+  const activeToken = token ?? (typeof window !== 'undefined' ? localStorage.getItem('access') ?? undefined : undefined)
+
   const sanitizeError = (raw: unknown) => {
     const text = typeof raw === 'string' ? raw : raw instanceof Error ? raw.message : String(raw)
     // If server returned an HTML error page, strip tags and show concise message
@@ -77,7 +79,7 @@ export default function Orders({ token }: OrdersProps) {
       try {
         setLoading(true)
         setError(null)
-        const data = await fetchOrders(token)
+        const data = await fetchOrders(activeToken)
         if (!active) {
           return
         }
@@ -252,7 +254,7 @@ export default function Orders({ token }: OrdersProps) {
   const handleViewOrder = async (orderId: string) => {
     setError(null)
     try {
-      const data = await getOrderDetails(token, orderId)
+      const data = await getOrderDetails(activeToken ?? '', orderId)
       const detailsItems = Array.isArray(data?.items)
         ? data.items.map((item: any) => ({
             product_name: item.product_name ?? 'Item',
@@ -313,7 +315,7 @@ export default function Orders({ token }: OrdersProps) {
     setError(null)
     setIsUpdatingStatus(true)
     try {
-      await updateOrderStatus(token, orderId, normalizedStatus)
+      await updateOrderStatus(activeToken ?? '', orderId, normalizedStatus)
       const normalizedValue = normalizedStatus.toLowerCase()
       setOrders((prev) => prev.map((order) => (
         order.id === orderId ? { ...order, status: normalizedValue } : order

@@ -110,7 +110,9 @@ export default function Receipts() {
   const handleDownload = async (receipt: Receipt) => {
     setBusyReceipt(receipt.id)
     try {
-      downloadBlob(await downloadReceiptPdf(receipt.id), `${receipt.receiptNumber}.pdf`)
+      const token = localStorage.getItem('access') ?? undefined
+      const blob = await downloadReceiptPdf(receipt.id, token)
+      downloadBlob(blob, `${receipt.receiptNumber}.pdf`)
       notifySuccess('Receipt downloaded successfully')
     } catch (err) {
       notifyError(err instanceof Error ? err.message : 'Unable to download receipt PDF.')

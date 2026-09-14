@@ -4,7 +4,7 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd())
-  const backendUrl = env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
+  const backendUrl = env.VITE_API_BASE_URL || 'https://backends-production-3d0b.up.railway.app'
 
   return {
     plugins: [react()],
@@ -21,10 +21,8 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: backendUrl,
           changeOrigin: true,
-          // SECURITY: Require HTTPS in production. Only disable for localhost development.
-          secure: process.env.NODE_ENV === 'production' || !backendUrl.includes('localhost'),
+          secure: true,
           rewrite: (path) => path.replace(/^\/api/, '/api'),
-          // Enable cookie forwarding between backend and frontend
           cookieDomainRewrite: {
             '*': ''
           }

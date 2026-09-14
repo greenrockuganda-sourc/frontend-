@@ -234,11 +234,27 @@ export async function sendReportEmail(token: string, reportType: string, body: a
   }, token)
 }
 
-export async function downloadReceiptPdf(token: string, receiptId: string) {
-  const response = await fetch(`${API_BASE_URL}/api/admin/receipts/${receiptId}/pdf/`, {
+export async function downloadReceiptPdf(receiptId: string, token?: string) {
+  let accessToken = token ?? localStorage.getItem('access') ?? undefined
+
+  let response = await fetch(`${API_BASE_URL}/api/admin/receipts/${receiptId}/pdf/`, {
     method: 'GET',
-    headers: new Headers({ Authorization: `Bearer ${token}` }),
+    credentials: 'include',
+    headers: accessToken ? new Headers({ Authorization: `Bearer ${accessToken}` }) : undefined,
   })
+
+  if (response.status === 401 && accessToken) {
+    try {
+      accessToken = await refreshAccessToken()
+      response = await fetch(`${API_BASE_URL}/api/admin/receipts/${receiptId}/pdf/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: new Headers({ Authorization: `Bearer ${accessToken}` }),
+      })
+    } catch {
+      // leave response as-is and surface the original failure below
+    }
+  }
 
   if (!response.ok) {
     const errorText = await response.text()
@@ -262,21 +278,33 @@ export async function createReceipt(token: string, orderId: string) {
   }, token)
 }
 
-export async function createProduct(token: string, productData: any) {
+export async function createProduct(productDataOrToken: any, maybeProductData?: any) {
+  const token = typeof productDataOrToken === 'string' ? productDataOrToken : undefined
+  const productData = typeof productDataOrToken === 'string' ? maybeProductData : productDataOrToken
+
   return request<any>('/api/products/', {
     method: 'POST',
-    body: JSON.stringify(productData),
+    body: JSON.stringify(productData ?? {}),
   }, token)
 }
 
-export async function updateProduct(token: string, productId: string, productData: any) {
+export async function updateProduct(productIdOrToken: string, productIdOrData: string | any, maybeData?: any) {
+  const usesTokenFirstSignature = typeof productIdOrData === 'string' && typeof maybeData !== 'undefined'
+
+  const token = usesTokenFirstSignature ? productIdOrToken : undefined
+  const productId = usesTokenFirstSignature ? productIdOrData : productIdOrToken
+  const productData = usesTokenFirstSignature ? maybeData : productIdOrData
+
   return request<any>(`/api/products/${productId}/`, {
     method: 'PUT',
-    body: JSON.stringify(productData),
+    body: JSON.stringify(productData ?? {}),
   }, token)
 }
 
-export async function deleteProduct(token: string, productId: string) {
+export async function deleteProduct(productIdOrToken: string, productIdOrUnused?: string) {
+  const token = typeof productIdOrUnused === 'string' ? productIdOrToken : undefined
+  const productId = typeof productIdOrUnused === 'string' ? productIdOrUnused : productIdOrToken
+
   return request<any>(`/api/products/${productId}/`, {
     method: 'DELETE',
   }, token)
