@@ -148,7 +148,8 @@ export default function Products({ onNavigate }: ProductsProps) {
       try {
         setLoading(true)
         setError(null)
-        const data = await fetchProducts(debouncedSearch)
+        // fetchProducts expects (token?, search?), so pass the search as the second arg
+        const data = await fetchProducts(undefined, debouncedSearch)
         if (!active) {
           return
         }
@@ -602,7 +603,7 @@ export default function Products({ onNavigate }: ProductsProps) {
   }, [])
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
+    <div className="min-h-screen overflow-auto bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-3 sm:p-6 lg:p-8">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:mb-8">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Catalog</p>
