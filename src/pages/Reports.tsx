@@ -14,10 +14,11 @@ const reportTypes = [
 type ReportType = (typeof reportTypes)[number]['value']
 
 interface ReportsProps {
-  token: string
+  token?: string
 }
 
 export default function Reports({ token }: ReportsProps) {
+  const activeToken = token ?? (typeof window !== 'undefined' ? localStorage.getItem('access') ?? '' : '')
   const [reportType, setReportType] = useState<ReportType>('sales')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -32,7 +33,7 @@ export default function Reports({ token }: ReportsProps) {
       setLoading(true)
       setError(null)
       try {
-        const data = await fetchReport(token, reportType, {
+        const data = await fetchReport(activeToken, reportType, {
           ...(startDate ? { start_date: startDate } : {}),
           ...(endDate ? { end_date: endDate } : {}),
         })
@@ -191,7 +192,7 @@ export default function Reports({ token }: ReportsProps) {
       const params: Record<string, string> = {}
       if (startDate) params.start_date = startDate
       if (endDate) params.end_date = endDate
-      const blob = await downloadReport(token, reportType, params, format)
+      const blob = await downloadReport(activeToken, reportType, params, format)
       const extension = format === 'excel' ? 'xlsx' : 'csv'
       const filename = `${reportType}-report.${extension}`
       const tempUrl = window.URL.createObjectURL(blob)
@@ -216,7 +217,7 @@ export default function Reports({ token }: ReportsProps) {
     setLoading(true)
     setError(null)
     try {
-      await sendReportEmail(token, reportType, {
+      await sendReportEmail(activeToken, reportType, {
         email: emailRecipient,
         frequency: emailFrequency,
         start_date: startDate || undefined,

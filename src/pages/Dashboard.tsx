@@ -3,11 +3,12 @@ import { DollarSign, ShoppingCart, Truck, AlertCircle, CalendarDays, RefreshCw, 
 import StatCard from '@/components/StatCard'
 import RecentOrders from '@/components/RecentOrders'
 import InventoryStatus from '@/components/InventoryStatus'
-import { fetchDashboard, fetchProducts, fetchOrders, fetchDeliveries } from '@/lib/api'
+import { fetchDashboard, fetchProducts, fetchOrders, fetchDeliveries, fetchCustomers, fetchPayments } from '@/lib/api'
 import { Order, Product } from '@/types'
 import Skeleton, { SkeletonStats, SkeletonTable } from '@/components/Skeleton'
 
 const validRanges = ['7d', '30d', '90d', 'all'] as const
+const DASHBOARD_REFRESH_INTERVAL_MS = 60000
 
 type RangeKey = (typeof validRanges)[number]
 
@@ -41,14 +42,20 @@ const formatCurrency = (amount: number) =>
 
 interface DashboardProps {
   user?: any
+  token?: string
 }
 
-export default function Dashboard({ user }: DashboardProps) {
+export default function Dashboard({ user, token }: DashboardProps) {
+  const activeToken = token ?? (typeof window !== 'undefined' ? localStorage.getItem('access') ?? '' : '')
+
   const [stats, setStats] = useState({
     revenue: 0,
     orders: 0,
     pending: 0,
     lowStock: 0,
+    customers: 0,
+    payments: 0,
+    inventoryCount: 0,
   })
   const [recentOrders, setRecentOrders] = useState<Order[]>([])
   const [inventory, setInventory] = useState<Product[]>([])
@@ -75,11 +82,13 @@ export default function Dashboard({ user }: DashboardProps) {
         setLoading(true)
         setError(null)
 
-        const [dashboardData, productsData, ordersData, deliveriesData] = await Promise.all([
-          fetchDashboard(),
-          fetchProducts(),
-          fetchOrders(),
-          fetchDeliveries(),
+        const [dashboardData, productsData, ordersData, deliveriesData, customersData, paymentsData] = await Promise.all([
+          fetchDashboard(activeToken),
+          fetchProducts(activeToken),
+          fetchOrders(activeToken),
+          fetchDeliveries(activeToken),
+          fetchCustomers(activeToken),
+          fetchPayments(activeToken),
         ])
         if (!active) {
           return
@@ -100,6 +109,16 @@ export default function Dashboard({ user }: DashboardProps) {
           ? deliveriesData.results
           : Array.isArray(deliveriesData)
             ? deliveriesData
+            : []
+        const customerList = Array.isArray(customersData?.results)
+          ? customersData.results
+          : Array.isArray(customersData)
+            ? customersData
+            : []
+        const paymentList = Array.isArray(paymentsData?.results)
+          ? paymentsData.results
+          : Array.isArray(paymentsData)
+            ? paymentsData
             : []
 
         const rangeStart = getRangeStartDate(range)
@@ -136,12 +155,18 @@ export default function Dashboard({ user }: DashboardProps) {
         const lowStock = summary.low_stock_products != null
           ? Number(summary.low_stock_products)
           : lowStockFromProducts
+        const customers = customerList.length || Number(summary.total_customers ?? 0)
+        const inventoryCount = productList.length
+        const payments = paymentList.reduce((sum: number, payment: any) => sum + Number(payment.amount ?? payment.total_amount ?? payment.value ?? 0), 0)
 
         setStats({
           revenue,
           orders: Number(summary.total_orders ?? orderList.length ?? 0),
           pending,
           lowStock,
+          customers,
+          payments,
+          inventoryCount,
         })
 
         const recentOrdersRaw = dashboardData?.recent_activity?.recent_orders
@@ -190,7 +215,7 @@ export default function Dashboard({ user }: DashboardProps) {
 
     const refreshTimer = window.setInterval(() => {
       void loadDashboard()
-    }, 15000)
+    }, DASHBOARD_REFRESH_INTERVAL_MS)
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -254,19 +279,27 @@ export default function Dashboard({ user }: DashboardProps) {
               Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
-          <div className="relative flex-1 sm:flex-none">
-            <CalendarDays size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <select
-              value={range}
-              onChange={(event) => setRange(event.target.value as '7d' | '30d' | '90d' | 'all')}
-              className="select !pl-9 sm:!w-[190px]"
-              aria-label="Date range"
-            >
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="90d">Last 90 days</option>
-              <option value="all">All time</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+            {validRanges.map((option) => {
+              const isActive = range === option
+              const label = option === '7d' ? '7d' : option === '30d' ? '30d' : option === '90d' ? '90d' : 'All'
+
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setRange(option)}
+                  aria-pressed={isActive}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+                      : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -344,11 +377,14 @@ export default function Dashboard({ user }: DashboardProps) {
               </div>
               <span className="badge badge-info flex-shrink-0">{dateRangeLabel}</span>
             </div>
-            <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-3">
               {[
                 { label: 'Orders in range', value: recentOrders.length.toLocaleString(), icon: ShoppingCart },
                 { label: 'Range revenue', value: formatCurrency(rangeRevenue), icon: TrendingUp },
                 { label: 'Average order', value: formatCurrency(averageOrder), icon: Receipt },
+                { label: 'Customers', value: stats.customers.toLocaleString(), icon: CalendarDays },
+                { label: 'Payments', value: formatCurrency(stats.payments), icon: DollarSign },
+                { label: 'Tracked stock', value: stats.inventoryCount.toLocaleString(), icon: AlertCircle },
               ].map((metric) => {
                 const Icon = metric.icon
                 return (

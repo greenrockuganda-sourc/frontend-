@@ -1,4 +1,4 @@
-import { Home, Package, ShoppingCart, Truck, FileText, Settings as SettingsIcon, X, BarChart3, Tags, FolderTree } from 'lucide-react'
+import { Home, Package, ShoppingCart, Truck, FileText, Settings as SettingsIcon, X, BarChart3, Tags, FolderTree, Users } from 'lucide-react'
 
 interface SidebarProps {
   currentPage: string
@@ -17,6 +17,7 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
     { id: 'deliveries', label: 'Deliveries', icon: Truck },
     { id: 'receipts', label: 'Receipts', icon: FileText },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
+    { id: 'customers', label: 'Customers', icon: Users },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ]
 

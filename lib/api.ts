@@ -112,6 +112,7 @@ export const categoriesApi = {
     delete payload.id
     return apiCall(`/categories/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }) as Promise<any>
   },
+  delete: (id: string) => apiCall(`/categories/${id}/`, { method: 'DELETE' }) as Promise<void>,
 }
 
 // Brands
@@ -132,4 +133,5 @@ export const brandsApi = {
     delete payload.id
     return apiCall(`/brands/${id}/`, { method: 'PUT', body: JSON.stringify(payload) }) as Promise<any>
   },
+  delete: (id: string) => apiCall(`/brands/${id}/`, { method: 'DELETE' }) as Promise<void>,
 }

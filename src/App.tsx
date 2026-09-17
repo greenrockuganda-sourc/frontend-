@@ -1,25 +1,27 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import Sidebar from '@/components/layout/Sidebar'
 import Header from '@/components/layout/Header'
-import Dashboard from '@/pages/Dashboard'
-import Products from '@/pages/Products'
-import Brands from '@/pages/Brands'
-import Categories from '@/pages/Categories'
-import CreateBrand from '@/pages/CreateBrand'
-import CreateCategory from '@/pages/CreateCategory'
-import Orders from '@/pages/Orders'
-import Deliveries from '@/pages/Deliveries'
-import Receipts from '@/pages/Receipts'
-import Reports from '@/pages/Reports'
-import Settings from '@/pages/Settings'
 import Login from '@/pages/Login'
+
+const Dashboard = lazy(() => import('@/pages/Dashboard'))
+const Products = lazy(() => import('@/pages/Products'))
+const Brands = lazy(() => import('@/pages/Brands'))
+const Categories = lazy(() => import('@/pages/Categories'))
+const CreateBrand = lazy(() => import('@/pages/CreateBrand'))
+const CreateCategory = lazy(() => import('@/pages/CreateCategory'))
+const Orders = lazy(() => import('@/pages/Orders'))
+const Deliveries = lazy(() => import('@/pages/Deliveries'))
+const Receipts = lazy(() => import('@/pages/Receipts'))
+const Reports = lazy(() => import('@/pages/Reports'))
+const Customers = lazy(() => import('@/pages/Customers'))
+const Settings = lazy(() => import('@/pages/Settings'))
 import { fetchProfile, logout, registerAuthSessionCallback } from '@/lib/api'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { UserProfile } from '@/types'
 import NotificationSystem, { useNotifications } from '@/components/NotificationSystem'
 
-type Page = 'dashboard' | 'products' | 'brands' | 'categories' | 'createBrand' | 'createCategory' | 'orders' | 'deliveries' | 'receipts' | 'reports' | 'settings'
+type Page = 'dashboard' | 'products' | 'brands' | 'categories' | 'createBrand' | 'createCategory' | 'orders' | 'deliveries' | 'receipts' | 'reports' | 'customers' | 'settings'
 
 export default function App() {
   const readInitialPage = (): Page => {
@@ -153,31 +155,35 @@ export default function App() {
   }
 
   const renderPage = () => {
+    const pageFallback = <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-500">Loading page...</div>
+
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard user={user} />
+        return <Suspense fallback={pageFallback}><Dashboard user={user} token={accessToken ?? ''} /></Suspense>
       case 'products':
-        return <Products onNavigate={handleNavigate} />
+        return <Suspense fallback={pageFallback}><Products onNavigate={handleNavigate} /></Suspense>
       case 'brands':
-        return <Brands onNavigate={handleNavigate} />
+        return <Suspense fallback={pageFallback}><Brands onNavigate={handleNavigate} /></Suspense>
       case 'categories':
-        return <Categories onNavigate={handleNavigate} />
+        return <Suspense fallback={pageFallback}><Categories onNavigate={handleNavigate} /></Suspense>
       case 'createBrand':
-        return <CreateBrand onCreated={() => handleNavigate('brands')} />
+        return <Suspense fallback={pageFallback}><CreateBrand onCreated={() => handleNavigate('brands')} /></Suspense>
       case 'createCategory':
-        return <CreateCategory onCreated={() => handleNavigate('categories')} />
+        return <Suspense fallback={pageFallback}><CreateCategory onCreated={() => handleNavigate('categories')} /></Suspense>
       case 'orders':
-        return <Orders />
+        return <Suspense fallback={pageFallback}><Orders token={accessToken ?? ''} /></Suspense>
       case 'deliveries':
-        return <Deliveries />
+        return <Suspense fallback={pageFallback}><Deliveries token={accessToken ?? ''} /></Suspense>
       case 'receipts':
-        return <Receipts />
+        return <Suspense fallback={pageFallback}><Receipts token={accessToken ?? ''} /></Suspense>
       case 'reports':
-        return <Reports />
+        return <Suspense fallback={pageFallback}><Reports token={accessToken ?? ''} /></Suspense>
+      case 'customers':
+        return <Suspense fallback={pageFallback}><Customers token={accessToken ?? ''} /></Suspense>
       case 'settings':
-        return <Settings user={user} onProfileSave={handleProfileSave} />
+        return <Suspense fallback={pageFallback}><Settings user={user} onProfileSave={handleProfileSave} /></Suspense>
       default:
-        return <Dashboard user={user} />
+        return <Suspense fallback={pageFallback}><Dashboard user={user} /></Suspense>
     }
   }
 

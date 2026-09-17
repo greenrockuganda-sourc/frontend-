@@ -10,6 +10,7 @@ interface DeliveriesProps {
 }
 
 export default function Deliveries({ token }: DeliveriesProps) {
+  const activeToken = token ?? (typeof window !== 'undefined' ? localStorage.getItem('access') ?? '' : '')
   const [deliveries, setDeliveries] = useState<Delivery[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -22,7 +23,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
       try {
         setLoading(true)
         setError(null)
-        const data = await fetchDeliveries(token)
+        const data = await fetchDeliveries(activeToken)
         if (!active) {
           return
         }
@@ -40,7 +41,12 @@ export default function Deliveries({ token }: DeliveriesProps) {
           address: delivery.delivery_address ?? delivery.address ?? 'Address unavailable',
           status: (delivery.delivery_status ?? delivery.status ?? 'preparing').toLowerCase(),
           receiptIssued: Boolean(delivery.receipt_issued ?? delivery.receiptIssued ?? false),
-        }))
+          createdAt: delivery.created_at ?? delivery.date ?? delivery.delivery_date ?? '',
+        })).sort((a: any, b: any) => {
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0
+          return bTime - aTime
+        }).map(({ createdAt, ...delivery }) => delivery)
         setDeliveries(normalizedDeliveries)
       } catch (err) {
         if (active) {
@@ -80,9 +86,9 @@ export default function Deliveries({ token }: DeliveriesProps) {
     const original = deliveries
     try {
       setBusyDelivery(delivery.id)
-      await updateDelivery(token, delivery.id, 'Delivered')
+      await updateDelivery(activeToken, delivery.id, 'Delivered')
       if (delivery.orderId) {
-        await updateOrderStatus(token, String(delivery.orderId), 'Delivered')
+        await updateOrderStatus(activeToken, String(delivery.orderId), 'Delivered')
       }
       setDeliveries((currentDeliveries) => currentDeliveries.map((item) =>
         item.id === delivery.id ? { ...item, status: 'delivered', receiptIssued: true } : item
@@ -183,7 +189,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
                           <button
                             onClick={() => handleMarkDelivered(delivery)}
                             disabled={busyDelivery === delivery.id}
-                            className="bg-blue-600 text-white px-3 py-2 rounded text-xs hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-1"
+                            className="w-full rounded bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors sm:w-auto"
                           >
                             {busyDelivery === delivery.id ? 'Updating...' : 'Mark Delivered'}
                           </button>

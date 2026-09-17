@@ -50,7 +50,12 @@ const readLocalReceipts = (): Receipt[] => {
   }
 }
 
-export default function Receipts() {
+interface ReceiptsProps {
+  token?: string
+}
+
+export default function Receipts({ token }: ReceiptsProps = {}) {
+  const activeToken = token ?? (typeof window !== 'undefined' ? localStorage.getItem('access') ?? '' : '')
   const [receipts, setReceipts] = useState<Receipt[]>([])
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null)
   const [loading, setLoading] = useState(true)
@@ -62,7 +67,7 @@ export default function Receipts() {
     try {
       setLoading(true)
       setError(null)
-      const data = await fetchReceipts()
+      const data = await fetchReceipts(activeToken)
       const list = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []
       const remoteReceipts = list.map((receipt: any) => ({
         id: String(receipt.id ?? receipt.receipt_id ?? 'N/A'),
@@ -84,7 +89,11 @@ export default function Receipts() {
       const mergedReceipts = [...remoteReceipts, ...localReceipts]
       const dedupedReceipts = mergedReceipts.filter((receipt, index, entries) =>
         entries.findIndex((candidate) => candidate.receiptNumber === receipt.receiptNumber || candidate.id === receipt.id) === index
-      )
+      ).sort((a, b) => {
+        const aTime = a.date ? new Date(`${a.date}T12:00:00`).getTime() : 0
+        const bTime = b.date ? new Date(`${b.date}T12:00:00`).getTime() : 0
+        return bTime - aTime
+      })
 
       setReceipts(dedupedReceipts)
     } catch (err) {
@@ -110,8 +119,7 @@ export default function Receipts() {
   const handleDownload = async (receipt: Receipt) => {
     setBusyReceipt(receipt.id)
     try {
-      const token = localStorage.getItem('access') ?? undefined
-      const blob = await downloadReceiptPdf(receipt.id, token)
+      const blob = await downloadReceiptPdf(receipt.id, activeToken || undefined)
       downloadBlob(blob, `${receipt.receiptNumber}.pdf`)
       notifySuccess('Receipt downloaded successfully')
     } catch (err) {
@@ -124,7 +132,7 @@ export default function Receipts() {
   const handleEmail = async (receipt: Receipt) => {
     setBusyReceipt(receipt.id)
     try {
-      await sendReceiptEmail(receipt.id)
+      await sendReceiptEmail(activeToken, receipt.id)
       notifySuccess('Receipt email sent successfully')
     } catch (err) {
       notifyError(err instanceof Error ? err.message : 'Unable to send receipt email.')

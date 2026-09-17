@@ -165,9 +165,82 @@ export async function fetchDashboard(token: string) {
   return request<any>('/api/admin/dashboard/', {}, token)
 }
 
+export async function fetchCustomers(token?: string) {
+  const candidateEndpoints = [
+    '/api/admin/customers/',
+    '/api/customers/',
+    '/api/customer/customers/',
+    '/api/admin/users/',
+    '/api/users/',
+  ]
+
+  let lastError: unknown = null
+
+  for (const path of candidateEndpoints) {
+    try {
+      return await request<any>(path, {}, token)
+    } catch (error) {
+      lastError = error
+      const message = error instanceof Error ? error.message : String(error)
+      if (!/404|Not Found|Method Not Allowed|Unknown endpoint/i.test(message)) {
+        throw error
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('Unable to load customer accounts.')
+}
+
+export async function fetchUsers(token?: string) {
+  const candidateEndpoints = [
+    '/api/admin/users/',
+    '/api/users/',
+    '/api/user/accounts/',
+    '/api/auth/users/',
+    '/api/admin/customers/',
+  ]
+
+  let lastError: unknown = null
+
+  for (const path of candidateEndpoints) {
+    try {
+      return await request<any>(path, {}, token)
+    } catch (error) {
+      lastError = error
+      const message = error instanceof Error ? error.message : String(error)
+      if (!/404|Not Found|Method Not Allowed|Unknown endpoint/i.test(message)) {
+        throw error
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('Unable to load user accounts.')
+}
+
+export async function fetchInventory(token?: string) {
+  return request<any>('/api/admin/inventory/', {}, token)
+}
+
+export async function fetchPayments(token?: string) {
+  return request<any>('/api/admin/payments/', {}, token)
+}
+
+export async function getCategories() {
+  return request<any>('/api/categories/', {}, undefined)
+}
+
+export async function getBrands() {
+  return request<any>('/api/brands/', {}, undefined)
+}
+
 export async function fetchProducts(token: string, search = '') {
   const query = search ? `?search=${encodeURIComponent(search)}` : ''
   return request<any>(`/api/products/${query}`, {}, token)
+}
+
+export async function fetchCatalogProducts(token?: string, search = '') {
+  const query = search ? `?search=${encodeURIComponent(search)}` : ''
+  return request<any>(`/api/catalog/products/${query}`, {}, token)
 }
 
 export async function fetchOrders(token?: string) {
@@ -264,20 +337,6 @@ export async function downloadReceiptPdf(receiptId: string, token?: string) {
   return response.blob()
 }
 
-export async function getCategories() {
-  return request<any>('/api/categories/', {}, undefined)
-}
-
-export async function getBrands() {
-  return request<any>('/api/brands/', {}, undefined)
-}
-
-export async function createReceipt(token: string, orderId: string) {
-  return request<any>(`/api/orders/${orderId}/receipt/`, {
-    method: 'POST',
-  }, token)
-}
-
 export async function createProduct(productDataOrToken: any, maybeProductData?: any) {
   const token = typeof productDataOrToken === 'string' ? productDataOrToken : undefined
   const productData = typeof productDataOrToken === 'string' ? maybeProductData : productDataOrToken
@@ -367,9 +426,100 @@ export async function markNotificationRead(token: string, notificationId: number
   }, token)
 }
 
-export async function sendNewArrivalNotification(token: string, title: string, message: string) {
+export async function sendNewArrivalNotification(token: string, title: string, message: string, extra: Record<string, any> = {}) {
   return request<{ message: string; recipient_count: number }>('/api/admin/notifications/broadcast-new-arrival/', {
     method: 'POST',
-    body: JSON.stringify({ title, message }),
+    body: JSON.stringify({
+      title,
+      message,
+      segment: 'app_users',
+      target: 'app_users',
+      is_app_user: true,
+      app_user_only: true,
+      ...extra,
+    }),
   }, token)
+}
+
+export async function sendCustomerCampaignEmail(
+  token: string,
+  payload: {
+    customer_id?: string | number | null
+    customer_email?: string
+    subject: string
+    message: string
+    app_domain?: boolean
+    segment?: string
+    target?: string
+    is_app_user?: boolean
+    recipient_count?: number
+    recipients?: Array<string | number | null>
+    send_to_all?: boolean
+  },
+) {
+  const body = {
+    customer_id: payload.customer_id ?? null,
+    customer_email: payload.customer_email ?? '',
+    email: payload.customer_email ?? '',
+    to: payload.customer_email ?? '',
+    subject: payload.subject,
+    message: payload.message,
+    app_domain: payload.app_domain ?? true,
+    segment: payload.segment ?? 'app_users',
+    target: payload.target ?? 'app_users',
+    is_app_user: payload.is_app_user ?? true,
+    app_user_only: true,
+    send_to_all: Boolean(payload.send_to_all),
+    recipient_count: payload.recipient_count ?? 1,
+    recipients: payload.recipients ?? (payload.customer_email ? [payload.customer_email] : []),
+  }
+
+  const candidateEndpoints = [
+    '/api/admin/customers/email-campaign/',
+    '/api/admin/customers/send-email-campaign/',
+    '/api/admin/notifications/email-campaign/',
+    '/api/admin/notifications/send-email-campaign/',
+  ]
+
+  let lastError: unknown = null
+
+  for (const path of candidateEndpoints) {
+    try {
+      return await request<any>(path, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }, token)
+    } catch (error) {
+      lastError = error
+      const message = error instanceof Error ? error.message : String(error)
+      if (!/404|Not Found|Method Not Allowed|Unknown endpoint/i.test(message)) {
+        throw error
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('Unable to send customer email campaign.')
+}
+
+export async function sendBulkAppUserEmailCampaign(
+  token: string,
+  payload: {
+    subject: string
+    message: string
+    recipients?: Array<string | number | null>
+  },
+) {
+  const recipientEmails = (payload.recipients ?? []).filter(Boolean)
+
+  return sendCustomerCampaignEmail(token, {
+    subject: payload.subject,
+    message: payload.message,
+    app_domain: true,
+    segment: 'app_users',
+    target: 'app_users',
+    is_app_user: true,
+    send_to_all: true,
+    recipient_count: recipientEmails.length,
+    recipients: recipientEmails,
+  })
 }

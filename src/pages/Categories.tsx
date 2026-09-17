@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowUpRight, Clock3, Filter, FolderTree, Pencil, Plus, Search, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Clock3, Filter, FolderTree, Pencil, Plus, Search, Sparkles, Trash2 } from 'lucide-react'
 import { categoriesApi } from '../../lib/api'
 import CategoryForm from '../../components/products/category-form'
+import ConfirmationModal from '@/components/ConfirmationModal'
+import { notifyError, notifySuccess } from '@/lib/notify'
 
 interface Props {
   token?: string
@@ -28,6 +30,7 @@ export default function Categories({ onNavigate }: Props) {
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [editingCategory, setEditingCategory] = useState<any | null>(null)
+  const [pendingDeleteCategory, setPendingDeleteCategory] = useState<any | null>(null)
 
   useEffect(() => {
     void load()
@@ -56,6 +59,22 @@ export default function Categories({ onNavigate }: Props) {
 
   const totalCategories = items.length
   const featuredCategories = items.slice(0, 3)
+
+  const handleDeleteCategory = async () => {
+    if (!pendingDeleteCategory) {
+      return
+    }
+
+    try {
+      await categoriesApi.delete(String(pendingDeleteCategory.id))
+      setItems((prev) => prev.filter((item) => String(item.id) !== String(pendingDeleteCategory.id)))
+      notifySuccess('Category deleted successfully')
+    } catch (error) {
+      notifyError(error instanceof Error ? error.message : 'Unable to delete category.')
+    } finally {
+      setPendingDeleteCategory(null)
+    }
+  }
 
   return (
     <main className="min-h-screen bg-white text-slate-950">
@@ -155,46 +174,71 @@ export default function Categories({ onNavigate }: Props) {
               <p className="mt-1 max-w-md text-sm text-slate-500">Try a different keyword or add a category to build out the catalog structure.</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-200/80">
-              {filteredItems.map((category) => (
-                <div key={category.id} className="group flex flex-col gap-4 p-5 transition hover:bg-slate-50/80 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                  <div className="flex min-w-0 flex-1 items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-indigo-100 via-white to-violet-100 text-sm font-bold text-indigo-700 shadow-sm">
-                      {category.image_url ? (
-                        <img src={category.image_url} alt={category.category_name} className="h-full w-full object-cover" />
-                      ) : (
-                        (category.category_name ?? 'CT').slice(0, 2).toUpperCase()
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate text-base font-semibold text-slate-900">{category.category_name}</h3>
-                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">Active</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:gap-8">
-                    <div className="flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600">
-                      <Clock3 className="h-3.5 w-3.5" />
-                      Updated {formatDate(category.updated_at)}
-                    </div>
-                    <div className="hidden text-xs text-slate-500 md:block">
-                      Created {formatDate(category.created_at)}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setEditingCategory(category)}
-                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
-                      aria-label={`Edit ${category.category_name}`}
-                    >
-                      <Pencil className="h-4 w-4" />
-                      <span className="text-xs font-medium">Edit</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="min-w-full border-separate border-spacing-0 text-left">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Category</th>
+                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Updated</th>
+                    <th className="hidden px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 md:table-cell">Created</th>
+                    <th className="py-3 pr-6 pl-2 text-right text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredItems.map((category) => (
+                    <tr key={category.id} className="border-t border-slate-200/80 bg-white transition hover:bg-slate-50/80">
+                      <td className="px-6 py-4 align-middle">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-indigo-100 via-white to-violet-100 text-sm font-bold text-indigo-700 shadow-sm">
+                            {category.image_url ? (
+                              <img src={category.image_url} alt={category.category_name} className="h-full w-full object-cover" />
+                            ) : (
+                              (category.category_name ?? 'CT').slice(0, 2).toUpperCase()
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="truncate text-sm font-semibold text-slate-900">{category.category_name}</span>
+                              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Active</span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 align-middle text-sm text-slate-500">
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          <Clock3 className="h-3.5 w-3.5 text-slate-400" />
+                          {formatDate(category.updated_at)}
+                        </div>
+                      </td>
+                      <td className="hidden px-6 py-4 align-middle text-sm text-slate-500 md:table-cell">
+                        {formatDate(category.created_at)}
+                      </td>
+                      <td className="py-4 pr-6 pl-2 align-middle">
+                        <div className="ml-auto flex w-fit justify-end gap-1.5 rounded-lg border border-slate-200 bg-slate-50/60 p-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setEditingCategory(category)}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                            aria-label={`Edit ${category.category_name}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span className="text-[11px] font-medium">Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPendingDeleteCategory(category)}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-red-600 transition hover:bg-red-100"
+                            aria-label={`Delete ${category.category_name}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="text-[11px] font-medium">Delete</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
@@ -237,6 +281,17 @@ export default function Categories({ onNavigate }: Props) {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        open={Boolean(pendingDeleteCategory)}
+        title="Delete category"
+        description={`Are you sure you want to delete "${pendingDeleteCategory?.category_name ?? 'this category'}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        danger
+        onConfirm={handleDeleteCategory}
+        onCancel={() => setPendingDeleteCategory(null)}
+      />
     </main>
   )
 }

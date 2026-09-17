@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Download, Eye, Edit2, Filter, PackageOpen, Search } from 'lucide-react'
+import { Download, Eye, Edit2, PackageOpen } from 'lucide-react'
 import { fetchOrders, getOrderDetails, updateOrderStatus } from '@/lib/api'
 import { notifyError, notifySuccess } from '@/lib/notify'
 import { Order } from '@/types'
@@ -103,6 +103,10 @@ export default function Orders({ token }: OrdersProps) {
             date: order.created_at?.slice(0, 10) ?? order.date ?? '',
             items,
           }
+        }).sort((a, b) => {
+          const aTime = a.date ? new Date(a.date).getTime() : 0
+          const bTime = b.date ? new Date(b.date).getTime() : 0
+          return bTime - aTime
         })
 
         setOrders(normalizedOrders)
@@ -390,22 +394,20 @@ export default function Orders({ token }: OrdersProps) {
       </div>
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+        <div>
           <input
             type="text"
             placeholder="Search orders by ID, customer, or status..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <div className="relative">
-          <Filter className="absolute left-3 top-3 text-gray-400" size={20} />
+        <div>
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="All">All Statuses</option>
             <option value="Pending">Pending</option>
@@ -504,12 +506,12 @@ export default function Orders({ token }: OrdersProps) {
                     </td>
                     <td data-label="Date" className="px-6 py-4 text-sm text-gray-500">{order.date}</td>
                     <td data-label="Actions" className="px-6 py-4 text-sm">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {order.status !== 'confirmed' && (
+                      <div className="flex flex-wrap items-center gap-2 sm:justify-start">
+                        {order.status !== 'confirmed' && order.status !== 'delivered' && (
                           <button
                             type="button"
                             onClick={() => handleQuickStatusChange(order.id, 'Confirmed')}
-                            className="rounded bg-green-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+                            className="w-full rounded bg-green-600 px-2.5 py-2 text-xs font-medium text-white hover:bg-green-700 sm:w-auto"
                           >
                             Confirm
                           </button>
@@ -518,16 +520,20 @@ export default function Orders({ token }: OrdersProps) {
                           <button
                             type="button"
                             onClick={() => handleQuickStatusChange(order.id, 'Out for Delivery')}
-                            className="rounded bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                            className="w-full rounded bg-blue-600 px-2.5 py-2 text-xs font-medium text-white hover:bg-blue-700 sm:w-auto"
                           >
                             Ship
                           </button>
                         )}
-                        <button onClick={() => handleViewOrder(order.id)} className="text-blue-600 hover:text-blue-800 p-2" title="View">
-                          <Eye size={18} />
-                        </button>
-                        <button onClick={() => handleViewOrder(order.id)} className="text-blue-600 hover:text-blue-800 p-2" title="Edit">
-                          <Edit2 size={18} />
+                        <button
+                          type="button"
+                          onClick={() => handleViewOrder(order.id)}
+                          className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                          title="Edit order status"
+                          aria-label="Edit order status"
+                        >
+                          <Edit2 size={16} />
+                          Edit
                         </button>
                       </div>
                     </td>
@@ -580,13 +586,13 @@ export default function Orders({ token }: OrdersProps) {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <label className="text-sm font-medium text-gray-700">Quick actions</label>
-                {selectedOrder.status !== 'confirmed' && (
+                {selectedOrder.status !== 'confirmed' && selectedOrder.status !== 'delivered' && (
                   <button
                     type="button"
                     onClick={() => handleQuickStatusChange(selectedOrder.id, 'Confirmed')}
-                    className="rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
+                    className="w-full rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 sm:w-auto"
                   >
                     Confirm order
                   </button>
@@ -595,7 +601,7 @@ export default function Orders({ token }: OrdersProps) {
                   <button
                     type="button"
                     onClick={() => handleQuickStatusChange(selectedOrder.id, 'Out for Delivery')}
-                    className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 sm:w-auto"
                   >
                     Ship order
                   </button>
@@ -604,7 +610,7 @@ export default function Orders({ token }: OrdersProps) {
                 <select
                   value={statusDraft}
                   onChange={(event) => setStatusDraft(event.target.value)}
-                  className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm sm:w-auto"
                 >
                   {statusOptions.map((option) => (
                     <option key={option} value={option}>
@@ -615,7 +621,7 @@ export default function Orders({ token }: OrdersProps) {
                 <button
                   onClick={() => handleUpdateOrderStatus(selectedOrder.id, statusDraft)}
                   disabled={isUpdatingStatus}
-                  className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
                   {isUpdatingStatus ? 'Saving...' : 'Save status'}
                 </button>

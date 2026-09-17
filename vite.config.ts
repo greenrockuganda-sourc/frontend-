@@ -29,5 +29,18 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            react: ['react', 'react-dom'],
+            charts: ['recharts'],
+            pdf: ['jspdf', 'html2canvas'],
+            icons: ['lucide-react'],
+          },
+        },
+      },
+    },
   }
 })
