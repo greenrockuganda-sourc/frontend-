@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { writeFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import url from 'node:url'
+import webPush from 'web-push'
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 const distDir = path.join(__dirname, 'dist')
@@ -53,11 +54,22 @@ async function readRequestBody(stream) {
 const DEFAULT_BACKEND_BASE_URL = 'https://backends-production-3d0b.up.railway.app'
 const backendBaseUrl = process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || DEFAULT_BACKEND_BASE_URL
 const shouldProxyApi = backendBaseUrl.trim() !== ''
+const vapidPublicKey = process.env.VITE_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY
+
+if (vapidPublicKey && vapidPrivateKey) {
+  webPush.setVapidDetails(
+    'mailto:seller@localhost',
+    vapidPublicKey,
+    vapidPrivateKey,
+  )
+}
 
 // Simple file-backed storage for categories and brands when no external API is configured
 const dataDir = path.join(__dirname, 'data')
 const categoriesFile = path.join(dataDir, 'categories.json')
 const brandsFile = path.join(dataDir, 'brands.json')
+const pushSubscriptionsFile = path.join(dataDir, 'push-subscriptions.json')
 
 async function ensureDataDir() {
   try {
@@ -80,9 +92,93 @@ async function writeJsonFile(filePath, data) {
   await writeFile(filePath, JSON.stringify(data, null, 2), 'utf8')
 }
 
+async function loadPushSubscriptions() {
+  const subscriptions = await readJsonFile(pushSubscriptionsFile, [])
+  return Array.isArray(subscriptions) ? subscriptions : []
+}
+
+async function savePushSubscriptions(subscriptions) {
+  await writeJsonFile(pushSubscriptionsFile, subscriptions)
+}
+
+async function sendSellerPushNotification(notification) {
+  const subscriptions = await loadPushSubscriptions()
+
+  if (!vapidPublicKey || !vapidPrivateKey || subscriptions.length === 0) {
+    return { sent: 0, total: subscriptions.length, reason: 'missing_vapid_or_subscriptions' }
+  }
+
+  const payload = JSON.stringify({
+    title: notification.title || 'New seller notification',
+    body: notification.body || 'You have a new update.',
+    url: notification.url || '/',
+    data: notification.data || {},
+  })
+
+  const results = await Promise.allSettled(
+    subscriptions.map(async (subscription) => {
+      await webPush.sendNotification(subscription, payload)
+    }),
+  )
+
+  const sent = results.filter((result) => result.status === 'fulfilled').length
+
+  return { sent, total: subscriptions.length, failed: results.length - sent }
+}
+
 createServer(async (req, res) => {
   const requestUrl = new URL(req.url, `http://localhost:${port}`)
   const requestPath = requestUrl.pathname
+
+  if (requestPath === '/api/push/subscribe' && req.method === 'POST') {
+    try {
+      const body = await readRequestBody(req)
+      const payload = body && body.length ? JSON.parse(body.toString('utf8')) : {}
+      if (!payload.subscription || !payload.subscription.endpoint) {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ detail: 'subscription required' }))
+        return
+      }
+
+      const subscriptions = await loadPushSubscriptions()
+      const existingIndex = subscriptions.findIndex((item) => item.endpoint === payload.subscription.endpoint)
+
+      if (existingIndex >= 0) {
+        subscriptions[existingIndex] = payload.subscription
+      } else {
+        subscriptions.push(payload.subscription)
+      }
+
+      await savePushSubscriptions(subscriptions)
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ ok: true, count: subscriptions.length }))
+      return
+    } catch (error) {
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ detail: 'Unable to save push subscription', error: String(error) }))
+      return
+    }
+  }
+
+  if (requestPath === '/api/push/send' && req.method === 'POST') {
+    try {
+      const body = await readRequestBody(req)
+      const payload = body && body.length ? JSON.parse(body.toString('utf8')) : {}
+      const result = await sendSellerPushNotification({
+        title: payload.title || 'New seller notification',
+        body: payload.body || 'You have a new update.',
+        url: payload.url || '/',
+        data: payload.data || {},
+      })
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(result))
+      return
+    } catch (error) {
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ detail: 'Unable to send push notification', error: String(error) }))
+      return
+    }
+  }
 
   if (shouldProxyApi && requestPath.startsWith('/api')) {
     try {

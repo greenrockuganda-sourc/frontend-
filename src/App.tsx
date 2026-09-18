@@ -2,6 +2,12 @@ import { Suspense, lazy, useEffect, useState } from 'react'
 import Sidebar from '@/components/layout/Sidebar'
 import Header from '@/components/layout/Header'
 import Login from '@/pages/Login'
+import { fetchProfile, logout, registerAuthSessionCallback } from '@/lib/api'
+import { registerServiceWorker, subscribeToSellerPush } from '@/lib/pushNotifications'
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+import { UserProfile } from '@/types'
+import NotificationSystem, { useNotifications } from '@/components/NotificationSystem'
 
 const Dashboard = lazy(() => import('@/pages/Dashboard'))
 const Products = lazy(() => import('@/pages/Products'))
@@ -15,11 +21,6 @@ const Receipts = lazy(() => import('@/pages/Receipts'))
 const Reports = lazy(() => import('@/pages/Reports'))
 const Customers = lazy(() => import('@/pages/Customers'))
 const Settings = lazy(() => import('@/pages/Settings'))
-import { fetchProfile, logout, registerAuthSessionCallback } from '@/lib/api'
-import { ToastContainer, toast } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
-import { UserProfile } from '@/types'
-import NotificationSystem, { useNotifications } from '@/components/NotificationSystem'
 
 type Page = 'dashboard' | 'products' | 'brands' | 'categories' | 'createBrand' | 'createCategory' | 'orders' | 'deliveries' | 'receipts' | 'reports' | 'customers' | 'settings'
 
@@ -59,6 +60,15 @@ export default function App() {
       window.removeEventListener('cloudinary-config-error', handleCloudinaryConfigError)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return
+    }
+
+    void registerServiceWorker()
+    void subscribeToSellerPush()
+  }, [isAuthenticated])
 
   /**
    * Fetch user profile on mount and when authentication state changes.

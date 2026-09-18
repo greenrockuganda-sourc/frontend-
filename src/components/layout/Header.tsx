@@ -24,7 +24,37 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
   const [arrivalStatus, setArrivalStatus] = useState<string | null>(null)
   const [sendingArrival, setSendingArrival] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
- 
+  const seenNotificationIds = useRef<Set<string>>(new Set())
+
+  const showBrowserNotification = useCallback((title: string, message?: string) => {
+    if (!('Notification' in window)) return
+
+    const canNotify = Notification.permission === 'granted'
+    const shouldNotify = document.visibilityState === 'hidden'
+
+    if (!canNotify && Notification.permission === 'default' && shouldNotify) {
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          const browserNotification = new Notification(title, {
+            body: message || 'New seller alert',
+            tag: 'seller-order-alert',
+            requireInteraction: true,
+          })
+          browserNotification.onclick = () => window.focus()
+        }
+      }).catch(() => undefined)
+      return
+    }
+
+    if (canNotify && shouldNotify) {
+      const browserNotification = new Notification(title, {
+        body: message || 'New seller alert',
+        tag: 'seller-order-alert',
+        requireInteraction: true,
+      })
+      browserNotification.onclick = () => window.focus()
+    }
+  }, [])
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -40,6 +70,22 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
     const refresh = window.setInterval(() => void loadNotifications(), 30000)
     return () => window.clearInterval(refresh)
   }, [loadNotifications])
+
+  useEffect(() => {
+    const unseenNotifications = notifications.filter((notification) => {
+      const id = String(notification.id)
+      return !notification.is_read && !seenNotificationIds.current.has(id)
+    })
+
+    if (unseenNotifications.length === 0) return
+
+    const newestNotification = unseenNotifications[0]
+    showBrowserNotification(newestNotification.title, newestNotification.message)
+
+    unseenNotifications.forEach((notification) => {
+      seenNotificationIds.current.add(String(notification.id))
+    })
+  }, [notifications, showBrowserNotification])
 
   const unreadCount = notifications.filter((notification) => !notification.is_read).length
 
