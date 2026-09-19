@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://backends-production-3d0b.up.railway.app'
 
 let authTokenUpdater: ((token: string | null) => void) | null = null
 
@@ -468,7 +468,7 @@ export async function sendCustomerCampaignEmail(
     segment: payload.segment ?? 'app_users',
     target: payload.target ?? 'app_users',
     is_app_user: payload.is_app_user ?? true,
-    app_user_only: true,
+    app_user_only: Boolean(payload.app_user_only ?? false),
     send_to_all: Boolean(payload.send_to_all),
     recipient_count: payload.recipient_count ?? 1,
     recipients: payload.recipients ?? (payload.customer_email ? [payload.customer_email] : []),
@@ -515,9 +515,10 @@ export async function sendBulkAppUserEmailCampaign(
     subject: payload.subject,
     message: payload.message,
     app_domain: true,
-    segment: 'app_users',
-    target: 'app_users',
-    is_app_user: true,
+    segment: 'customers',
+    target: 'customers',
+    is_app_user: false,
+    app_user_only: false,
     send_to_all: true,
     recipient_count: recipientEmails.length,
     recipients: recipientEmails,

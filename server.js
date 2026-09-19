@@ -48,9 +48,9 @@ async function readRequestBody(stream) {
   return Buffer.concat(chunks)
 }
 
-// Railway injects API_BASE_URL when configured. Keep the deployed backend as a
-// fallback so the frontend can still proxy authenticated API requests if the
-// frontend service variables have not yet been configured.
+// Railway injects API_BASE_URL when configured. Keep the deployed backend as the
+// default so local frontend runs against the hosted backend unless env vars are
+// explicitly set to another target.
 const DEFAULT_BACKEND_BASE_URL = 'https://backends-production-3d0b.up.railway.app'
 const backendBaseUrl = process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || DEFAULT_BACKEND_BASE_URL
 const shouldProxyApi = backendBaseUrl.trim() !== ''

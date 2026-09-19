@@ -1,0 +1,1 @@
+import{z as r}from"./index-J4F9NxSW.js";const s={position:"bottom-right",autoClose:4e3,hideProgressBar:!1,closeOnClick:!0,pauseOnHover:!0,draggable:!0,theme:"colored"};function n(o,e){r.success(o,{...s,...e})}function a(o,e){r.error(o,{...s,...e})}export{a,n};
