@@ -38,7 +38,7 @@ export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
-  const { notifications, dismissNotification, addNotification } = useNotifications()
+  const { notifications, dismissNotification, addNotification, clearAll } = useNotifications()
 
   // Register session callback - backend validates all auth
   useEffect(() => {
@@ -215,6 +215,7 @@ export default function App() {
           onProfileClick={() => handleNavigate('settings')}
           notifications={notifications}
           onDismissNotification={dismissNotification}
+          onClearAllNotifications={clearAll}
           addNotification={addNotification}
         />
         <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">

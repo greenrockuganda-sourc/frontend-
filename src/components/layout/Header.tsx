@@ -10,11 +10,12 @@ interface HeaderProps {
   onProfileClick?: () => void
   notifications?: Array<{ id: string; type: string; title: string; message?: string }>
   onDismissNotification?: (id: string) => void
+  onClearAllNotifications?: () => void
   addNotification?: (n: { type: 'success' | 'error' | 'warning' | 'info'; title: string; message?: string; duration?: number }) => string
   pageTitle?: string
 }
 
-export default function Header({ onMenuClick, user, token, onLogout, onProfileClick, notifications: initialNotifications = [], onDismissNotification, addNotification, pageTitle }: HeaderProps) {
+export default function Header({ onMenuClick, user, token, onLogout, onProfileClick, notifications: initialNotifications = [], onDismissNotification, onClearAllNotifications, addNotification, pageTitle }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState<any[]>(Array.isArray(initialNotifications) ? initialNotifications : [])
@@ -95,6 +96,13 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
     if (!showNotifications) void loadNotifications()
   }
 
+  const clearAllNotifications = () => {
+    if (onClearAllNotifications) {
+      onClearAllNotifications()
+    }
+    setNotifications([])
+  }
+
   const readNotification = async (notification: any) => {
     if (notification.is_read) return
     setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, is_read: true } : item))
@@ -167,40 +175,6 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
 
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="relative">
-            <button onClick={() => setShowNotifications((s) => !s)} className="relative rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900" aria-label="Notifications">
-              <Bell size={18} />
-              {notifications.length > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">{notifications.length}</span>
-              )}
-            </button>
-
-            {showNotifications && (
-              <div className="absolute right-0 z-50 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-xl">
-                <div className="p-3">
-                  <p className="text-sm font-semibold text-slate-700">Notifications</p>
-                </div>
-                <div className="max-h-60 overflow-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-3 text-sm text-slate-500">No notifications</div>
-                  ) : (
-                    notifications.map((n) => (
-                      <div key={n.id} className="flex items-start justify-between gap-3 border-t border-slate-100 p-3">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-900">{n.title}</p>
-                          {n.message && <p className="text-xs text-slate-600">{n.message}</p>}
-                        </div>
-                        <div className="flex-shrink-0 pl-2">
-                          <button onClick={() => { onDismissNotification?.(n.id); }} className="text-xs text-indigo-600">Dismiss</button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="relative">
             <button onClick={openNotifications} className="relative rounded-lg p-2.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900" aria-label="Notifications" aria-expanded={showNotifications}>
               <Bell size={19} />
               {unreadCount > 0 && <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
@@ -209,7 +183,16 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
               <div className="absolute right-0 z-50 mt-2 w-[min(24rem,calc(100vw-1.5rem))] rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <p className="font-semibold text-slate-900">Notifications</p>
-                  <button onClick={() => { setShowNewArrivalForm((value) => !value); setArrivalStatus(null) }} className="rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">New arrival</button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={clearAllNotifications}
+                      disabled={notifications.length === 0}
+                      className="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Clear all
+                    </button>
+                    <button onClick={() => { setShowNewArrivalForm((value) => !value); setArrivalStatus(null) }} className="rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">New arrival</button>
+                  </div>
                 </div>
                 {showNewArrivalForm && (
                   <div className="mb-3 rounded-lg bg-blue-50 p-3">
