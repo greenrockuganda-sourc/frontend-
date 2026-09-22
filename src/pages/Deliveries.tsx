@@ -9,6 +9,17 @@ interface DeliveriesProps {
   token?: string
 }
 
+const formatDeliveryLocation = (delivery: any) => {
+  const district = delivery?.district ?? delivery?.customer?.district ?? delivery?.customer_details?.district ?? ''
+  const division = delivery?.division ?? delivery?.customer?.division ?? delivery?.customer_details?.division ?? ''
+  const parish = delivery?.parish ?? delivery?.customer?.parish ?? delivery?.customer_details?.parish ?? ''
+  const village = delivery?.village ?? delivery?.customer?.village ?? delivery?.customer_details?.village ?? ''
+  const fallbackAddress = delivery?.full_location ?? delivery?.location ?? delivery?.delivery_address ?? delivery?.address ?? ''
+
+  const composedLocation = [district, division, parish, village].filter(Boolean).join(', ')
+  return composedLocation || fallbackAddress || 'Address unavailable'
+}
+
 export default function Deliveries({ token }: DeliveriesProps) {
   const activeToken = token ?? (typeof window !== 'undefined' ? localStorage.getItem('access') ?? '' : '')
   const [deliveries, setDeliveries] = useState<Delivery[]>([])
@@ -34,15 +45,26 @@ export default function Deliveries({ token }: DeliveriesProps) {
             ? data
             : []
 
-        const normalizedDeliveries = deliveriesArray.map((delivery: any) => ({
-          id: delivery.id ?? delivery.delivery_id ?? 'N/A',
-          orderId: delivery.order_number ?? delivery.orderId ?? 'N/A',
-          driver: delivery.delivery_person ?? delivery.driver_name ?? delivery.driver ?? 'Unassigned',
-          address: delivery.delivery_address ?? delivery.address ?? 'Address unavailable',
-          status: (delivery.delivery_status ?? delivery.status ?? 'preparing').toLowerCase(),
-          receiptIssued: Boolean(delivery.receipt_issued ?? delivery.receiptIssued ?? false),
-          createdAt: delivery.created_at ?? delivery.date ?? delivery.delivery_date ?? '',
-        })).sort((a: any, b: any) => {
+        const normalizedDeliveries = deliveriesArray.map((delivery: any) => {
+          const orderNumber = delivery.order_number ?? delivery.orderNumber ?? delivery.orderId ?? 'N/A'
+          const deliveryNumber = delivery.delivery_number ?? delivery.deliveryNumber ?? delivery.id ?? delivery.delivery_id ?? 'N/A'
+          const salonName = delivery.salon_name ?? delivery.salonName ?? delivery.customer_name ?? delivery.customer ?? 'Unknown salon'
+          const location = formatDeliveryLocation(delivery)
+
+          return {
+            id: delivery.id ?? delivery.delivery_id ?? 'N/A',
+            orderId: orderNumber,
+            orderNumber,
+            deliveryNumber,
+            driver: delivery.delivery_person ?? delivery.driver_name ?? delivery.driver ?? 'Unassigned',
+            salonName,
+            address: location,
+            location,
+            status: (delivery.delivery_status ?? delivery.status ?? 'preparing').toLowerCase(),
+            receiptIssued: Boolean(delivery.receipt_issued ?? delivery.receiptIssued ?? false),
+            createdAt: delivery.created_at ?? delivery.date ?? delivery.delivery_date ?? '',
+          }
+        }).sort((a: any, b: any) => {
           const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0
           const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0
           return bTime - aTime
@@ -81,14 +103,14 @@ export default function Deliveries({ token }: DeliveriesProps) {
     return label.charAt(0).toUpperCase() + label.slice(1)
   }
 
-  const handleMarkDelivered = async (delivery: { id: string; orderId?: string | number | null; status?: string }) => {
+  const handleMarkDelivered = async (delivery: { id: string; orderNumber?: string | number | null; status?: string }) => {
     setError(null)
     const original = deliveries
     try {
       setBusyDelivery(delivery.id)
       await updateDelivery(activeToken, delivery.id, 'Delivered')
-      if (delivery.orderId) {
-        await updateOrderStatus(activeToken, String(delivery.orderId), 'Delivered')
+      if (delivery.orderNumber) {
+        await updateOrderStatus(activeToken, String(delivery.orderNumber), 'Delivered')
       }
       setDeliveries((currentDeliveries) => currentDeliveries.map((item) =>
         item.id === delivery.id ? { ...item, status: 'delivered', receiptIssued: true } : item
@@ -139,10 +161,10 @@ export default function Deliveries({ token }: DeliveriesProps) {
           <table className="responsive-table w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Delivery ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Driver</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Address</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order Number</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Delivery Number</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Salon Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Delivery Location</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
@@ -169,13 +191,13 @@ export default function Deliveries({ token }: DeliveriesProps) {
               ) : (
                 deliveries.map((delivery) => (
                   <tr key={delivery.id} className="hover:bg-gray-50 transition-colors">
-                    <td data-label="Delivery ID" className="px-6 py-4 text-sm font-medium text-blue-600">{delivery.id}</td>
-                    <td data-label="Order ID" className="px-6 py-4 text-sm text-gray-900">{delivery.orderId}</td>
-                    <td data-label="Driver" className="px-6 py-4 text-sm text-gray-900">{delivery.driver}</td>
-                    <td data-label="Address" className="px-6 py-4 text-sm text-gray-600">
+                    <td data-label="Order Number" className="px-6 py-4 text-sm font-medium text-blue-600">{delivery.orderNumber || delivery.orderId}</td>
+                    <td data-label="Delivery Number" className="px-6 py-4 text-sm text-gray-900">{delivery.deliveryNumber || delivery.id}</td>
+                    <td data-label="Salon Name" className="px-6 py-4 text-sm text-gray-900">{delivery.salonName || 'Unknown salon'}</td>
+                    <td data-label="Delivery Location" className="px-6 py-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1">
                         <MapPin size={16} className="flex-shrink-0" />
-                        <span className="break-words">{delivery.address}</span>
+                        <span className="break-words">{delivery.location || delivery.address}</span>
                       </span>
                     </td>
                     <td data-label="Status" className="px-6 py-4 text-sm">

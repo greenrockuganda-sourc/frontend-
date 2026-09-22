@@ -35,6 +35,9 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
   const customerName = receipt.customerName || (receipt as any).customer || 'Customer'
   const orderId = receipt.orderId || 'ORD-0000000'
   const itemSubtotal = receipt.items.reduce((sum, item) => sum + Number(item.total || 0), 0) || receipt.subtotal || 0
+  const getItemImageUrl = (item: any) => {
+    return item?.imageUrl || item?.image_url || item?.productImage || item?.image || item?.product?.image || item?.product?.image_url || null
+  }
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank', 'width=420,height=900')
@@ -44,13 +47,21 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
     }
 
     const receiptItems = receipt.items?.length
-      ? receipt.items.map((item) => `
+      ? receipt.items.map((item) => {
+          const imageUrl = getItemImageUrl(item)
+          return `
         <tr>
-          <td>${item.productName || 'Item'}</td>
+          <td>
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${imageUrl ? `<img src="${imageUrl}" alt="${item.productName || 'Item'}" style="width:24px; height:24px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0;" />` : '<div style="width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid #e2e8f0; background:#f8fafc; font-size:12px;">📄</div>'}
+              <span>${item.productName || 'Item'}</span>
+            </div>
+          </td>
           <td>${item.quantity || 0}</td>
           <td>${formatCurrency(Number(item.total || 0))}</td>
         </tr>
-      `).join('')
+      `
+        }).join('')
       : '<tr><td colspan="3">No item details available.</td></tr>'
 
     const printMarkup = `<!doctype html>
@@ -208,10 +219,8 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
       doc.line(margin, y, pageWidth - margin, y)
       y += 6
       doc.setFontSize(6.5)
-      doc.text('+256 700 123 456', margin, y)
-      doc.text('support@glow.ug', pageWidth / 2, y)
-      y += 4
-      doc.text('Kampala, Uganda', margin, y)
+      doc.text('0746998111 / 0772616736', margin, y)
+      doc.text('glowsalonsupplies24@gmail.com', pageWidth / 2, y)
 
       const filename = `receipt-${String(receipt.receiptNumber || 'receipt').replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-_]/g, '')}.pdf`
 
@@ -370,18 +379,30 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
                 </div>
 
                 {receipt.items && receipt.items.length > 0 ? (
-                  receipt.items.map((item, index) => (
-                    <div key={`${item.id || index}`} className="grid grid-cols-[1.8fr_1.2fr_0.8fr] items-center gap-2 border-t border-[#e5edf4] px-3 py-4 text-[13px] text-slate-700 last:border-b-0 sm:px-4 sm:text-[15px]">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#dfeaf3] bg-[#f7fafc] text-sm text-[#0d2d48] sm:h-10 sm:w-10">📄</div>
-                        <div className="min-w-0 break-words font-extrabold text-[#0d2d48]">{item.productName}</div>
+                  receipt.items.map((item, index) => {
+                    const imageUrl = getItemImageUrl(item)
+
+                    return (
+                      <div key={`${item.id || index}`} className="grid grid-cols-[1.8fr_1.2fr_0.8fr] items-center gap-2 border-t border-[#e5edf4] px-3 py-4 text-[13px] text-slate-700 last:border-b-0 sm:px-4 sm:text-[15px]">
+                        <div className="flex min-w-0 items-center gap-3">
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={item.productName || 'Product'}
+                              className="h-9 w-9 shrink-0 rounded-lg border border-[#dfeaf3] bg-[#f7fafc] object-cover sm:h-10 sm:w-10"
+                            />
+                          ) : (
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#dfeaf3] bg-[#f7fafc] text-sm text-[#0d2d48] sm:h-10 sm:w-10">📄</div>
+                          )}
+                          <div className="min-w-0 break-words font-extrabold text-[#0d2d48]">{item.productName}</div>
+                        </div>
+                        <div className="text-center font-semibold text-slate-700">
+                          {item.quantity} × {formatCurrency(item.price)}
+                        </div>
+                        <div className="text-right font-extrabold text-[#0d2d48]">{formatCurrency(item.total)}</div>
                       </div>
-                      <div className="text-center font-semibold text-slate-700">
-                        {item.quantity} × {formatCurrency(item.price)}
-                      </div>
-                      <div className="text-right font-extrabold text-[#0d2d48]">{formatCurrency(item.total)}</div>
-                    </div>
-                  ))
+                    )
+                  })
                 ) : (
                   <div className="px-4 py-5 text-slate-500">No item details available.</div>
                 )}
@@ -437,16 +458,8 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
                 </div>
 
                 <div className="grid gap-2 text-[11px] font-medium text-slate-200 sm:text-[12px]">
-                  <div className="flex items-center gap-2 break-words"><span className="w-4 shrink-0 text-center">📞</span><span>+256 700 123 456</span></div>
-                  <div className="flex items-center gap-2 break-words"><span className="w-4 shrink-0 text-center">✉</span><span>support@glow.ug</span></div>
-                  <div className="flex items-center gap-2 break-words"><span className="w-4 shrink-0 text-center">📍</span><span>Kampala, Uganda</span></div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm sm:h-10 sm:w-10">f</div>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm sm:h-10 sm:w-10">◎</div>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm sm:h-10 sm:w-10">x</div>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm sm:h-10 sm:w-10">▶</div>
+                  <div className="flex items-center gap-2 break-words"><span className="w-4 shrink-0 text-center">📞</span><span>0746998111 / 0772616736</span></div>
+                  <div className="flex items-center gap-2 break-words"><span className="w-4 shrink-0 text-center">✉</span><span>glowsalonsupplies24@gmail.com</span></div>
                 </div>
               </div>
             </div>

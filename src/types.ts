@@ -58,10 +58,13 @@ export interface Order {
 export interface Delivery {
   id: string
   orderId: string
+  orderNumber?: string
+  deliveryNumber?: string
   salonName?: string
   userName?: string
-  driver: string
+  driver?: string
   address: string
+  location?: string
   status: string
   receiptIssued: boolean
   receiptId?: string

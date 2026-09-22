@@ -34,7 +34,10 @@ export default function App() {
 
   const [currentPage, setCurrentPage] = useState<Page>(readInitialPage)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return Boolean(localStorage.getItem('access') || localStorage.getItem('refresh'))
+  })
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)

@@ -17,10 +17,10 @@ export default function Customers({ token }: CustomersProps) {
   const [roleFilter, setRoleFilter] = useState<'all' | 'app' | 'seller' | 'customer'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [sortBy, setSortBy] = useState<'newest' | 'spend' | 'activity'>('newest')
-  const [pushTitle, setPushTitle] = useState('Customer update')
-  const [pushMessage, setPushMessage] = useState('We have a new offer ready for you. Check your dashboard for details.')
-  const [campaignSubject, setCampaignSubject] = useState('New offer to explore')
-  const [campaignMessage, setCampaignMessage] = useState('Hi, we have new products and offers ready for you. Visit the store today.')
+  const [pushTitle, setPushTitle] = useState('Order update from Glow')
+  const [pushMessage, setPushMessage] = useState('Hi there, your order is being prepared with care and you will receive real-time updates as it moves through our delivery process. Please keep an eye on your dashboard and app notifications for the latest status. For help, contact us on 0746998111 or 0772616736, or email glowsalonsupplies24@gmail.com.')
+  const [campaignSubject, setCampaignSubject] = useState('Fresh salon essentials are now available')
+  const [campaignMessage, setCampaignMessage] = useState('Hi there, we have refreshed our salon essentials collection with high-quality products and limited-time offers selected to support your business. Explore the latest arrivals in your store today and enjoy reliable delivery from Glow Salon Supplies. For questions or support, call 0746998111 or 0772616736, or email glowsalonsupplies24@gmail.com.')
   const [sendingPush, setSendingPush] = useState(false)
   const [sendingCampaign, setSendingCampaign] = useState(false)
   const [templates, setTemplates] = useState<Array<{ id: string; name: string; subject: string; message: string; pushTitle: string; type: 'email' | 'push' }>>([])
@@ -113,25 +113,25 @@ export default function Customers({ token }: CustomersProps) {
       id: 'new-arrival',
       name: 'New Arrival',
       type: 'email',
-      subject: 'New products are here',
-      message: 'Hi, we just added new products and offers for you. Visit the app to explore what is fresh today.',
-      pushTitle: 'New arrival',
+      subject: 'Fresh salon essentials are now available',
+      message: 'Hi there, we have refreshed our salon essentials collection with premium products and carefully selected offers for your business. Explore the latest arrivals today and enjoy smooth ordering, reliable delivery, and dependable support from Glow Salon Supplies. For assistance, call 0746998111 or 0772616736, or email glowsalonsupplies24@gmail.com.',
+      pushTitle: 'New arrivals at Glow',
     },
     {
       id: 'offer',
-      name: 'Offer',
+      name: 'Exclusive Offer',
       type: 'email',
-      subject: 'Special offer just for you',
-      message: 'Hi, we have a time-limited offer ready for you. Check the app now to unlock your offer.',
-      pushTitle: 'Special offer',
+      subject: 'Special offer for your next purchase',
+      message: 'Hi there, we are pleased to offer you a limited-time promotion on selected salon essentials and professional products. Take advantage of this offer while stock lasts and enjoy fast, trusted service from Glow Salon Supplies. To place an order or ask questions, contact us on 0746998111 or 0772616736, or email glowsalonsupplies24@gmail.com.',
+      pushTitle: 'Exclusive offer from Glow',
     },
     {
-      id: 'welcome-back',
-      name: 'Welcome Back',
+      id: 'delivery-update',
+      name: 'Delivery Update',
       type: 'push',
-      subject: 'Welcome back',
-      message: 'Welcome back to your dashboard. We have new updates and offers ready for you.',
-      pushTitle: 'Welcome back',
+      subject: 'Delivery update from Glow',
+      message: 'Hi there, your order is moving through our delivery process and we will keep you informed with timely updates until it reaches you. Please check your dashboard or app notifications for the latest status. Need help? Call 0746998111 or 0772616736, or email glowsalonsupplies24@gmail.com.',
+      pushTitle: 'Delivery update from Glow',
     },
   ]
 
