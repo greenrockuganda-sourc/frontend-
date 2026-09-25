@@ -129,10 +129,10 @@ export async function logout() {
   })
 }
 
-export async function forgotPassword(email: string) {
+export async function forgotPassword(identifier: string) {
   return request<any>('/api/auth/forgot-password/', {
     method: 'POST',
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ identifier }),
   })
 }
 

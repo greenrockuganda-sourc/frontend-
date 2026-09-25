@@ -33,6 +33,7 @@ export default function App() {
   }
 
   const [currentPage, setCurrentPage] = useState<Page>(readInitialPage)
+  const [navHistory, setNavHistory] = useState<Page[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
@@ -144,6 +145,15 @@ export default function App() {
   const handleNavigate = (page: Page) => {
     setCurrentPage(page)
     setSidebarOpen(false)
+    // push previous page to history stack (avoid duplicates)
+    setNavHistory((prev) => {
+      const last = prev.length ? prev[prev.length - 1] : null
+      if (last === currentPage) return prev
+      const next = [...prev, currentPage]
+      // keep history reasonable
+      if (next.length > 50) next.shift()
+      return next
+    })
 
     // Update URL to reflect current page while preserving other query params (e.g., dashboardRange)
     if (typeof window !== 'undefined') {
@@ -156,6 +166,25 @@ export default function App() {
         // fallback to replaceState if pushState fails
         window.history.replaceState(null, '', newUrl)
       }
+    }
+  }
+
+  const handleGoBack = (steps = 1) => {
+    const s = Math.max(1, Math.min(steps, 5))
+    setNavHistory((prev) => {
+      if (prev.length === 0) return prev
+      const targetIndex = Math.max(0, prev.length - s)
+      const target = prev[targetIndex] ?? 'dashboard'
+      setCurrentPage(target)
+      // trim history up to targetIndex
+      return prev.slice(0, targetIndex)
+    })
+    // update URL
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      params.set('page', (navHistory[navHistory.length - Math.min(steps, 5)] ?? 'dashboard') as string)
+      const newUrl = `${window.location.pathname}?${params.toString()}`
+      try { window.history.pushState(null, '', newUrl) } catch { window.history.replaceState(null, '', newUrl) }
     }
   }
 
@@ -212,6 +241,7 @@ export default function App() {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden min-h-0">
         <Header
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          onBack={handleGoBack}
           user={user}
           token={accessToken}
           onLogout={handleLogout}

@@ -4,6 +4,7 @@ import { fetchNotifications, markNotificationRead, sendNewArrivalNotification } 
 
 interface HeaderProps {
   onMenuClick: () => void
+  onBack?: (steps?: number) => void
   user?: any
   token?: string
   onLogout: () => void
@@ -145,13 +146,26 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl">
       <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-          <button
-            onClick={onMenuClick}
-            className="rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden"
-            aria-label="Open menu"
-          >
-            <Menu size={22} />
-          </button>
+          <div className="relative flex items-center gap-2">
+            <button
+              onClick={onMenuClick}
+              className="rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+              aria-label="Open menu"
+            >
+              <Menu size={22} />
+            </button>
+            {/* Back menu: quick choices to go back 1..5 pages */}
+            <div className="relative">
+              <button
+                onClick={() => onBack?.(1)}
+                title="Go back (1)"
+                className="rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              >
+                <ChevronDown size={18} />
+              </button>
+              <div className="absolute left-0 mt-10 hidden w-40 rounded-xl border border-slate-200 bg-white shadow-lg group-hover:block" />
+            </div>
+          </div>
 
           <div className="flex flex-1 items-center justify-center sm:justify-start">
             <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-indigo-200/80 bg-gradient-to-br from-indigo-100 via-white to-violet-100 sm:h-16 sm:w-16">
