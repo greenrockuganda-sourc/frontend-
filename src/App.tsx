@@ -170,22 +170,22 @@ export default function App() {
   }
 
   const handleGoBack = (steps = 1) => {
-    const s = Math.max(1, Math.min(steps, 5))
+    const s = Math.max(1, Math.min(steps, 6))
     setNavHistory((prev) => {
       if (prev.length === 0) return prev
       const targetIndex = Math.max(0, prev.length - s)
       const target = prev[targetIndex] ?? 'dashboard'
       setCurrentPage(target)
       // trim history up to targetIndex
+      // update URL using computed target
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search)
+        params.set('page', target as string)
+        const newUrl = `${window.location.pathname}?${params.toString()}`
+        try { window.history.pushState(null, '', newUrl) } catch { window.history.replaceState(null, '', newUrl) }
+      }
       return prev.slice(0, targetIndex)
     })
-    // update URL
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      params.set('page', (navHistory[navHistory.length - Math.min(steps, 5)] ?? 'dashboard') as string)
-      const newUrl = `${window.location.pathname}?${params.toString()}`
-      try { window.history.pushState(null, '', newUrl) } catch { window.history.replaceState(null, '', newUrl) }
-    }
   }
 
   // Use the stored access token when available so authenticated actions (including order status changes)
