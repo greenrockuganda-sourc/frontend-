@@ -91,7 +91,6 @@ export function NotificationsPanel() {
           {notifications.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-center">
               <div>
-                <Bell className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
                 <p className="text-sm text-muted-foreground">No notifications yet</p>
               </div>
             </div>

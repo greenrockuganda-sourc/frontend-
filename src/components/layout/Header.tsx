@@ -98,9 +98,20 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
   }
 
   const clearAllNotifications = () => {
-    if (onClearAllNotifications) {
-      onClearAllNotifications()
+    // mark all unread notifications as read on the backend, then clear local list
+    const unread = notifications.filter((n) => !n.is_read)
+    if (unread.length > 0) {
+      Promise.allSettled(unread.map((n) => markNotificationRead(token ?? '', n.id))).then(() => {
+        if (onClearAllNotifications) onClearAllNotifications()
+        setNotifications([])
+      }).catch(() => {
+        // if marking fails, still clear local notifications to avoid duplicate UI
+        if (onClearAllNotifications) onClearAllNotifications()
+        setNotifications([])
+      })
+      return
     }
+    if (onClearAllNotifications) onClearAllNotifications()
     setNotifications([])
   }
 
