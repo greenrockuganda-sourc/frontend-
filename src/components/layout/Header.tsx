@@ -1,4 +1,4 @@
-import { Menu, Bell, User, LogOut, Settings, ChevronDown, Search } from 'lucide-react'
+import { Menu, Bell, User, LogOut, ChevronDown } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchNotifications, markNotificationRead, sendNewArrivalNotification } from '@/lib/api'
 
@@ -16,7 +16,7 @@ interface HeaderProps {
   pageTitle?: string
 }
 
-export default function Header({ onMenuClick, user, token, onLogout, onProfileClick, notifications: initialNotifications = [], onDismissNotification, onClearAllNotifications, addNotification, pageTitle }: HeaderProps) {
+export default function Header({ onMenuClick, onBack, user, token, onLogout, onProfileClick, notifications: initialNotifications = [], onClearAllNotifications }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState<any[]>(Array.isArray(initialNotifications) ? initialNotifications : [])
@@ -25,7 +25,6 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
   const [arrivalMessage, setArrivalMessage] = useState('')
   const [arrivalStatus, setArrivalStatus] = useState<string | null>(null)
   const [sendingArrival, setSendingArrival] = useState(false)
-  const menuRef = useRef<HTMLDivElement | null>(null)
   const seenNotificationIds = useRef<Set<string>>(new Set())
 
   const showBrowserNotification = useCallback((title: string, message?: string) => {
@@ -60,7 +59,7 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
 
   const loadNotifications = useCallback(async () => {
     try {
-      const data = await fetchNotifications(token)
+      const data = await fetchNotifications(token ?? undefined)
       setNotifications(Array.isArray(data) ? data : [])
     } catch {
       // Notification failures should not interrupt the dashboard.
@@ -101,7 +100,7 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
     // mark all unread notifications as read on the backend, then clear local list
     const unread = notifications.filter((n) => !n.is_read)
     if (unread.length > 0) {
-      Promise.allSettled(unread.map((n) => markNotificationRead(token ?? '', n.id))).then(() => {
+      Promise.allSettled(unread.map((n) => markNotificationRead(token ?? undefined, n.id))).then(() => {
         if (onClearAllNotifications) onClearAllNotifications()
         setNotifications([])
       }).catch(() => {
@@ -119,7 +118,7 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
     if (notification.is_read) return
     setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, is_read: true } : item))
     try {
-      await markNotificationRead(token, notification.id)
+      await markNotificationRead(token ?? undefined, notification.id)
     } catch {
       void loadNotifications()
     }
@@ -134,7 +133,7 @@ export default function Header({ onMenuClick, user, token, onLogout, onProfileCl
     setSendingArrival(true)
     setArrivalStatus(null)
     try {
-      const result = await sendNewArrivalNotification(token, arrivalTitle.trim() || 'New arrival at Glow', message)
+      const result = await sendNewArrivalNotification(token ?? '', arrivalTitle.trim() || 'New arrival at Glow', message)
       setArrivalStatus(`Sent to ${result.recipient_count} customer${result.recipient_count === 1 ? '' : 's'}.`)
       setArrivalMessage('')
       setShowNewArrivalForm(false)

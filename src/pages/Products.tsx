@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, Search, PackageOpen, Filter, X, Download } from 'lucide-react'
 import { fetchProducts, getCategories, getBrands, createProduct, updateProduct, deleteProduct } from '@/lib/api'
 import { Product, Category, Brand } from '@/types'
-import { notifyError, notifySuccess } from '@/lib/notify'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import { SkeletonTable } from '@/components/Skeleton'
 import ErrorMessage from '@/components/ErrorMessage'
 import { cloudinaryService } from '../../lib/cloudinary-service'
+import { notifySuccess } from '@/lib/notify'
 
 interface ProductsProps {
   onNavigate?: (page: string) => void
@@ -15,7 +15,7 @@ interface ProductsProps {
 const MIN_PRODUCT_IMAGES = 1
 const MAX_PRODUCT_IMAGES = 4
 
-export default function Products({ onNavigate }: ProductsProps) {
+export default function Products({}: ProductsProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
@@ -149,7 +149,7 @@ export default function Products({ onNavigate }: ProductsProps) {
         setLoading(true)
         setError(null)
         // fetchProducts expects (token?, search?), so pass the search as the second arg
-        const data = await fetchProducts(undefined, debouncedSearch)
+        const data = await fetchProducts('', debouncedSearch)
         if (!active) {
           return
         }
@@ -770,7 +770,7 @@ export default function Products({ onNavigate }: ProductsProps) {
               </button>
               <button
                 type="button"
-                onClick={(e) => { const form = document.querySelector('#create-product-form') as HTMLFormElement | null; if (form) form.requestSubmit(); }}
+                onClick={() => { const form = document.querySelector('#create-product-form') as HTMLFormElement | null; if (form) form.requestSubmit(); }}
                 disabled={isSubmitting || uploadingImages}
                 className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 font-medium text-white shadow-[0_18px_28px_-18px_rgba(99,102,241,0.9)] transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
               >

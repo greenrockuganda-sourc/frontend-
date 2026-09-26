@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Download, Send, FileText } from 'lucide-react'
-import { fetchReport, sendReportEmail } from '@/lib/api'
+import { downloadReport, fetchReport, sendReportEmail } from '@/lib/api'
 import { notifyError, notifySuccess } from '@/lib/notify'
 
 const reportTypes = [
@@ -192,7 +192,7 @@ export default function Reports({ token }: ReportsProps) {
       const params: Record<string, string> = {}
       if (startDate) params.start_date = startDate
       if (endDate) params.end_date = endDate
-      const blob = await downloadReport(activeToken, reportType, params, format)
+      const blob = await downloadReport(activeToken || '', reportType, params, format)
       const extension = format === 'excel' ? 'xlsx' : 'csv'
       const filename = `${reportType}-report.${extension}`
       const tempUrl = window.URL.createObjectURL(blob)

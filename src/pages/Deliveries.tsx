@@ -3,7 +3,7 @@ import { MapPin, PackageOpen } from 'lucide-react'
 import { fetchDeliveries, updateDelivery, updateOrderStatus } from '@/lib/api'
 import { notifySuccess } from '@/lib/notify'
 import { Delivery } from '@/types'
-import Skeleton, { SkeletonTable } from '@/components/Skeleton'
+import { SkeletonTable } from '@/components/Skeleton'
 
 interface DeliveriesProps {
   token?: string
@@ -48,7 +48,8 @@ export default function Deliveries({ token }: DeliveriesProps) {
         const normalizedDeliveries = deliveriesArray.map((delivery: any) => {
           const orderNumber = delivery.order_number ?? delivery.orderNumber ?? delivery.orderId ?? 'N/A'
           const deliveryNumber = delivery.delivery_number ?? delivery.deliveryNumber ?? delivery.id ?? delivery.delivery_id ?? 'N/A'
-          const salonName = delivery.salon_name ?? delivery.salonName ?? delivery.customer_name ?? delivery.customer ?? 'Unknown salon'
+          const customerName = delivery.customer_name ?? delivery.customer ?? delivery.recipient_name ?? 'Guest'
+          const salonName = delivery.salon_name ?? delivery.salonName ?? customerName ?? 'Unknown salon'
           const location = formatDeliveryLocation(delivery)
 
           return {
@@ -56,6 +57,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
             orderId: orderNumber,
             orderNumber,
             deliveryNumber,
+            customer: customerName,
             driver: delivery.delivery_person ?? delivery.driver_name ?? delivery.driver ?? 'Unassigned',
             salonName,
             address: location,
@@ -68,7 +70,10 @@ export default function Deliveries({ token }: DeliveriesProps) {
           const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0
           const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0
           return bTime - aTime
-        }).map(({ createdAt, ...delivery }) => delivery)
+        }).map((delivery: any) => {
+          const { createdAt: _createdAt, ...rest } = delivery as any
+          return rest
+        })
         setDeliveries(normalizedDeliveries)
       } catch (err) {
         if (active) {
@@ -162,7 +167,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order Number</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Delivery Number</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Customer</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Salon Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Delivery Location</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
@@ -172,15 +177,15 @@ export default function Deliveries({ token }: DeliveriesProps) {
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={6}>
                     <div className="px-4">
-                      <SkeletonTable rows={5} columns={7} />
+                      <SkeletonTable rows={5} columns={6} />
                     </div>
                   </td>
                 </tr>
               ) : !loading && deliveries.length === 0 ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={6}>
                     <div className="flex flex-col items-center justify-center px-4 py-12">
                       <PackageOpen size={48} className="text-gray-400 mb-3" />
                       <p className="text-sm font-medium text-gray-900">No deliveries yet</p>
@@ -192,7 +197,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
                 deliveries.map((delivery) => (
                   <tr key={delivery.id} className="hover:bg-gray-50 transition-colors">
                     <td data-label="Order Number" className="px-6 py-4 text-sm font-medium text-blue-600">{delivery.orderNumber || delivery.orderId}</td>
-                    <td data-label="Delivery Number" className="px-6 py-4 text-sm text-gray-900">{delivery.deliveryNumber || delivery.id}</td>
+                    <td data-label="Customer" className="px-6 py-4 text-sm text-gray-900">{delivery.customer || 'Guest'}</td>
                     <td data-label="Salon Name" className="px-6 py-4 text-sm text-gray-900">{delivery.salonName || 'Unknown salon'}</td>
                     <td data-label="Delivery Location" className="px-6 py-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1">

@@ -143,7 +143,7 @@ export async function resetPassword(payload: { uid: string; token: string; new_p
   })
 }
 
-export async function register(userData: { first_name: string; last_name: string; email: string; phone_number: string; password: string; role?: string }) {
+export async function register(userData: { first_name: string; last_name: string; email: string; phone_number: string; password: string; role?: string; salon_name?: string; shop_name?: string; business_name?: string }) {
   return request<any>('/api/auth/register/', {
     method: 'POST',
     body: JSON.stringify(userData),
@@ -415,11 +415,11 @@ export async function updateDelivery(token: string, deliveryId: string, delivery
   }, token)
 }
 
-export async function fetchNotifications(token: string) {
+export async function fetchNotifications(token?: string) {
   return request<any[]>('/api/admin/notifications/', {}, token)
 }
 
-export async function markNotificationRead(token: string, notificationId: number) {
+export async function markNotificationRead(token: string | undefined, notificationId: number) {
   return request<any>(`/api/admin/notifications/${notificationId}/read/`, {
     method: 'PATCH',
     body: JSON.stringify({ is_read: true }),
@@ -452,6 +452,7 @@ export async function sendCustomerCampaignEmail(
     segment?: string
     target?: string
     is_app_user?: boolean
+    app_user_only?: boolean
     recipient_count?: number
     recipients?: Array<string | number | null>
     send_to_all?: boolean
@@ -468,7 +469,6 @@ export async function sendCustomerCampaignEmail(
     segment: payload.segment ?? 'app_users',
     target: payload.target ?? 'app_users',
     is_app_user: payload.is_app_user ?? true,
-    app_user_only: Boolean(payload.app_user_only ?? false),
     send_to_all: Boolean(payload.send_to_all),
     recipient_count: payload.recipient_count ?? 1,
     recipients: payload.recipients ?? (payload.customer_email ? [payload.customer_email] : []),
@@ -518,7 +518,6 @@ export async function sendBulkAppUserEmailCampaign(
     segment: 'customers',
     target: 'customers',
     is_app_user: false,
-    app_user_only: false,
     send_to_all: true,
     recipient_count: recipientEmails.length,
     recipients: recipientEmails,

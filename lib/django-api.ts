@@ -66,9 +66,11 @@ async function djangoApiCall<T>(
     url += `?${searchParams.toString()}`
   }
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...fetchOptions.headers,
+  // Normalize headers to HeadersInit so we can safely merge defaults
+  const headersInit: HeadersInit = new Headers(fetchOptions.headers as HeadersInit)
+  // Ensure Content-Type is set when not provided
+  if (!(headersInit as any)['Content-Type']) {
+    ;(headersInit as any)['Content-Type'] = 'application/json'
   }
 
   // Retry logic for failed requests
@@ -82,7 +84,7 @@ async function djangoApiCall<T>(
       const response = await fetch(url, {
         ...fetchOptions,
         credentials: 'include', // Include HttpOnly cookies automatically
-        headers,
+        headers: headersInit,
         signal: controller.signal,
       })
 
@@ -291,10 +293,13 @@ export const djangoDeliveriesApi = {
  */
 export async function checkDjangoApiHealth(): Promise<boolean> {
   try {
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), 5000)
     const response = await fetch(`${DJANGO_API_BASE}/health/`, {
       method: 'GET',
-      timeout: 5000,
+      signal: controller.signal,
     })
+    clearTimeout(id)
     return response.ok
   } catch {
     return false

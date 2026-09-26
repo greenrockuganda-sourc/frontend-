@@ -5,6 +5,7 @@ import { Download, Printer, X } from 'lucide-react'
 import { Button } from '../ui/button'
 import { useMemo, useRef } from 'react'
 import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 interface ReceiptTemplateProps {
   receipt: Receipt
@@ -39,81 +40,107 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
     return item?.imageUrl || item?.image_url || item?.productImage || item?.image || item?.product?.image || item?.product?.image_url || null
   }
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank', 'width=420,height=900')
-    if (!printWindow) {
+  const handlePrint = async () => {
+    // Render the visible receipt element to a PNG sized for 58mm thermal printers
+    const el = receiptRef.current
+    if (!el) {
       window.print()
       return
     }
 
-    const receiptItems = receipt.items?.length
-      ? receipt.items.map((item) => {
-          const imageUrl = getItemImageUrl(item)
-          return `
-        <tr>
-          <td>
-            <div style="display:flex; align-items:center; gap:8px;">
-              ${imageUrl ? `<img src="${imageUrl}" alt="${item.productName || 'Item'}" style="width:24px; height:24px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0;" />` : '<div style="width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid #e2e8f0; background:#f8fafc; font-size:12px;">📄</div>'}
-              <span>${item.productName || 'Item'}</span>
-            </div>
-          </td>
-          <td>${item.quantity || 0}</td>
-          <td>${formatCurrency(Number(item.total || 0))}</td>
-        </tr>
-      `
-        }).join('')
-      : '<tr><td colspan="3">No item details available.</td></tr>'
+    try {
+      // Target thermal width in CSS pixels. 58mm printers commonly use 384px printable width at 203dpi.
+      const targetPx = 384
 
-    const printMarkup = `<!doctype html>
-      <html>
-        <head>
-          <title>Receipt</title>
-          <style>
-            * { box-sizing: border-box; }
-            body {
-              margin: 0;
-              padding: 12px;
-              background: #fff;
-              font-family: Arial, sans-serif;
-              color: #0f172a;
-            }
-            .receipt {
-              width: 80mm;
-              margin: 0 auto;
-              border: 1px solid #e2e8f0;
-              padding: 10px;
-            }
-            h1 { font-size: 22px; margin: 0; text-align: center; }
-            .meta { font-size: 11px; line-height: 1.5; margin: 10px 0; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            td { border-top: 1px solid #e2e8f0; padding: 5px 0; vertical-align: top; }
-            .total { margin-top: 10px; font-size: 14px; font-weight: bold; text-align: right; }
-          </style>
-        </head>
-        <body>
-          <div class="receipt">
-            <h1>GLOW</h1>
-            <div class="meta">
-              <div>Receipt: ${receipt.receiptNumber || '—'}</div>
-              <div>Customer: ${customerName}</div>
-              <div>Date: ${formatReceiptDate(receipt.issuedAt)}</div>
-            </div>
-            <table>
-              <tbody>${receiptItems}</tbody>
-            </table>
-            <div class="total">Total: ${formatCurrency(receipt.total || itemSubtotal || receipt.subtotal || 0)}</div>
-          </div>
-        </body>
-      </html>
-    `
+      const rect = el.getBoundingClientRect()
+      const elementWidth = Math.max(rect.width, 1)
+      const scale = targetPx / elementWidth
 
-    printWindow.document.write(printMarkup)
-    printWindow.document.close()
-    printWindow.focus()
-    setTimeout(() => {
-      printWindow.print()
-      printWindow.close()
-    }, 250)
+      const canvas = await html2canvas(el, {
+        scale: scale * (window.devicePixelRatio || 1),
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      })
+
+      const dataUrl = canvas.toDataURL('image/png')
+
+      const printWindow = window.open('', '_blank', 'width=400,height=600')
+      if (!printWindow) {
+        // fallback: open the image in a new tab
+        const link = document.createElement('a')
+        link.href = dataUrl
+        link.download = `receipt-${String(receipt.receiptNumber || 'receipt')}.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        return
+      }
+
+      // Use blob URL to avoid very long data URIs in some browsers
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          // fallback to data URL write
+          const html = `<!doctype html><html><head><title>Print Receipt</title><style>html,body{margin:0;padding:0;background:#fff}img{display:block;margin:0 auto;width:58mm}</style></head><body><img src="${dataUrl}"/></body></html>`
+          printWindow.document.write(html)
+          printWindow.document.close()
+          return
+        }
+
+        const url = URL.createObjectURL(blob)
+
+        // Try opening the raw image in a new tab/window first (many browsers show native image viewer)
+        try {
+          const rawWin = window.open(url, '_blank')
+          if (rawWin) {
+            try { rawWin.focus() } catch (_) {}
+            // Let the user use the browser's image print flow (or press Ctrl/Cmd+P)
+            return
+          }
+        } catch (e) {
+          // ignore popup errors and fall back
+        }
+
+        // If opening the raw image is blocked, use the printWindow with a manual Print button
+        const w = printWindow || window.open('', '_blank', 'width=400,height=600')
+        if (!w) {
+          // final fallback: force download
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `receipt-${String(receipt.receiptNumber || 'receipt')}.png`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(url)
+          return
+        }
+
+        w.document.open()
+        w.document.write('<!doctype html><html><head><title>Print Receipt</title><style>@page{size:58mm auto;margin:0}html,body{margin:0;padding:8px;background:#fff;font-family:Arial,Helvetica,sans-serif}img{display:block;margin:0 auto;width:58mm}button{display:block;margin:12px auto;padding:8px 12px;font-size:14px;border-radius:6px}</style></head><body><div id="container"></div></body></html>')
+        w.document.close()
+
+        const img = w.document.createElement('img')
+        img.src = url
+
+        const btn = w.document.createElement('button')
+        btn.textContent = 'Print Image'
+        btn.onclick = () => {
+          try { w.focus() } catch (_) {}
+          w.print()
+          setTimeout(() => {
+            URL.revokeObjectURL(url)
+            try { w.close() } catch (_) {}
+          }, 300)
+        }
+
+        const cont = w.document.getElementById('container') || w.document.body
+        cont.appendChild(img)
+        cont.appendChild(btn)
+      }, 'image/png')
+    } catch (err) {
+      console.error('Failed to render receipt image for print', err)
+      // fallback to browser print
+      window.print()
+    }
   }
 
   const handleDownloadPDF = () => {
@@ -243,6 +270,53 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
     }
   }
 
+  const handleDownloadImage = async () => {
+    const el = receiptRef.current
+    if (!el) {
+      window.alert('Receipt not available for download')
+      return
+    }
+
+    try {
+      // Use device pixel ratio for higher-fidelity images
+      const scale = (window.devicePixelRatio || 1) * 2
+      const canvas = await html2canvas(el, {
+        scale,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      })
+
+      const filename = `receipt-${String(receipt.receiptNumber || 'receipt').replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-_]/g, '')}.png`
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          const dataUrl = canvas.toDataURL('image/png')
+          const link = document.createElement('a')
+          link.href = dataUrl
+          link.download = filename
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          return
+        }
+
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }, 'image/png')
+    } catch (err) {
+      console.error('Failed to generate receipt image', err)
+      window.alert('Failed to generate receipt image. Try Print or Download PDF instead.')
+    }
+  }
+
+
+
   return (
     <>
       <style>{`
@@ -279,6 +353,10 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
           <Button variant="default" size="sm" onClick={handleDownloadPDF} className="gap-2">
             <Download className="h-4 w-4" />
             Download PDF
+          </Button>
+          <Button variant="default" size="sm" onClick={handleDownloadImage} className="gap-2">
+            <Download className="h-4 w-4" />
+            Download Image
           </Button>
           <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
             <Printer className="h-4 w-4" />

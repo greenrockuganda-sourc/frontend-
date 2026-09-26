@@ -339,7 +339,6 @@ export default function Customers({ token }: CustomersProps) {
           customer_email: selectedCustomer.email ?? '',
           segment: 'customers',
           target: 'customers',
-          app_user_only: false,
           is_app_user: false,
         },
       )
@@ -417,7 +416,6 @@ export default function Customers({ token }: CustomersProps) {
         {
           segment: 'customers',
           target: 'customers',
-          app_user_only: false,
           is_app_user: false,
           send_to_all: true,
           recipient_count: customerEmails.length,
@@ -434,14 +432,10 @@ export default function Customers({ token }: CustomersProps) {
   }
 
   const totalCustomers = customers.length
-  const appUserCount = appCustomers.length
   const activeCustomers = customers.filter((customer) => {
     const status = String(customer.status ?? customer.customer_status ?? '').toLowerCase()
     return status === 'active' || status === 'new' || !status
   }).length
-  const campaignReadyUsers = appCustomers.filter((customer) => !!customer.email && isAppUserRecord(customer)).length
-  const noEmailUsers = appCustomers.filter((customer) => !customer.email || !String(customer.email).trim()).length
-
   const saveTemplate = (kind: 'email' | 'push') => {
     const title = kind === 'email' ? campaignSubject.trim() || 'New offer' : pushTitle.trim() || 'Customer update'
     const message = kind === 'email' ? campaignMessage.trim() : pushMessage.trim()

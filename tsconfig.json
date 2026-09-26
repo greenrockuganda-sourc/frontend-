@@ -23,7 +23,7 @@
     },
     "ignoreDeprecations": "5.0"
   },
-  "include": ["src", "components", "lib", "vite-env.d.ts"],
-  "exclude": ["app"],
+  "include": ["src", "vite-env.d.ts"],
+  "exclude": ["app", "components", "lib", "DASHBAORD"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

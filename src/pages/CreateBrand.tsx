@@ -1,4 +1,4 @@
-import { ArrowLeft, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import BrandForm from '../../components/products/brand-form'
 import { useEffect } from 'react'
 

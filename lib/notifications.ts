@@ -65,7 +65,7 @@ export const notificationsStore = {
     return () => listeners.delete(listener)
   },
 
-  private notify() {
+  notify() {
     listeners.forEach(listener => listener([...notifications]))
   },
 }

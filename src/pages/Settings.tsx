@@ -7,10 +7,11 @@ import { notifyError, notifySuccess } from '@/lib/notify'
 
 interface SettingsProps {
   user?: UserProfile | null
+  token?: string
   onProfileSave: (profile: UserProfile) => void
 }
 
-export default function Settings({ user, onProfileSave }: SettingsProps) {
+export default function Settings({ user, token, onProfileSave }: SettingsProps) {
   const [settings, setSettings] = useState({
     firstName: '',
     lastName: '',
@@ -108,7 +109,7 @@ export default function Settings({ user, onProfileSave }: SettingsProps) {
         }
       }
 
-      const updated = await updateProfile({
+      const updated = await updateProfile(token || '', {
         first_name: settings.firstName,
         last_name: settings.lastName,
         phone_number: settings.phoneNumber,

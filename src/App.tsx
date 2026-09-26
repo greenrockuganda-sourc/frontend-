@@ -33,7 +33,7 @@ export default function App() {
   }
 
   const [currentPage, setCurrentPage] = useState<Page>(readInitialPage)
-  const [navHistory, setNavHistory] = useState<Page[]>([])
+  const [, setNavHistory] = useState<Page[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
@@ -142,8 +142,9 @@ export default function App() {
     }
   }
 
-  const handleNavigate = (page: Page) => {
-    setCurrentPage(page)
+  const handleNavigate = (page: Page | string) => {
+    const nextPage = page as Page
+    setCurrentPage(nextPage)
     setSidebarOpen(false)
     // push previous page to history stack (avoid duplicates)
     setNavHistory((prev) => {
@@ -158,7 +159,7 @@ export default function App() {
     // Update URL to reflect current page while preserving other query params (e.g., dashboardRange)
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
-      params.set('page', page)
+      params.set('page', nextPage)
       const newUrl = `${window.location.pathname}?${params.toString()}`
       try {
         window.history.pushState(null, '', newUrl)
@@ -209,9 +210,9 @@ export default function App() {
       case 'categories':
         return <Suspense fallback={pageFallback}><Categories onNavigate={handleNavigate} /></Suspense>
       case 'createBrand':
-        return <Suspense fallback={pageFallback}><CreateBrand onCreated={() => handleNavigate('brands')} /></Suspense>
+        return <Suspense fallback={pageFallback}><CreateBrand token={accessToken ?? ''} onCreated={() => handleNavigate('brands')} /></Suspense>
       case 'createCategory':
-        return <Suspense fallback={pageFallback}><CreateCategory onCreated={() => handleNavigate('categories')} /></Suspense>
+        return <Suspense fallback={pageFallback}><CreateCategory token={accessToken ?? ''} onCreated={() => handleNavigate('categories')} /></Suspense>
       case 'orders':
         return <Suspense fallback={pageFallback}><Orders token={accessToken ?? ''} /></Suspense>
       case 'deliveries':
@@ -223,7 +224,7 @@ export default function App() {
       case 'customers':
         return <Suspense fallback={pageFallback}><Customers token={accessToken ?? ''} /></Suspense>
       case 'settings':
-        return <Suspense fallback={pageFallback}><Settings user={user} onProfileSave={handleProfileSave} /></Suspense>
+        return <Suspense fallback={pageFallback}><Settings user={user} token={accessToken ?? undefined} onProfileSave={handleProfileSave} /></Suspense>
       default:
         return <Suspense fallback={pageFallback}><Dashboard user={user} /></Suspense>
     }
@@ -243,7 +244,7 @@ export default function App() {
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           onBack={handleGoBack}
           user={user}
-          token={accessToken}
+          token={accessToken ?? undefined}
           onLogout={handleLogout}
           onProfileClick={() => handleNavigate('settings')}
           notifications={notifications}

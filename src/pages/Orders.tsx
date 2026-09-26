@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Download, Eye, Edit2, PackageOpen } from 'lucide-react'
+import { Download, Edit2, PackageOpen } from 'lucide-react'
 import { fetchOrders, getOrderDetails, updateOrderStatus } from '@/lib/api'
 import { notifyError, notifySuccess } from '@/lib/notify'
 import { Order } from '@/types'
@@ -98,12 +98,13 @@ export default function Orders({ token }: OrdersProps) {
           return {
             id: String(order.order_id ?? order.id ?? 'N/A'),
             customer: order.customer_name ?? order.customer ?? 'Guest',
+            salon: String(order.salon_name ?? order.salon ?? order.shop_name ?? order.business_name ?? order.customer?.salon_name ?? 'Unknown salon'),
             amount: Number(order.total_amount ?? order.amount ?? 0),
             status: String(order.order_status ?? order.status ?? 'pending').toLowerCase(),
             date: order.created_at?.slice(0, 10) ?? order.date ?? '',
             items,
           }
-        }).sort((a, b) => {
+        }).sort((a: any, b: any) => {
           const aTime = a.date ? new Date(a.date).getTime() : 0
           const bTime = b.date ? new Date(b.date).getTime() : 0
           return bTime - aTime
@@ -145,6 +146,7 @@ export default function Orders({ token }: OrdersProps) {
       filtered = filtered.filter((order) =>
         order.id.toLowerCase().includes(term) ||
         order.customer.toLowerCase().includes(term) ||
+        (order.salon ?? '').toLowerCase().includes(term) ||
         order.status.toLowerCase().includes(term)
       )
     }
@@ -172,7 +174,7 @@ export default function Orders({ token }: OrdersProps) {
 
   const handleExportCsv = () => {
     const rows: string[] = []
-    rows.push('Order ID,Customer,Status,Date,Amount,Item,Qty,Cost Each,Subtotal')
+    rows.push('Order ID,Customer,Salon,Status,Date,Amount,Item,Qty,Cost Each,Subtotal')
 
     filteredOrders.forEach((order) => {
       if (order.items?.length) {
@@ -180,6 +182,7 @@ export default function Orders({ token }: OrdersProps) {
           rows.push([
             order.id,
             order.customer,
+            order.salon ?? 'Unknown salon',
             order.status,
             order.date,
             order.amount.toFixed(2),
@@ -193,6 +196,7 @@ export default function Orders({ token }: OrdersProps) {
         rows.push([
           order.id,
           order.customer,
+          order.salon ?? 'Unknown salon',
           order.status,
           order.date,
           order.amount.toFixed(2),
@@ -218,7 +222,7 @@ export default function Orders({ token }: OrdersProps) {
 
   const handleExportExcel = () => {
     const rows: string[] = []
-    rows.push('Order ID,Customer,Status,Date,Amount,Item,Qty,Cost Each,Subtotal')
+    rows.push('Order ID,Customer,Salon,Status,Date,Amount,Item,Qty,Cost Each,Subtotal')
 
     filteredOrders.forEach((order) => {
       if (order.items?.length) {
@@ -226,6 +230,7 @@ export default function Orders({ token }: OrdersProps) {
           rows.push([
             order.id,
             order.customer,
+            order.salon ?? 'Unknown salon',
             order.status,
             order.date,
             order.amount.toFixed(2),
@@ -239,6 +244,7 @@ export default function Orders({ token }: OrdersProps) {
         rows.push([
           order.id,
           order.customer,
+          order.salon ?? 'Unknown salon',
           order.status,
           order.date,
           order.amount.toFixed(2),
@@ -272,6 +278,7 @@ export default function Orders({ token }: OrdersProps) {
       setSelectedOrder({
         id: String(data.id ?? orderId),
         customer: data.customer ?? 'Guest',
+        salon: String(data.salon_name ?? data.salon ?? data.shop_name ?? data.business_name ?? data.customer?.salon_name ?? 'Unknown salon'),
         amount: Number(data.total_amount ?? data.amount ?? 0),
         status: selectedStatus.toLowerCase(),
         date: data.created_at?.slice(0, 10) ?? data.date ?? '',
@@ -453,6 +460,7 @@ export default function Orders({ token }: OrdersProps) {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Salon</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Items</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
@@ -463,15 +471,15 @@ export default function Orders({ token }: OrdersProps) {
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     <div className="px-4">
-                      <SkeletonTable rows={5} columns={7} />
+                      <SkeletonTable rows={5} columns={8} />
                     </div>
                   </td>
                 </tr>
               ) : !loading && filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     <div className="flex flex-col items-center justify-center px-4 py-12">
                       <PackageOpen size={48} className="text-gray-400 mb-3" />
                       <p className="text-sm font-medium text-gray-900">No orders yet</p>
@@ -484,6 +492,7 @@ export default function Orders({ token }: OrdersProps) {
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                     <td data-label="Order ID" className="px-6 py-4 text-sm font-medium text-blue-600">{order.id}</td>
                     <td data-label="Customer" className="px-6 py-4 text-sm text-gray-900">{order.customer}</td>
+                    <td data-label="Salon" className="px-6 py-4 text-sm text-gray-900">{order.salon || 'Unknown salon'}</td>
                     <td data-label="Items" className="px-6 py-4 text-sm text-gray-500 max-w-xs">
                       {order.items?.length ? (
                         <div className="space-y-1">

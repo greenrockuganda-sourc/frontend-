@@ -61,6 +61,7 @@ export interface Delivery {
   orderNumber?: string
   deliveryNumber?: string
   salonName?: string
+  customer?: string
   userName?: string
   driver?: string
   address: string

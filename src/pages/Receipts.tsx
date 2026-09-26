@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Download, Eye, Mail, PackageOpen, Printer, Search, X } from 'lucide-react'
+import { Download, Eye, Mail, PackageOpen, Search } from 'lucide-react'
 import { downloadReceiptPdf, fetchReceipts, sendReceiptEmail } from '@/lib/api'
 import { downloadBlob } from '@/lib/file-download'
 import { notifyError, notifySuccess } from '@/lib/notify'
@@ -140,8 +140,6 @@ export default function Receipts({ token }: ReceiptsProps = {}) {
       setBusyReceipt(null)
     }
   }
-
-  const handlePrint = () => window.print()
 
   const isBusy = (receipt: Receipt) => busyReceipt === receipt.id
 
