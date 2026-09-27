@@ -16,8 +16,12 @@ const formatDeliveryLocation = (delivery: any) => {
   const village = delivery?.village ?? delivery?.customer?.village ?? delivery?.customer_details?.village ?? ''
   const fallbackAddress = delivery?.full_location ?? delivery?.location ?? delivery?.delivery_address ?? delivery?.address ?? ''
 
-  const composedLocation = [district, division, parish, village].filter(Boolean).join(', ')
-  return composedLocation || fallbackAddress || 'Address unavailable'
+  if (fallbackAddress) {
+    return fallbackAddress
+  }
+
+  const structuredParts = [village, parish, division, district].filter(Boolean)
+  return structuredParts.length > 0 ? structuredParts.join(', ') : 'Address unavailable'
 }
 
 export default function Deliveries({ token }: DeliveriesProps) {
