@@ -78,13 +78,13 @@ export default function Orders({ token }: OrdersProps) {
               }))
             : []
 
-          const customerName = order.customer_name ?? order.customer ?? 'Guest'
+          const customerName = order.customer_name ?? order.customer ?? '—'
           const salonName = order.salon_name ?? order.salonName ?? customerName
           const deliveryAddress = order.delivery_address ?? order.address ?? ''
 
           return {
             id: String(order.order_id ?? order.id ?? 'N/A'),
-            customer: salonName || customerName || 'Guest',
+            customer: salonName || customerName || '—',
             customerName,
             salonName,
             deliveryAddress,
@@ -258,12 +258,12 @@ export default function Orders({ token }: OrdersProps) {
         : []
 
       const selectedStatus = String(data?.order_status ?? 'Pending')
-      const customerName = data?.customer_name ?? data?.customer ?? 'Guest'
+      const customerName = data?.customer_name ?? data?.customer ?? '—'
       const salonName = data?.salon_name ?? data?.salonName ?? customerName
       const deliveryAddress = data?.delivery_address ?? data?.address ?? ''
       setSelectedOrder({
         id: String(data.id ?? orderId),
-        customer: salonName || customerName || 'Guest',
+        customer: salonName || customerName || '—',
         customerName,
         salonName,
         deliveryAddress,

@@ -40,7 +40,7 @@ export default function Receipts({ token }: ReceiptsProps) {
         if (!active) return
 
         const normalizedReceipts = (data?.results ?? data ?? []).map((receipt: any) => {
-          const customerName = receipt.customer_name ?? receipt.customer ?? 'Guest'
+          const customerName = receipt.customer_name ?? receipt.customer ?? '—'
           const salonName = receipt.salon_name ?? receipt.salonName ?? customerName
           const address = receipt.delivery_address ?? receipt.address ?? ''
 
@@ -48,7 +48,7 @@ export default function Receipts({ token }: ReceiptsProps) {
             id: String(receipt.id ?? receipt.receipt_id ?? 'N/A'),
             receiptNumber: receipt.receipt_number ?? receipt.receiptNumber ?? `${receipt.id ?? 'N/A'}`,
             orderNumber: receipt.order_number ?? receipt.orderNumber ?? receipt.order_id ?? receipt.orderId ?? 'N/A',
-            customer: salonName || customerName || 'Guest',
+            customer: salonName || customerName || '—',
             customerName,
             salonName,
             address,
@@ -347,7 +347,7 @@ export default function Receipts({ token }: ReceiptsProps) {
         if (!active) return
 
         const normalizedReceipts = (data?.results ?? data ?? []).map((receipt: any) => {
-          const customerName = receipt.customer_name ?? receipt.customer ?? 'Guest'
+          const customerName = receipt.customer_name ?? receipt.customer ?? '—'
           const salonName = receipt.salon_name ?? receipt.salonName ?? customerName
           const address = receipt.delivery_address ?? receipt.address ?? ''
 
@@ -355,7 +355,7 @@ export default function Receipts({ token }: ReceiptsProps) {
             id: String(receipt.id ?? receipt.receipt_id ?? 'N/A'),
             receiptNumber: receipt.receipt_number ?? receipt.receiptNumber ?? `${receipt.id ?? 'N/A'}`,
             orderNumber: receipt.order_number ?? receipt.orderNumber ?? receipt.order_id ?? receipt.orderId ?? 'N/A',
-            customer: salonName || customerName || 'Guest',
+            customer: salonName || customerName || '—',
             customerName,
             salonName,
             address,

@@ -172,7 +172,7 @@ export default function Dashboard({ user, token }: DashboardProps) {
         const recentOrdersRaw = dashboardData?.recent_activity?.recent_orders
         const normalizedOrders = (Array.isArray(recentOrdersRaw) ? recentOrdersRaw : []).map((order: any) => ({
           id: order.order_number ?? order.id ?? 'N/A',
-          customer: order.customer ?? 'Guest',
+          customer: order.customer ?? '—',
           amount: Number(order.total_amount ?? order.amount ?? 0),
           status: (order.order_status ?? order.status ?? 'pending').toLowerCase(),
           date: order.created_at?.slice(0, 10) ?? order.date ?? '',

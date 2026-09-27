@@ -97,7 +97,7 @@ export default function Orders({ token }: OrdersProps) {
 
           return {
             id: String(order.order_id ?? order.id ?? 'N/A'),
-            customer: order.customer_name ?? order.customer ?? 'Guest',
+            customer: order.customer_name ?? order.customer ?? '—',
             salon: String(order.salon_name ?? order.salon ?? order.shop_name ?? order.business_name ?? order.customer?.salon_name ?? 'Unknown salon'),
             amount: Number(order.total_amount ?? order.amount ?? 0),
             status: String(order.order_status ?? order.status ?? 'pending').toLowerCase(),
@@ -277,7 +277,7 @@ export default function Orders({ token }: OrdersProps) {
       const selectedStatus = String(data?.order_status ?? 'Pending')
       setSelectedOrder({
         id: String(data.id ?? orderId),
-        customer: data.customer ?? 'Guest',
+        customer: data.customer ?? '—',
         salon: String(data.salon_name ?? data.salon ?? data.shop_name ?? data.business_name ?? data.customer?.salon_name ?? 'Unknown salon'),
         amount: Number(data.total_amount ?? data.amount ?? 0),
         status: selectedStatus.toLowerCase(),

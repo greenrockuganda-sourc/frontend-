@@ -48,7 +48,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
         const normalizedDeliveries = deliveriesArray.map((delivery: any) => {
           const orderNumber = delivery.order_number ?? delivery.orderNumber ?? delivery.orderId ?? 'N/A'
           const deliveryNumber = delivery.delivery_number ?? delivery.deliveryNumber ?? delivery.id ?? delivery.delivery_id ?? 'N/A'
-          const customerName = delivery.customer_name ?? delivery.customer ?? delivery.recipient_name ?? 'Guest'
+          const customerName = delivery.customer_name ?? delivery.customer ?? delivery.recipient_name ?? '—'
           const salonName = delivery.salon_name ?? delivery.salonName ?? customerName ?? 'Unknown salon'
           const location = formatDeliveryLocation(delivery)
 
@@ -108,12 +108,12 @@ export default function Deliveries({ token }: DeliveriesProps) {
     return label.charAt(0).toUpperCase() + label.slice(1)
   }
 
-  const handleMarkDelivered = async (delivery: { id: string; orderNumber?: string | number | null; status?: string }) => {
+  const handleMarkDelivered = async (delivery: any) => {
     setError(null)
     const original = deliveries
     try {
       setBusyDelivery(delivery.id)
-      await updateDelivery(activeToken, delivery.id, 'Delivered')
+      await updateDelivery(activeToken, delivery.id, 'Delivered', { delivery_address: delivery.address ?? delivery.location ?? '' })
       if (delivery.orderNumber) {
         await updateOrderStatus(activeToken, String(delivery.orderNumber), 'Delivered')
       }
@@ -197,7 +197,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
                 deliveries.map((delivery) => (
                   <tr key={delivery.id} className="hover:bg-gray-50 transition-colors">
                     <td data-label="Order Number" className="px-6 py-4 text-sm font-medium text-blue-600">{delivery.orderNumber || delivery.orderId}</td>
-                    <td data-label="Customer" className="px-6 py-4 text-sm text-gray-900">{delivery.customer || 'Guest'}</td>
+                    <td data-label="Customer" className="px-6 py-4 text-sm text-gray-900">{delivery.customer || '—'}</td>
                     <td data-label="Salon Name" className="px-6 py-4 text-sm text-gray-900">{delivery.salonName || 'Unknown salon'}</td>
                     <td data-label="Delivery Location" className="px-6 py-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1">

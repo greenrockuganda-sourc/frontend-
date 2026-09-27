@@ -233,9 +233,10 @@ export async function updateOrderStatus(token: string, orderId: string, status: 
   }, token)
 }
 
-export async function updateDelivery(token: string, deliveryId: string, deliveryStatus: string) {
+export async function updateDelivery(token: string, deliveryId: string, deliveryStatus: string, extra: Record<string, any> = {}) {
+  const body = { delivery_status: deliveryStatus, ...extra }
   return request<any>(`/api/admin/deliveries/${deliveryId}/`, {
     method: 'PATCH',
-    body: JSON.stringify({ delivery_status: deliveryStatus }),
+    body: JSON.stringify(body),
   }, token)
 }

@@ -28,7 +28,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
         }
 
         const normalizedDeliveries = (data?.results ?? data ?? []).map((delivery: any) => {
-          const customerName = delivery.customer_name ?? delivery.customer ?? 'Guest'
+          const customerName = delivery.customer_name ?? delivery.customer ?? '—'
           const orderNumber = delivery.order_number ?? delivery.orderNumber ?? delivery.orderId ?? 'N/A'
           const deliveryNumber = delivery.delivery_number ?? delivery.deliveryNumber ?? delivery.id ?? delivery.delivery_id ?? 'N/A'
           const salonName = delivery.salon_name ?? delivery.salonName ?? customerName
@@ -40,7 +40,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
             orderNumber,
             deliveryNumber,
             driver: delivery.delivery_person ?? delivery.driver_name ?? delivery.driver ?? 'Unassigned',
-            customer: salonName || customerName || 'Guest',
+            customer: salonName || customerName || '—',
             customerName,
             salonName,
             address,
@@ -83,14 +83,14 @@ export default function Deliveries({ token }: DeliveriesProps) {
     return label.charAt(0).toUpperCase() + label.slice(1)
   }
 
-  const handleMarkDelivered = async (id: string) => {
+  const handleMarkDelivered = async (delivery: any) => {
     setError(null)
     const original = deliveries
     try {
-      setBusyDelivery(id)
-      await updateDelivery(token, id, 'Delivered')
-      setDeliveries((currentDeliveries) => currentDeliveries.map((delivery) =>
-        delivery.id === id ? { ...delivery, status: 'delivered', receiptIssued: true } : delivery
+      setBusyDelivery(delivery.id)
+      await updateDelivery(token, delivery.id, 'Delivered', { delivery_address: delivery.address ?? delivery.location ?? '' })
+      setDeliveries((currentDeliveries) => currentDeliveries.map((d) =>
+        d.id === delivery.id ? { ...d, status: 'delivered', receiptIssued: true } : d
       ))
       notifySuccess('Delivery marked as delivered')
     } catch (err) {
@@ -234,7 +234,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
                   <tr key={delivery.id} className="hover:bg-gray-50 transition-colors">
                     <td data-label="Order Number" className="px-6 py-4 text-sm font-medium text-blue-600">{delivery.orderNumber || delivery.orderId}</td>
                     <td data-label="Delivery Number" className="px-6 py-4 text-sm text-gray-900">{delivery.deliveryNumber || delivery.id}</td>
-                    <td data-label="Salon Name" className="px-6 py-4 text-sm text-gray-900">{delivery.salonName || delivery.customer || 'Guest'}</td>
+                    <td data-label="Salon Name" className="px-6 py-4 text-sm text-gray-900">{delivery.salonName || delivery.customer || '—'}</td>
                     <td data-label="Delivery Location" className="px-6 py-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1">
                         <MapPin size={16} className="flex-shrink-0" />
