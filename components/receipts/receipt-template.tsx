@@ -6,6 +6,7 @@ import { Button } from '../ui/button'
 import { useMemo, useRef } from 'react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { printReceiptDirectly, THERMAL_PRINTER_MODEL } from '../../src/lib/thermalPrinter'
 
 interface ReceiptTemplateProps {
   receipt: Receipt
@@ -41,104 +42,85 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
   }
 
   const handlePrint = async () => {
-    // Render the visible receipt element to a PNG sized for 58mm thermal printers
-    const el = receiptRef.current
-    if (!el) {
-      window.print()
-      return
-    }
-
     try {
-      // Target thermal width in CSS pixels. 58mm printers commonly use 384px printable width at 203dpi.
-      const targetPx = 384
-
-      const rect = el.getBoundingClientRect()
-      const elementWidth = Math.max(rect.width, 1)
-      const scale = targetPx / elementWidth
-
-      const canvas = await html2canvas(el, {
-        scale: scale * (window.devicePixelRatio || 1),
-        backgroundColor: '#ffffff',
-        useCORS: true,
-      })
-
-      const dataUrl = canvas.toDataURL('image/png')
-
-      const printWindow = window.open('', '_blank', 'width=400,height=600')
-      if (!printWindow) {
-        // fallback: open the image in a new tab
-        const link = document.createElement('a')
-        link.href = dataUrl
-        link.download = `receipt-${String(receipt.receiptNumber || 'receipt')}.png`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+      const directPrintSucceeded = await printReceiptDirectly(receipt)
+      if (directPrintSucceeded) {
         return
       }
 
-      // Use blob URL to avoid very long data URIs in some browsers
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          // fallback to data URL write
-          const html = `<!doctype html><html><head><title>Print Receipt</title><style>html,body{margin:0;padding:0;background:#fff}img{display:block;margin:0 auto;width:58mm}</style></head><body><img src="${dataUrl}"/></body></html>`
-          printWindow.document.write(html)
-          printWindow.document.close()
-          return
-        }
+      const el = receiptRef.current
+      if (!el) {
+        window.print()
+        return
+      }
 
-        const url = URL.createObjectURL(blob)
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        width: 384,
+        height: 760,
+      })
 
-        // Try opening the raw image in a new tab/window first (many browsers show native image viewer)
+      const imageDataUrl = canvas.toDataURL('image/png')
+      const printWindow = window.open('', '_blank', 'width=450,height=900')
+
+      if (!printWindow) {
+        window.alert(`Please allow pop-ups so the ${THERMAL_PRINTER_MODEL} dialog can open.`)
+        return
+      }
+
+      printWindow.document.write(`<!doctype html>
+        <html>
+          <head>
+            <meta charset="utf-8" />
+            <title>Thermal Receipt</title>
+            <style>
+              @page { size: 58mm auto; margin: 0; }
+              html, body {
+                width: 58mm;
+                margin: 0;
+                padding: 0;
+                background: #ffffff;
+                font-family: Arial, Helvetica, sans-serif;
+              }
+              body { display: block; }
+              img {
+                display: block;
+                width: 58mm;
+                max-width: 58mm;
+                height: auto;
+                margin: 0;
+                padding: 0;
+              }
+            </style>
+          </head>
+          <body>
+            <img src="${imageDataUrl}" alt="Thermal receipt" />
+          </body>
+        </html>`)
+
+      printWindow.document.close()
+
+      setTimeout(() => {
         try {
-          const rawWin = window.open(url, '_blank')
-          if (rawWin) {
-            try { rawWin.focus() } catch (_) {}
-            // Let the user use the browser's image print flow (or press Ctrl/Cmd+P)
-            return
-          }
-        } catch (e) {
-          // ignore popup errors and fall back
+          printWindow.focus()
+          printWindow.print()
+        } catch (error) {
+          console.error('Could not open the browser thermal printer dialog:', error)
+          window.alert('The browser could not open the printer dialog. Please allow pop-ups and try again.')
         }
+      }, 350)
 
-        // If opening the raw image is blocked, use the printWindow with a manual Print button
-        const w = printWindow || window.open('', '_blank', 'width=400,height=600')
-        if (!w) {
-          // final fallback: force download
-          const link = document.createElement('a')
-          link.href = url
-          link.download = `receipt-${String(receipt.receiptNumber || 'receipt')}.png`
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          URL.revokeObjectURL(url)
-          return
+      setTimeout(() => {
+        try {
+          printWindow.close()
+        } catch {
+          // Ignore close errors
         }
-
-        w.document.open()
-        w.document.write('<!doctype html><html><head><title>Print Receipt</title><style>@page{size:58mm auto;margin:0}html,body{margin:0;padding:8px;background:#fff;font-family:Arial,Helvetica,sans-serif}img{display:block;margin:0 auto;width:58mm}button{display:block;margin:12px auto;padding:8px 12px;font-size:14px;border-radius:6px}</style></head><body><div id="container"></div></body></html>')
-        w.document.close()
-
-        const img = w.document.createElement('img')
-        img.src = url
-
-        const btn = w.document.createElement('button')
-        btn.textContent = 'Print Image'
-        btn.onclick = () => {
-          try { w.focus() } catch (_) {}
-          w.print()
-          setTimeout(() => {
-            URL.revokeObjectURL(url)
-            try { w.close() } catch (_) {}
-          }, 300)
-        }
-
-        const cont = w.document.getElementById('container') || w.document.body
-        cont.appendChild(img)
-        cont.appendChild(btn)
-      }, 'image/png')
-    } catch (err) {
-      console.error('Failed to render receipt image for print', err)
-      // fallback to browser print
+      }, 1800)
+    } catch (error) {
+      console.error('Failed to generate thermal receipt image for print:', error)
       window.print()
     }
   }
