@@ -4,7 +4,8 @@ import { SerialPort } from 'serialport'
 const app = express()
 const port = Number(process.env.PORT || 4001)
 
-const vendorIds = [0x04b8, 0x0fe6, 0x1a86]
+// Epson, FTDI and CH340 are common USB-to-serial chipsets in 58 mm printers.
+const vendorIds = [0x04b8, 0x0403, 0x0fe6, 0x1a86]
 
 const padText = (value, width) => {
   const text = String(value ?? '')
@@ -55,7 +56,9 @@ const buildEscPosReceipt = (receipt) => {
 const findPrinterPort = async () => {
   const ports = await SerialPort.list()
   const match = ports.find((device) => vendorIds.includes(Number(device.vendorId || 0)))
-  return match?.path || null
+  // Some low-cost printers do not expose a vendor ID. A single connected serial
+  // device is safe to treat as the printer; with several devices, require a match.
+  return match?.path || (ports.length === 1 ? ports[0].path : null)
 }
 
 const printToPort = async (receipt, portPath) => {
@@ -82,12 +85,30 @@ const printToPort = async (receipt, portPath) => {
   })
 }
 
-app.use(express.json())
+// The dashboard is normally served from a different localhost port.
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Content-Type')
+  // Required by Chromium when a hosted dashboard calls a localhost device service.
+  res.header('Access-Control-Allow-Private-Network', 'true')
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
+
+app.use(express.json({ limit: '1mb' }))
 
 app.get('/status', async (_req, res) => {
   try {
     const ports = await SerialPort.list()
-    res.json({ ok: true, ports: ports.map((item) => ({ path: item.path, manufacturer: item.manufacturer, vendorId: item.vendorId })) })
+    const printers = ports.map((item) => ({
+      path: item.path,
+      manufacturer: item.manufacturer || 'Unknown device',
+      vendorId: item.vendorId,
+      productId: item.productId,
+      supported: vendorIds.includes(Number(item.vendorId || 0)),
+    }))
+    res.json({ ok: true, model: '58 mm ESC/POS thermal printer', ports: printers, discovered: printers.filter((item) => item.supported) })
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message })
   }
@@ -101,12 +122,12 @@ app.post('/print', async (req, res) => {
     }
 
     await printToPort(receipt, port)
-    res.json({ ok: true, printer: 'Epson TM-T20II', model: '58mm thermal printer' })
+    res.json({ ok: true, printer: port || (await findPrinterPort()), model: '58 mm thermal printer' })
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message })
   }
 })
 
 app.listen(port, () => {
-  console.log(`Glow thermal printer companion listening on http://localhost:${port}`)
+  console.log(`Glow 58 mm printer companion listening on http://127.0.0.1:${port}`)
 })

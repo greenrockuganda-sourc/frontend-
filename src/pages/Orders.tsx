@@ -100,7 +100,7 @@ export default function Orders({ token }: OrdersProps) {
             customer: order.customer_name ?? order.customer ?? '—',
             salon: String(order.salon_name ?? order.salon ?? order.shop_name ?? order.business_name ?? order.customer?.salon_name ?? 'Unknown salon'),
             amount: Number(order.total_amount ?? order.amount ?? 0),
-            status: String(order.order_status ?? order.status ?? 'pending').toLowerCase(),
+            status: String(order.order_status ?? order.status ?? 'pending').toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim(),
             date: order.created_at?.slice(0, 10) ?? order.date ?? '',
             items,
           }
@@ -160,6 +160,10 @@ export default function Orders({ token }: OrdersProps) {
   }, [orders, range, searchTerm, statusFilter])
 
   const visibleOrderRows = useMemo(() => filteredOrders.slice(0, visibleOrders), [filteredOrders, visibleOrders])
+
+  useEffect(() => {
+    setVisibleOrders(20)
+  }, [range, searchTerm, statusFilter])
 
   const downloadBlob = (blob: Blob, filename: string) => {
     const url = window.URL.createObjectURL(blob)

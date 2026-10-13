@@ -29,6 +29,7 @@ export default function Categories({ onNavigate }: Props) {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
+  const [imageFilter, setImageFilter] = useState<'all' | 'with-image' | 'without-image'>('all')
   const [editingCategory, setEditingCategory] = useState<any | null>(null)
   const [pendingDeleteCategory, setPendingDeleteCategory] = useState<any | null>(null)
 
@@ -50,12 +51,14 @@ export default function Categories({ onNavigate }: Props) {
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return items
     return items.filter((item) => {
       const haystack = String(item.category_name ?? '').toLowerCase()
-      return haystack.includes(q)
+      const matchesQuery = !q || haystack.includes(q)
+      const hasImage = Boolean(item.image_url)
+      const matchesImage = imageFilter === 'all' || (imageFilter === 'with-image' ? hasImage : !hasImage)
+      return matchesQuery && matchesImage
     })
-  }, [items, query])
+  }, [items, query, imageFilter])
 
   const totalCategories = items.length
   const featuredCategories = items.slice(0, 3)
@@ -153,10 +156,15 @@ export default function Categories({ onNavigate }: Props) {
                 className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
               />
             </div>
-            <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+            <label className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
               <Filter className="h-4 w-4" />
-              Filter
-            </button>
+              <span className="sr-only">Filter categories</span>
+              <select value={imageFilter} onChange={(event) => setImageFilter(event.target.value as typeof imageFilter)} className="bg-transparent outline-none" aria-label="Filter categories by image">
+                <option value="all">All categories</option>
+                <option value="with-image">With image</option>
+                <option value="without-image">Missing image</option>
+              </select>
+            </label>
           </div>
 
           {loading ? (

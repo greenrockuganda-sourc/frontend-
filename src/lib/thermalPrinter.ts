@@ -1,6 +1,7 @@
 import type { Receipt } from '../../lib/types'
 
-export const THERMAL_PRINTER_MODEL = 'Epson TM-T20II / 58mm thermal printer'
+export const THERMAL_PRINTER_MODEL = '58 mm ESC/POS thermal printer'
+export const THERMAL_RECEIPT_WIDTH_MM = 58
 
 const ESC = '\u001b'
 const GS = '\u001d'
@@ -12,7 +13,8 @@ const padText = (value: string, width: number) => {
   return raw + ' '.repeat(width - raw.length)
 }
 
-const formatMoney = (value: number) => `UGX ${Number(value || 0).toFixed(2)}`
+// A standard 58 mm ESC/POS roll is 32 characters wide at the default font.
+const formatMoney = (value: number) => Math.round(Number(value || 0)).toLocaleString('en-US')
 
 const chunkText = (text: string, maxChars: number) => {
   const lines: string[] = []
@@ -39,26 +41,29 @@ const buildReceiptText = (receipt: Receipt) => {
   lines.push(`Date: ${new Date(receipt.issuedAt || Date.now()).toLocaleDateString('en-GB')}`)
   lines.push(`Cust: ${receipt.customerName || 'Walk-in'}`)
   lines.push('')
-  lines.push(`${padText('Item', 18)} ${padText('Qty', 4)} ${padText('Amt', 8)}`)
+  lines.push('--------------------------------')
+  lines.push(`${padText('Item', 16)} ${padText('Qty', 3)} ${padText('Amount', 11)}`)
+  lines.push('--------------------------------')
 
   rows.forEach((item) => {
     const productName = String(item.productName || 'Item')
     const total = Number(item.total || 0)
-    const nameLines = chunkText(productName, 18)
+    const nameLines = chunkText(productName, 16)
     const quantityText = String(item.quantity || 0)
 
     nameLines.forEach((line, index) => {
-      const quantity = index === 0 ? padText(quantityText, 4) : ' '.repeat(4)
-      const money = index === 0 ? padText(formatMoney(total), 8) : ' '.repeat(8)
-      lines.push(`${padText(line, 18)} ${quantity} ${money}`)
+      const quantity = index === 0 ? padText(quantityText, 3) : ' '.repeat(3)
+      const money = index === 0 ? padText(formatMoney(total), 11) : ' '.repeat(11)
+      lines.push(`${padText(line, 16)} ${quantity} ${money}`)
     })
   })
 
-  lines.push('')
-  lines.push(`${padText('Subtotal', 18)} ${padText(formatMoney(Number(receipt.subtotal || 0)), 12)}`)
-  lines.push(`${padText('Tax', 18)} ${padText(formatMoney(Number(receipt.tax || 0)), 12)}`)
-  lines.push(`${padText('Shipping', 18)} ${padText(formatMoney(Number(receipt.shipping || 0)), 12)}`)
-  lines.push(`${padText('TOTAL', 18)} ${padText(formatMoney(Number(receipt.total || receipt.subtotal || 0)), 12)}`)
+  lines.push('--------------------------------')
+  lines.push(`${padText('Subtotal', 20)} ${padText(formatMoney(Number(receipt.subtotal || 0)), 11)}`)
+  if (Number(receipt.tax || 0)) lines.push(`${padText('Tax', 20)} ${padText(formatMoney(Number(receipt.tax || 0)), 11)}`)
+  if (Number(receipt.shipping || 0)) lines.push(`${padText('Shipping', 20)} ${padText(formatMoney(Number(receipt.shipping || 0)), 11)}`)
+  lines.push(`${padText('TOTAL (UGX)', 20)} ${padText(formatMoney(Number(receipt.total || receipt.subtotal || 0)), 11)}`)
+  lines.push('--------------------------------')
   lines.push('')
   lines.push('Payment Successful')
   lines.push('Thank you for choosing Glow Salon Supplies!')
@@ -86,7 +91,8 @@ export const buildEpsonTmT20ReceiptCommand = (receipt: Receipt) => {
     .join('')
 
   const payload = new TextEncoder().encode(body)
-  const feed = new Uint8Array([0x0a, 0x0a, 0x1b, 0x64, 0x04])
+  // Feed four lines and issue a partial cut when supported by the printer.
+  const feed = new Uint8Array([0x0a, 0x0a, 0x0a, 0x0a, 0x1d, 0x56, 0x01])
 
   return new Uint8Array([...bytes.map((piece) => piece.charCodeAt(0)), ...payload, ...feed])
 }
@@ -96,14 +102,40 @@ export const hasDirectPrinterSupport = () => {
   return !!(nav.serial || nav.usb || nav.bluetooth)
 }
 
+const companionUrl = () => String(import.meta.env.VITE_THERMAL_PRINTER_COMPANION_URL || 'http://127.0.0.1:4001').replace(/\/$/, '')
+
+/**
+ * The local companion can enumerate serial ports and print without exposing the
+ * computer's device list to the browser. It is tried before the browser picker.
+ */
+export const printWithLocalCompanion = async (receipt: Receipt): Promise<boolean> => {
+  const controller = new AbortController()
+  const timer = window.setTimeout(() => controller.abort(), 1600)
+
+  try {
+    const response = await fetch(`${companionUrl()}/print`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ receipt }),
+      signal: controller.signal,
+    })
+    const payload = await response.json().catch(() => null)
+    return response.ok && payload?.ok === true
+  } catch {
+    return false
+  } finally {
+    window.clearTimeout(timer)
+  }
+}
+
 export const requestSerialPrinter = async (receipt: Receipt): Promise<boolean> => {
   const nav = navigator as any
   if (!nav.serial) return false
 
   try {
-    const port = await nav.serial.requestPort({
-      filters: [{ usbVendorId: 0x04b8 }, { usbVendorId: 0x0fe6 }, { usbVendorId: 0x1a86 }],
-    })
+    // Requesting without a vendor filter lets the operator choose any supported
+    // USB-to-serial thermal printer (many 58 mm models use different chipsets).
+    const port = await nav.serial.requestPort()
 
     await port.open({ baudRate: 115200 })
     const writer = port.writable?.getWriter()
@@ -176,7 +208,11 @@ export const requestBluetoothPrinter = async (receipt: Receipt): Promise<boolean
 }
 
 export const printReceiptDirectly = async (receipt: Receipt): Promise<boolean> => {
-  const directPaths: Array<() => Promise<boolean>> = [requestSerialPrinter, requestUsbPrinter, requestBluetoothPrinter]
+  if (await printWithLocalCompanion(receipt)) return true
+
+  // Do not open multiple competing browser pickers. When serial is unavailable
+  // or cancelled, the receipt preview falls back to the OS print dialog.
+  const directPaths: Array<() => Promise<boolean>> = [requestSerialPrinter]
 
   for (const run of directPaths) {
     try {

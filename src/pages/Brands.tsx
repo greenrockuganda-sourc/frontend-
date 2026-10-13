@@ -29,6 +29,7 @@ export default function Brands({ onNavigate }: Props) {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
+  const [logoFilter, setLogoFilter] = useState<'all' | 'with-logo' | 'without-logo'>('all')
   const [editingBrand, setEditingBrand] = useState<any | null>(null)
   const [pendingDeleteBrand, setPendingDeleteBrand] = useState<any | null>(null)
 
@@ -50,12 +51,14 @@ export default function Brands({ onNavigate }: Props) {
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return items
     return items.filter((item) => {
       const haystack = String(item.brand_name ?? '').toLowerCase()
-      return haystack.includes(q)
+      const matchesQuery = !q || haystack.includes(q)
+      const hasLogo = Boolean(item.logo)
+      const matchesLogo = logoFilter === 'all' || (logoFilter === 'with-logo' ? hasLogo : !hasLogo)
+      return matchesQuery && matchesLogo
     })
-  }, [items, query])
+  }, [items, query, logoFilter])
 
   const totalProducts = items.length
   const activeCount = items.length > 0 ? items.length : 0
@@ -153,10 +156,15 @@ export default function Brands({ onNavigate }: Props) {
                 className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
               />
             </div>
-            <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+            <label className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
               <Filter className="h-4 w-4" />
-              Filter
-            </button>
+              <span className="sr-only">Filter brands</span>
+              <select value={logoFilter} onChange={(event) => setLogoFilter(event.target.value as typeof logoFilter)} className="bg-transparent outline-none" aria-label="Filter brands by logo">
+                <option value="all">All brands</option>
+                <option value="with-logo">With logo</option>
+                <option value="without-logo">Missing logo</option>
+              </select>
+            </label>
           </div>
 
           {loading ? (

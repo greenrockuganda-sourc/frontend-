@@ -1,22 +1,12 @@
-# Glow Thermal Printer Companion
+# Glow 58 mm thermal printer companion
 
-This desktop companion can send ESC/POS receipt data directly to a supported 58mm thermal printer over USB serial.
+Run this small local service on the computer connected to the printer:
 
-## Setup
-
+```bash
 npm install
 npm start
+```
 
-## API
+The dashboard automatically calls `http://127.0.0.1:4001` whenever **Print** is selected. The companion discovers compatible serial 58 mm ESC/POS printers and sends the receipt directly. To use another local address or port, set `VITE_THERMAL_PRINTER_COMPANION_URL` when building the dashboard.
 
-GET /status
-- Lists serial ports and connected printers.
-
-POST /print
-- Body: { "receipt": { ...receipt object... }, "port": "COM3" }
-- If port is omitted, the companion will auto-detect a supported printer port.
-
-## Supported printer profile
-
-- Epson TM-T20II
-- 58mm thermal printer workflow
+If the printer is installed only as a normal Windows/macOS printer, the dashboard instead opens the system print dialog. Select the printer there and set its paper size to **58 mm** with zero margins.

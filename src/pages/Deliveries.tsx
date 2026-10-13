@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { MapPin, PackageOpen } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { MapPin, PackageOpen, Search, X } from 'lucide-react'
 import { fetchDeliveries, updateDelivery, updateOrderStatus } from '@/lib/api'
 import { notifySuccess } from '@/lib/notify'
 import { Delivery } from '@/types'
@@ -30,6 +30,8 @@ export default function Deliveries({ token }: DeliveriesProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyDelivery, setBusyDelivery] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   useEffect(() => {
     let active = true
@@ -66,7 +68,7 @@ export default function Deliveries({ token }: DeliveriesProps) {
             salonName,
             address: location,
             location,
-            status: (delivery.delivery_status ?? delivery.status ?? 'preparing').toLowerCase(),
+            status: String(delivery.delivery_status ?? delivery.status ?? 'preparing').toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim(),
             receiptIssued: Boolean(delivery.receipt_issued ?? delivery.receiptIssued ?? false),
             createdAt: delivery.created_at ?? delivery.date ?? delivery.delivery_date ?? '',
           }
@@ -74,9 +76,6 @@ export default function Deliveries({ token }: DeliveriesProps) {
           const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0
           const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0
           return bTime - aTime
-        }).map((delivery: any) => {
-          const { createdAt: _createdAt, ...rest } = delivery as any
-          return rest
         })
         setDeliveries(normalizedDeliveries)
       } catch (err) {
@@ -136,6 +135,23 @@ export default function Deliveries({ token }: DeliveriesProps) {
   const pendingCount = deliveries.filter((d) => isDeliveryPending(d.status)).length
   const inTransitCount = deliveries.filter((d) => isDeliveryInTransit(d.status)).length
   const deliveredCount = deliveries.filter((d) => isDeliveryDelivered(d.status)).length
+  const filteredDeliveries = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase()
+    return deliveries.filter((delivery: any) => {
+      const matchesSearch = !query || [
+        delivery.orderNumber,
+        delivery.deliveryNumber,
+        delivery.customer,
+        delivery.salonName,
+        delivery.driver,
+        delivery.location,
+        delivery.address,
+      ].some((value) => String(value ?? '').toLowerCase().includes(query))
+      return matchesSearch && (statusFilter === 'all' || delivery.status === statusFilter)
+    })
+  }, [deliveries, searchTerm, statusFilter])
+
+  const hasActiveFilters = Boolean(searchTerm.trim() || statusFilter !== 'all')
 
   return (
     <div className="p-3 sm:p-6 lg:p-8">
@@ -165,6 +181,23 @@ export default function Deliveries({ token }: DeliveriesProps) {
         </div>
       </div>
 
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_220px_auto]">
+        <div className="relative">
+          <Search size={18} className="absolute left-3 top-3 text-gray-400" />
+          <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search order, delivery, customer, salon, driver, or location" className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </div>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+          <option value="all">All statuses</option>
+          <option value="preparing">Preparing</option>
+          <option value="pending">Pending</option>
+          <option value="out for delivery">Out for delivery</option>
+          <option value="in-transit">In transit</option>
+          <option value="shipped">Shipped</option>
+          <option value="delivered">Delivered</option>
+        </select>
+        {hasActiveFilters ? <button type="button" onClick={() => { setSearchTerm(''); setStatusFilter('all') }} className="inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50"><X size={16} />Clear</button> : <span />}
+      </div>
+
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="responsive-table w-full">
@@ -187,18 +220,18 @@ export default function Deliveries({ token }: DeliveriesProps) {
                     </div>
                   </td>
                 </tr>
-              ) : !loading && deliveries.length === 0 ? (
+              ) : !loading && filteredDeliveries.length === 0 ? (
                 <tr>
                   <td colSpan={6}>
                     <div className="flex flex-col items-center justify-center px-4 py-12">
                       <PackageOpen size={48} className="text-gray-400 mb-3" />
-                      <p className="text-sm font-medium text-gray-900">No deliveries yet</p>
-                      <p className="text-sm text-gray-500 mt-1">Deliveries will appear here when orders are ready.</p>
+                      <p className="text-sm font-medium text-gray-900">{deliveries.length ? 'No matching deliveries' : 'No deliveries yet'}</p>
+                      <p className="text-sm text-gray-500 mt-1">{deliveries.length ? 'Try clearing or changing the filters.' : 'Deliveries will appear here when orders are ready.'}</p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                deliveries.map((delivery) => (
+                filteredDeliveries.map((delivery) => (
                   <tr key={delivery.id} className="hover:bg-gray-50 transition-colors">
                     <td data-label="Order Number" className="px-6 py-4 text-sm font-medium text-blue-600">{delivery.orderNumber || delivery.orderId}</td>
                     <td data-label="Customer" className="px-6 py-4 text-sm text-gray-900">{delivery.customer || '—'}</td>

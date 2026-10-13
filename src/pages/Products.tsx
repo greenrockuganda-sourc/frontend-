@@ -109,16 +109,32 @@ export default function Products({}: ProductsProps) {
   
   const filteredProducts = useMemo(() => {
     let filtered = products
+    const query = searchTerm.trim().toLowerCase()
+
+    if (query) {
+      filtered = filtered.filter((product) => [
+        product.name,
+        product.sku,
+        product.category,
+        product.brand,
+        product.description,
+      ].some((value) => String(value ?? '').toLowerCase().includes(query)))
+    }
 
     if (categoryFilter) {
-      filtered = filtered.filter((p) => p.category === categories.find(c => c.id === categoryFilter)?.category_name)
+      const selectedCategory = categories.find((category) => String(category.id) === String(categoryFilter))
+      filtered = filtered.filter((product) =>
+        String(product.categoryId ?? '') === String(categoryFilter) ||
+        (selectedCategory ? String(product.category ?? '').toLowerCase() === String(selectedCategory.category_name ?? '').toLowerCase() : false)
+      )
     }
 
     if (brandFilter) {
-      filtered = filtered.filter((p) => {
-        const brand = brands.find(b => b.id === brandFilter)
-        return brand && p.name?.toLowerCase().includes(brand.brand_name.toLowerCase())
-      })
+      const selectedBrand = brands.find((brand) => String(brand.id) === String(brandFilter))
+      filtered = filtered.filter((product) =>
+        String(product.brandId ?? '') === String(brandFilter) ||
+        (selectedBrand ? String(product.brand ?? '').toLowerCase() === String(selectedBrand.brand_name ?? '').toLowerCase() : false)
+      )
     }
 
     if (stockFilter === 'low') {
@@ -126,11 +142,11 @@ export default function Products({}: ProductsProps) {
     } else if (stockFilter === 'out') {
       filtered = filtered.filter((p) => p.stock === 0)
     } else if (stockFilter === 'available') {
-      filtered = filtered.filter((p) => p.stock > 10)
+      filtered = filtered.filter((p) => p.stock > 0)
     }
 
     return filtered
-  }, [products, categoryFilter, brandFilter, stockFilter, categories, brands])
+  }, [products, searchTerm, categoryFilter, brandFilter, stockFilter, categories, brands])
 
   useEffect(() => {
     const handler = window.setTimeout(() => {
@@ -201,7 +217,7 @@ export default function Products({}: ProductsProps) {
     return () => {
       active = false
     }
-  }, [debouncedSearch, categoryFilter, brandFilter, stockFilter])
+  }, [debouncedSearch])
 
   useEffect(() => {
     let active = true

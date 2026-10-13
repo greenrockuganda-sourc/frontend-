@@ -122,46 +122,39 @@ export default function Dashboard({ user, token }: DashboardProps) {
             : []
 
         const rangeStart = getRangeStartDate(range)
-        const filteredOrdersForRange = orderList.filter((order: any) => {
+        const isInSelectedRange = (record: any, dateKeys: string[]) => {
           if (!rangeStart) return true
-          const dateValue = order.created_at ?? order.date ?? order.order_date ?? ''
-          const orderDate = new Date(dateValue)
-          return !Number.isNaN(orderDate.getTime()) && orderDate >= rangeStart
-        })
+          const dateValue = dateKeys.map((key) => record?.[key]).find(Boolean) ?? ''
+          const recordDate = new Date(dateValue)
+          return !Number.isNaN(recordDate.getTime()) && recordDate >= rangeStart
+        }
+        const filteredOrdersForRange = orderList.filter((order: any) => isInSelectedRange(order, ['created_at', 'date', 'order_date']))
+        const filteredDeliveriesForRange = deliveryList.filter((delivery: any) => isInSelectedRange(delivery, ['created_at', 'date', 'delivery_date']))
+        const filteredPaymentsForRange = paymentList.filter((payment: any) => isInSelectedRange(payment, ['created_at', 'date', 'payment_date', 'paid_at']))
         const revenueFromOrders = filteredOrdersForRange.reduce((sum: number, order: any) => sum + Number(order.total_amount ?? order.amount ?? 0), 0)
         const lowStockFromProducts = productList.filter((product: any) => {
           const stock = Number(product.stock ?? product.quantity_in_stock ?? 0)
           const reorderLevel = Number(product.reorder_level ?? product.reorderLevel ?? 0)
           return stock <= reorderLevel || stock <= 0
         }).length
-        const pendingDeliveriesFromData = deliveryList.filter((delivery: any) => {
+        const pendingDeliveriesFromData = filteredDeliveriesForRange.filter((delivery: any) => {
           const status = String(delivery.delivery_status ?? delivery.status ?? '').toLowerCase()
           return status === 'preparing' || status === 'pending' || status === 'in progress'
         }).length
         const pendingOrdersFromData = filteredOrdersForRange.filter((order: any) => String(order.order_status ?? order.status ?? '').toLowerCase() === 'pending').length
 
-        const revenue = summary.revenue_today != null
-          ? Number(summary.revenue_today)
-          : (summary.revenue_this_week != null
-            ? Number(summary.revenue_this_week)
-            : (summary.revenue_this_month != null
-              ? Number(summary.revenue_this_month)
-              : revenueFromOrders))
-        const pending = summary.pending_deliveries != null
-          ? Number(summary.pending_deliveries)
-          : (summary.pending_orders != null
-            ? Number(summary.pending_orders)
-            : pendingDeliveriesFromData || pendingOrdersFromData)
+        const revenue = revenueFromOrders
+        const pending = pendingDeliveriesFromData || pendingOrdersFromData
         const lowStock = summary.low_stock_products != null
           ? Number(summary.low_stock_products)
           : lowStockFromProducts
         const customers = customerList.length || Number(summary.total_customers ?? 0)
         const inventoryCount = productList.length
-        const payments = paymentList.reduce((sum: number, payment: any) => sum + Number(payment.amount ?? payment.total_amount ?? payment.value ?? 0), 0)
+        const payments = filteredPaymentsForRange.reduce((sum: number, payment: any) => sum + Number(payment.amount ?? payment.total_amount ?? payment.value ?? 0), 0)
 
         setStats({
           revenue,
-          orders: Number(summary.total_orders ?? orderList.length ?? 0),
+          orders: filteredOrdersForRange.length,
           pending,
           lowStock,
           customers,
@@ -255,8 +248,8 @@ export default function Dashboard({ user, token }: DashboardProps) {
   }, [])
 
   const firstName = user?.first_name || user?.email?.split('@')[0] || 'there'
-  const rangeRevenue = recentOrders.reduce((sum, order) => sum + order.amount, 0)
-  const averageOrder = recentOrders.length ? rangeRevenue / recentOrders.length : 0
+  const rangeRevenue = stats.revenue
+  const averageOrder = stats.orders ? rangeRevenue / stats.orders : 0
 
   return (
     <div className="page-container">
@@ -339,7 +332,7 @@ export default function Dashboard({ user, token }: DashboardProps) {
               title="Total Revenue"
               value={formatCurrency(stats.revenue)}
               icon={<DollarSign size={20} />}
-              change="Live from the API"
+              change={dateRangeLabel}
               trend="up"
               color="blue"
             />
@@ -347,7 +340,7 @@ export default function Dashboard({ user, token }: DashboardProps) {
               title="Total Orders"
               value={stats.orders.toLocaleString()}
               icon={<ShoppingCart size={20} />}
-              change="Updated now"
+              change={dateRangeLabel}
               trend="up"
               color="emerald"
             />
@@ -355,7 +348,7 @@ export default function Dashboard({ user, token }: DashboardProps) {
               title="Pending Deliveries"
               value={stats.pending.toLocaleString()}
               icon={<Truck size={20} />}
-              change="In progress"
+              change={dateRangeLabel}
               trend="down"
               color="amber"
             />
@@ -379,7 +372,7 @@ export default function Dashboard({ user, token }: DashboardProps) {
             </div>
             <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-3">
               {[
-                { label: 'Orders in range', value: recentOrders.length.toLocaleString(), icon: ShoppingCart },
+                { label: 'Orders in range', value: stats.orders.toLocaleString(), icon: ShoppingCart },
                 { label: 'Range revenue', value: formatCurrency(rangeRevenue), icon: TrendingUp },
                 { label: 'Average order', value: formatCurrency(averageOrder), icon: Receipt },
                 { label: 'Customers', value: stats.customers.toLocaleString(), icon: CalendarDays },

@@ -3,7 +3,7 @@
 import { Receipt } from '../../lib/types'
 import { Download, Printer, X } from 'lucide-react'
 import { Button } from '../ui/button'
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { printReceiptDirectly, THERMAL_PRINTER_MODEL } from '../../src/lib/thermalPrinter'
@@ -28,6 +28,7 @@ const formatReceiptDate = (dateString: string) => {
 
 export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
+  const [printStatus, setPrintStatus] = useState('')
   const qrCodeUrl = useMemo(() => {
     const payload = String(receipt.receiptNumber || 'receipt').trim() || 'receipt'
     return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(payload)}`
@@ -43,10 +44,14 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
 
   const handlePrint = async () => {
     try {
+      setPrintStatus('Searching for a connected 58 mm thermal printer…')
       const directPrintSucceeded = await printReceiptDirectly(receipt)
       if (directPrintSucceeded) {
+        setPrintStatus('Receipt sent to the discovered thermal printer.')
         return
       }
+
+      setPrintStatus('Opening the print dialog. Choose your 58 mm thermal printer and set paper size to 58 mm.')
 
       const el = receiptRef.current
       if (!el) {
@@ -58,8 +63,29 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
-        width: 384,
-        height: 760,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        onclone: (clonedDocument) => {
+          // The preview is colourful on screen, but a thermal printer needs a
+          // paper-saving black-and-white receipt rather than large dark blocks.
+          const printStyle = clonedDocument.createElement('style')
+          printStyle.textContent = `
+            [data-thermal-receipt], [data-thermal-receipt] * {
+              color: #000 !important;
+              background: transparent !important;
+              border-color: #000 !important;
+              box-shadow: none !important;
+              text-shadow: none !important;
+            }
+            [data-thermal-receipt] img {
+              filter: grayscale(1) contrast(2) !important;
+            }
+            [data-thermal-receipt] .absolute {
+              display: none !important;
+            }
+          `
+          clonedDocument.head.appendChild(printStyle)
+        },
       })
 
       const imageDataUrl = canvas.toDataURL('image/png')
@@ -92,6 +118,7 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
                 height: auto;
                 margin: 0;
                 padding: 0;
+                 filter: grayscale(1) contrast(2);
               }
             </style>
           </head>
@@ -121,6 +148,7 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
       }, 1800)
     } catch (error) {
       console.error('Failed to generate thermal receipt image for print:', error)
+      setPrintStatus('Could not prepare the thermal receipt. Opening the system print dialog instead.')
       window.print()
     }
   }
@@ -306,8 +334,8 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
           body { background: #ffffff !important; }
           .no-print { display: none !important; }
           .receipt-modal-shell {
-            width: 80mm !important;
-            max-width: 80mm !important;
+            width: 58mm !important;
+            max-width: 58mm !important;
             box-shadow: none !important;
             border: none !important;
             background: transparent !important;
@@ -315,11 +343,20 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
             padding: 0 !important;
           }
           .receipt-print-wrap {
-            max-width: 80mm !important;
-            width: 80mm !important;
+            max-width: 58mm !important;
+            width: 58mm !important;
             margin: 0 !important;
             box-shadow: none !important;
           }
+          [data-thermal-receipt], [data-thermal-receipt] * {
+            color: #000 !important;
+            background: transparent !important;
+            border-color: #000 !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+          }
+          [data-thermal-receipt] img { filter: grayscale(1) contrast(2) !important; }
+          [data-thermal-receipt] .absolute { display: none !important; }
         }
       `}</style>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -345,9 +382,10 @@ export function ReceiptTemplate({ receipt, onClose }: ReceiptTemplateProps) {
             Print
           </Button>
         </div>
+        {printStatus ? <p className="border-b border-slate-200 bg-white px-4 py-2 text-xs text-slate-600 no-print" role="status">{printStatus}</p> : null}
 
-        <div ref={receiptRef} className="bg-[#edf4fa] p-2 text-slate-900 sm:p-4">
-          <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-[18px] bg-[#edf4fa] shadow-[0_18px_45px_rgba(13,45,72,0.15)] print:max-w-[80mm] print:rounded-none print:shadow-none">
+        <div ref={receiptRef} data-thermal-receipt className="bg-[#edf4fa] p-2 text-slate-900 sm:p-4">
+          <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-[18px] bg-[#edf4fa] shadow-[0_18px_45px_rgba(13,45,72,0.15)] print:max-w-[58mm] print:rounded-none print:shadow-none">
             <div className="relative overflow-hidden bg-[#0d2d48] px-4 pb-8 pt-6 text-white sm:px-6 sm:pb-9 sm:pt-7 lg:px-8 lg:pb-10 lg:pt-8">
               <div className="absolute -left-14 bottom-[-60px] h-36 w-36 rounded-full bg-[#f97316]/20 blur-2xl" />
               <div className="absolute -right-10 top-0 h-36 w-36 rounded-full bg-[#f97316]/15 blur-2xl" />

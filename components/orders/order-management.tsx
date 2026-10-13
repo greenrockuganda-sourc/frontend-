@@ -115,8 +115,9 @@ export function OrderManagement({
       )
     }
     if (filters.dateTo) {
+      const endOfSelectedDay = new Date(`${filters.dateTo}T23:59:59.999`)
       result = result.filter(
-        (order) => new Date(order.createdAt) <= new Date(filters.dateTo)
+        (order) => !Number.isNaN(endOfSelectedDay.getTime()) && new Date(order.createdAt) <= endOfSelectedDay
       )
     }
 

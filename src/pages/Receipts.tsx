@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Download, Eye, Mail, PackageOpen, Search } from 'lucide-react'
+import { Download, Eye, Mail, PackageOpen, Search, X } from 'lucide-react'
 import { downloadReceiptPdf, fetchReceipts, sendReceiptEmail } from '@/lib/api'
 import { downloadBlob } from '@/lib/file-download'
 import { notifyError, notifySuccess } from '@/lib/notify'
@@ -62,6 +62,8 @@ export default function Receipts({ token }: ReceiptsProps = {}) {
   const [error, setError] = useState<string | null>(null)
   const [busyReceipt, setBusyReceipt] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [salonFilter, setSalonFilter] = useState('all')
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | '7d' | '30d'>('all')
 
   const loadReceipts = useCallback(async () => {
     try {
@@ -109,10 +111,24 @@ export default function Receipts({ token }: ReceiptsProps = {}) {
 
   const filteredReceipts = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
-    if (!query) return receipts
-    return receipts.filter((receipt) => [receipt.receiptNumber, receipt.orderNumber, receipt.customer, receipt.salon ?? '', receipt.date]
-      .some((value) => value.toLowerCase().includes(query)))
-  }, [receipts, searchTerm])
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const days = dateFilter === '7d' ? 7 : dateFilter === '30d' ? 30 : 0
+    const startDate = days ? new Date(today.getTime() - (days - 1) * 24 * 60 * 60 * 1000) : today
+
+    return receipts.filter((receipt) => {
+      const matchesSearch = !query || [receipt.receiptNumber, receipt.orderNumber, receipt.customer, receipt.salon ?? '', receipt.date]
+        .some((value) => String(value ?? '').toLowerCase().includes(query))
+      const matchesSalon = salonFilter === 'all' || (receipt.salon ?? 'Unknown salon') === salonFilter
+      const issuedDate = receipt.date ? new Date(`${receipt.date}T00:00:00`) : null
+      const matchesDate = dateFilter === 'all' || Boolean(issuedDate && !Number.isNaN(issuedDate.getTime()) && issuedDate >= startDate)
+      return matchesSearch && matchesSalon && matchesDate
+    })
+  }, [receipts, searchTerm, salonFilter, dateFilter])
+
+  const salons = useMemo(() => Array.from(new Set(receipts.map((receipt) => receipt.salon ?? 'Unknown salon'))).sort((a, b) => a.localeCompare(b)), [receipts])
+  const filteredTotal = filteredReceipts.reduce((sum, receipt) => sum + receipt.amount, 0)
+  const hasActiveFilters = Boolean(searchTerm.trim() || salonFilter !== 'all' || dateFilter !== 'all')
 
   const totalIssued = receipts.reduce((sum, receipt) => sum + receipt.amount, 0)
 
@@ -178,9 +194,15 @@ export default function Receipts({ token }: ReceiptsProps = {}) {
       {error ? <div className="mb-6"><ErrorMessage message={error} onRetry={() => void loadReceipts()} /></div> : null}
 
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Receipts issued</p><p className="mt-2 text-2xl font-bold text-gray-900">{receipts.length}</p></div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Total receipted</p><p className="mt-2 text-2xl font-bold text-gray-900">{formatCurrency(totalIssued)}</p></div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Receipts issued</p><p className="mt-2 text-2xl font-bold text-gray-900">{hasActiveFilters ? `${filteredReceipts.length} of ${receipts.length}` : receipts.length}</p></div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Total receipted</p><p className="mt-2 text-2xl font-bold text-gray-900">{formatCurrency(hasActiveFilters ? filteredTotal : totalIssued)}</p></div>
         <div className="relative"><Search size={18} className="absolute left-3 top-3 text-gray-400" /><input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search receipt, order, or customer" className="h-full min-h-20 w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></div>
+      </div>
+
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_200px_auto]">
+        <select value={salonFilter} onChange={(event) => setSalonFilter(event.target.value)} className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"><option value="all">All salons</option>{salons.map((salon) => <option key={salon} value={salon}>{salon}</option>)}</select>
+        <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value as typeof dateFilter)} className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"><option value="all">All dates</option><option value="today">Today</option><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option></select>
+        {hasActiveFilters ? <button type="button" onClick={() => { setSearchTerm(''); setSalonFilter('all'); setDateFilter('all') }} className="inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50"><X size={16} />Clear</button> : <span />}
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
