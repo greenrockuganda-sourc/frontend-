@@ -126,7 +126,7 @@ async function sendSellerPushNotification(notification) {
   return { sent, total: subscriptions.length, failed: results.length - sent }
 }
 
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
   const requestUrl = new URL(req.url, `http://localhost:${port}`)
   const requestPath = requestUrl.pathname
 
@@ -376,7 +376,19 @@ createServer(async (req, res) => {
   } catch {
     await serveFile(path.join(distDir, 'index.html'), res)
   }
-}).listen(port, () => {
+})
+
+server.keepAliveTimeout = 5000
+server.headersTimeout = 10000
+server.requestTimeout = 10000
+server.maxConnections = 100
+
+server.on('connection', (socket) => {
+  socket.setKeepAlive(true)
+  socket.setTimeout(15000)
+})
+
+server.listen(port, () => {
   // eslint-disable-next-line no-console
   if (shouldProxyApi) {
     console.log(`Server listening on port ${port} and proxying /api to ${backendBaseUrl}`)
