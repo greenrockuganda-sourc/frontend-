@@ -1,23 +1,33 @@
-import { AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react'
 import { Product } from '@/types'
 
 interface InventoryStatusProps {
   inventory: Product[]
   loading?: boolean
+  onViewAll?: () => void
 }
 
-export default function InventoryStatus({ inventory, loading }: InventoryStatusProps) {
-  const lowStockItems = inventory.filter(p => p.stock < 10)
+const MAX_VISIBLE_ITEMS = 8
+
+/** Same rule as the backend dashboard summary: stock at or below the reorder level. */
+export const isLowStock = (product: Product) => product.stock <= (product.reorderLevel ?? 0)
+
+export default function InventoryStatus({ inventory, loading, onViewAll }: InventoryStatusProps) {
+  const lowStockItems = inventory
+    .filter(isLowStock)
+    .sort((a, b) => a.stock - b.stock)
+  const visibleItems = lowStockItems.slice(0, MAX_VISIBLE_ITEMS)
+  const hiddenCount = lowStockItems.length - visibleItems.length
 
   if (loading) {
     return (
       <div className="card">
         <div className="card-header">
-          <p className="card-title">Low Stock Items</p>
+          <p className="card-title">Low stock</p>
         </div>
         <div className="space-y-3 p-5">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100" />
+            <div key={i} className="h-14 animate-pulse rounded-lg bg-slate-100" />
           ))}
         </div>
       </div>
@@ -25,58 +35,67 @@ export default function InventoryStatus({ inventory, loading }: InventoryStatusP
   }
 
   return (
-    <div className="card overflow-hidden">
+    <div className="card flex h-full flex-col overflow-hidden">
       <div className="card-header">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-amber-100">
-            <AlertTriangle size={16} />
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+            <AlertTriangle size={17} />
           </span>
           <div className="min-w-0">
-            <p className="card-title">Low Stock Items</p>
-            <p className="card-subtitle">Below 10 units in inventory</p>
+            <p className="card-title">Low stock</p>
+            <p className="card-subtitle">At or below reorder level</p>
           </div>
         </div>
-        {lowStockItems.length > 0 && (
-          <span className="badge badge-warning flex-shrink-0">{lowStockItems.length}</span>
-        )}
       </div>
 
       {lowStockItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
             <CheckCircle2 size={22} />
           </div>
           <p className="mt-4 text-sm font-semibold text-slate-900">Inventory looks healthy</p>
-          <p className="mt-1 text-sm text-slate-500">All items are well stocked.</p>
+          <p className="mt-1 text-sm text-slate-500">No product is at its reorder level.</p>
         </div>
       ) : (
-        <ul className="divide-y divide-slate-100">
-          {lowStockItems.map(item => {
-            const critical = item.stock <= 3
-            return (
-              <li
-                key={item.id}
-                className="flex items-center justify-between gap-4 px-5 py-3.5 transition-colors hover:bg-slate-50"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">{item.name}</p>
-                  <p className="truncate text-xs text-slate-500">{item.sku || 'No SKU'}</p>
-                </div>
-                <div className="flex flex-shrink-0 items-center gap-3">
-                  <div className="text-right">
-                    <p className={`tabular text-base font-bold ${critical ? 'text-rose-600' : 'text-amber-600'}`}>
-                      {item.stock}
+        <>
+          <ul className="flex-1 divide-y divide-slate-100">
+            {visibleItems.map(item => {
+              const outOfStock = item.stock <= 0
+              return (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-slate-50"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">{item.name}</p>
+                    <p className="truncate text-xs text-slate-500">
+                      {item.sku || 'No SKU'} · reorder at {item.reorderLevel ?? 0}
                     </p>
-                    <p className="text-[0.6875rem] text-slate-400">units</p>
                   </div>
-                  <span className={`badge ${critical ? 'badge-danger' : 'badge-warning'}`}>
-                    {critical ? 'Critical' : 'Low'}
+                  <span className={`badge tabular flex-shrink-0 ${outOfStock ? 'badge-danger' : 'badge-warning'}`}>
+                    {outOfStock ? 'Out of stock' : `${item.stock} left`}
                   </span>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
+                </li>
+              )
+            })}
+          </ul>
+          {(hiddenCount > 0 || onViewAll) && (
+            <div className="border-t border-slate-100 px-5 py-3">
+              {onViewAll ? (
+                <button
+                  type="button"
+                  onClick={onViewAll}
+                  className="inline-flex min-h-0 items-center gap-1.5 text-sm font-semibold text-blue-700 hover:text-blue-800"
+                >
+                  {hiddenCount > 0 ? `View all ${lowStockItems.length} in Products` : 'Manage stock in Products'}
+                  <ArrowRight size={15} />
+                </button>
+              ) : (
+                <p className="text-xs text-slate-500">+{hiddenCount} more</p>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -24,6 +24,21 @@ const Settings = lazy(() => import('@/pages/Settings'))
 
 type Page = 'dashboard' | 'products' | 'brands' | 'categories' | 'createBrand' | 'createCategory' | 'orders' | 'deliveries' | 'receipts' | 'reports' | 'customers' | 'settings'
 
+const PAGE_TITLES: Record<Page, string> = {
+  dashboard: 'Dashboard',
+  products: 'Products',
+  brands: 'Brands',
+  categories: 'Categories',
+  createBrand: 'New brand',
+  createCategory: 'New category',
+  orders: 'Orders',
+  deliveries: 'Deliveries',
+  receipts: 'Receipts',
+  reports: 'Reports',
+  customers: 'Customers',
+  settings: 'Settings',
+}
+
 export default function App() {
   const readInitialPage = (): Page => {
     if (typeof window === 'undefined') return 'dashboard'
@@ -202,7 +217,7 @@ export default function App() {
 
     switch (currentPage) {
       case 'dashboard':
-        return <Suspense fallback={pageFallback}><Dashboard user={user} token={accessToken ?? ''} /></Suspense>
+        return <Suspense fallback={pageFallback}><Dashboard user={user} token={accessToken ?? ''} onNavigate={handleNavigate} /></Suspense>
       case 'products':
         return <Suspense fallback={pageFallback}><Products onNavigate={handleNavigate} /></Suspense>
       case 'brands':
@@ -226,12 +241,12 @@ export default function App() {
       case 'settings':
         return <Suspense fallback={pageFallback}><Settings user={user} token={accessToken ?? undefined} onProfileSave={handleProfileSave} /></Suspense>
       default:
-        return <Suspense fallback={pageFallback}><Dashboard user={user} /></Suspense>
+        return <Suspense fallback={pageFallback}><Dashboard user={user} onNavigate={handleNavigate} /></Suspense>
     }
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-white">
+    <div className="flex h-screen w-full overflow-hidden bg-[var(--surface-muted)]">
       <Sidebar
         currentPage={currentPage}
         onNavigate={handleNavigate}
@@ -242,6 +257,7 @@ export default function App() {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden min-h-0">
         <Header
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          pageTitle={PAGE_TITLES[currentPage] ?? 'Dashboard'}
           onBack={handleGoBack}
           user={user}
           token={accessToken ?? undefined}

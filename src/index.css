@@ -1,18 +1,74 @@
 @import "tailwindcss";
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Glow brand palette. Pages use Tailwind's blue / indigo / violet classes for
+   accents; remapping those scales here gives every page the same navy brand
+   colour without touching page code. */
+@theme {
+  --color-blue-50: #eef4fc;
+  --color-blue-100: #dce7f7;
+  --color-blue-200: #bacfee;
+  --color-blue-300: #8eaedf;
+  --color-blue-400: #5c86c9;
+  --color-blue-500: #3765b0;
+  --color-blue-600: #1d4c98;
+  --color-blue-700: #163c7c;
+  --color-blue-800: #102d60;
+  --color-blue-900: #0a2048;
+  --color-blue-950: #001c44;
+
+  --color-indigo-50: #eef4fc;
+  --color-indigo-100: #dce7f7;
+  --color-indigo-200: #bacfee;
+  --color-indigo-300: #8eaedf;
+  --color-indigo-400: #5c86c9;
+  --color-indigo-500: #3765b0;
+  --color-indigo-600: #1d4c98;
+  --color-indigo-700: #163c7c;
+  --color-indigo-800: #102d60;
+  --color-indigo-900: #0a2048;
+  --color-indigo-950: #001c44;
+
+  --color-violet-50: #eef4fc;
+  --color-violet-100: #dce7f7;
+  --color-violet-200: #bacfee;
+  --color-violet-300: #8eaedf;
+  --color-violet-400: #5c86c9;
+  --color-violet-500: #3765b0;
+  --color-violet-600: #2a5aa6;
+  --color-violet-700: #1d4c98;
+  --color-violet-800: #163c7c;
+  --color-violet-900: #102d60;
+  --color-violet-950: #001c44;
+
+  /* Glow orange, used sparingly as an accent (active states, highlights). */
+  --color-accent-50: #fff4ea;
+  --color-accent-100: #fee4cc;
+  --color-accent-400: #f89a4a;
+  --color-accent-500: #f5821f;
+  --color-accent-600: #d96a0c;
+}
+
+/* Element-level base rules live in @layer base so Tailwind utility classes
+   (p-5, min-h-0, h-full, text-sm ...) can override them. Unlayered rules
+   always beat Tailwind v4's layered utilities, which silently disabled
+   spacing and sizing classes across the dashboard. */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 }
 
 :root {
-  /* Brand */
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
-  --primary-light: #60a5fa;
-  --primary-50: #eff6ff;
-  --primary-100: #dbeafe;
+  /* Brand (Glow navy + orange accent) */
+  --primary: #1d4c98;
+  --primary-dark: #163c7c;
+  --primary-light: #5c86c9;
+  --primary-50: #eef4fc;
+  --primary-100: #dce7f7;
+  --brand-navy: #001c44;
+  --accent: #f5821f;
 
   /* Semantic */
   --secondary: #0f766e;
@@ -35,20 +91,20 @@
 
   /* Surfaces */
   --surface: #ffffff;
-  --surface-muted: #f8fafc;
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
+  --surface-muted: #f4f6fb;
+  --border: #e5e9f2;
+  --border-strong: #cfd6e4;
 
-  /* Elevation */
-  --shadow-xs: 0 1px 2px 0 rgb(15 23 42 / 0.04);
-  --shadow-sm: 0 1px 3px 0 rgb(15 23 42 / 0.06), 0 1px 2px -1px rgb(15 23 42 / 0.04);
-  --shadow-md: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 6px -2px rgb(15 23 42 / 0.04);
-  --shadow-lg: 0 12px 28px -8px rgb(15 23 42 / 0.14), 0 4px 10px -4px rgb(15 23 42 / 0.06);
+  /* Elevation (navy-tinted, soft) */
+  --shadow-xs: 0 1px 2px 0 rgb(0 28 68 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(0 28 68 / 0.04), 0 4px 14px -6px rgb(0 28 68 / 0.08);
+  --shadow-md: 0 2px 4px -1px rgb(0 28 68 / 0.05), 0 12px 28px -10px rgb(0 28 68 / 0.16);
+  --shadow-lg: 0 18px 40px -12px rgb(0 28 68 / 0.22), 0 4px 10px -4px rgb(0 28 68 / 0.06);
 
   /* Radii */
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 16px;
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 20px;
 
   /* Layout */
   --header-height: 64px;
@@ -70,7 +126,10 @@ body {
     'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--surface-muted);
+  background:
+    radial-gradient(circle at 82% -8%, rgb(224 231 255 / 0.68), transparent 28rem),
+    radial-gradient(circle at 3% 32%, rgb(224 242 254 / 0.58), transparent 25rem),
+    var(--surface-muted);
   color: var(--gray-900);
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
@@ -93,25 +152,51 @@ code {
    TYPOGRAPHY
    ============================================ */
 
-h1, .text-3xl, .text-4xl {
-  font-size: clamp(1.5rem, 4vw + 0.5rem, 2rem);
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  word-break: break-word;
+@layer base {
+  h1, .text-3xl, .text-4xl {
+    font-size: clamp(1.5rem, 4vw + 0.5rem, 2rem);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    word-break: break-word;
+  }
+
+  h2, .text-2xl {
+    font-size: clamp(1.25rem, 3vw + 0.5rem, 1.625rem);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    word-break: break-word;
+  }
+
+  h3, .text-xl {
+    font-size: clamp(1.05rem, 2vw + 0.5rem, 1.25rem);
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    word-break: break-word;
+  }
+
+  /* Touch-friendly tap targets */
+  button, a, select, input[type="checkbox"], input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  button, a {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
 }
 
-h2, .text-2xl {
-  font-size: clamp(1.25rem, 3vw + 0.5rem, 1.625rem);
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-  word-break: break-word;
-}
-
-h3, .text-xl {
-  font-size: clamp(1.05rem, 2vw + 0.5rem, 1.25rem);
-  line-height: 1.35;
-  letter-spacing: -0.01em;
-  word-break: break-word;
+/* Prevent iOS input zoom on focus (kept unlayered so it wins on phones). */
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px;
+  }
 }
 
 .eyebrow {
@@ -120,28 +205,6 @@ h3, .text-xl {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--gray-500);
-}
-
-/* Touch-friendly tap targets */
-button, a, select, input[type="checkbox"], input[type="radio"] {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-button, a {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Prevent iOS input zoom on focus */
-input, select, textarea {
-  font-size: 16px;
-}
-
-:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-  border-radius: 6px;
 }
 
 /* ============================================
@@ -162,6 +225,7 @@ input, select, textarea {
 .card-hover:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--border-strong);
+  transform: translateY(-1px);
 }
 
 .card-header {
@@ -171,6 +235,33 @@ input, select, textarea {
   gap: 12px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
+}
+
+/* Navy hero band used at the top of the dashboard. */
+.hero-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgb(245 130 31 / 0.22) 0%, transparent 45%),
+    linear-gradient(135deg, #001c44 0%, #0a2b5e 55%, #163c7c 100%);
+  color: #ffffff;
+  box-shadow: var(--shadow-md);
+}
+
+.hero-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(90deg, transparent 30%, #000 100%);
+  pointer-events: none;
+}
+
+.hero-panel > * {
+  position: relative;
+  z-index: 1;
 }
 
 .card-title {
@@ -327,6 +418,27 @@ input, select, textarea {
   max-width: 1440px;
   margin: 0 auto;
   padding: 20px 16px 32px;
+}
+
+.dashboard-hero {
+  position: relative;
+  background:
+    radial-gradient(circle at 92% 8%, rgb(196 181 253 / 0.75), transparent 32%),
+    radial-gradient(circle at 72% 104%, rgb(191 219 254 / 0.78), transparent 43%),
+    linear-gradient(120deg, #ffffff 0%, #f8faff 48%, #f5f3ff 100%);
+}
+
+.dashboard-hero::after {
+  content: '';
+  position: absolute;
+  right: -2rem;
+  top: -3.5rem;
+  width: 11rem;
+  height: 11rem;
+  border: 1px solid rgb(129 140 248 / 0.24);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1.5rem rgb(129 140 248 / 0.06), 0 0 0 3rem rgb(129 140 248 / 0.035);
+  pointer-events: none;
 }
 
 @media (min-width: 640px) { .page-container { padding: 24px 24px 40px; } }
@@ -757,11 +869,13 @@ input, select, textarea {
 }
 
 /* Ensure images render fully and are not cropped by default */
-img, picture, video {
-  max-width: 100%;
-  height: auto;
-  object-fit: contain;
-  display: block;
+@layer base {
+  img, picture, video {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+  }
 }
 
 /* Utility to force full-image rendering when needed */

@@ -1,23 +1,33 @@
 import { useEffect, useMemo, useState } from 'react'
-import { DollarSign, ShoppingCart, Truck, AlertCircle, CalendarDays, RefreshCw, Receipt, TrendingUp } from 'lucide-react'
+import { Wallet, ShoppingCart, Truck, AlertTriangle, RefreshCw, Receipt, Users, Package, Clock, AlertCircle, ChevronRight, Banknote } from 'lucide-react'
 import StatCard from '@/components/StatCard'
 import RecentOrders from '@/components/RecentOrders'
-import InventoryStatus from '@/components/InventoryStatus'
+import InventoryStatus, { isLowStock } from '@/components/InventoryStatus'
+import RevenueTrend, { RevenuePoint } from '@/components/RevenueTrend'
 import { fetchDashboard, fetchProducts, fetchOrders, fetchDeliveries, fetchCustomers, fetchPayments } from '@/lib/api'
 import { Order, Product } from '@/types'
 import Skeleton, { SkeletonStats, SkeletonTable } from '@/components/Skeleton'
 
 const validRanges = ['7d', '30d', '90d', 'all'] as const
 const DASHBOARD_REFRESH_INTERVAL_MS = 60000
+const DAY_MS = 24 * 60 * 60 * 1000
+const RECENT_ORDERS_LIMIT = 8
 
 type RangeKey = (typeof validRanges)[number]
+
+const RANGE_LABELS: Record<RangeKey, string> = {
+  '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
+  '90d': 'Last 90 days',
+  all: 'All time',
+}
 
 const getRangeStartDate = (range: RangeKey) => {
   if (range === 'all') return null
   const days = range === '7d' ? 7 : range === '30d' ? 30 : 90
   const now = new Date()
   now.setHours(0, 0, 0, 0)
-  return new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000)
+  return new Date(now.getTime() - (days - 1) * DAY_MS)
 }
 
 const normalizeRangeValue = (raw?: string | null): RangeKey => {
@@ -37,49 +47,95 @@ const readDashboardRangeFromUrl = (): RangeKey => {
   return normalizeRangeValue(value)
 }
 
-const formatCurrency = (amount: number) =>
-  `UGX ${Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const formatCurrency = (amount: number) => `UGX ${Math.round(Number(amount || 0)).toLocaleString()}`
+
+const toList = (data: any): any[] => {
+  if (Array.isArray(data?.results)) return data.results
+  return Array.isArray(data) ? data : []
+}
+
+const ORDER_DATE_KEYS = ['created_at', 'date', 'order_date']
+const DELIVERY_DATE_KEYS = ['created_at', 'date', 'delivery_date']
+const PAYMENT_DATE_KEYS = ['created_at', 'date', 'payment_date', 'paid_at']
+
+const getRecordDate = (record: any, dateKeys: string[]) => {
+  const dateValue = dateKeys.map((key) => record?.[key]).find(Boolean) ?? ''
+  const recordDate = new Date(dateValue)
+  return Number.isNaN(recordDate.getTime()) ? null : recordDate
+}
+
+const dayKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+const monthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+
+/** Revenue per day for a fixed range, or per month for "All time"; empty periods are zero. */
+const buildRevenueSeries = (orders: any[], range: RangeKey, rangeStart: Date | null): RevenuePoint[] => {
+  const totals = new Map<string, number>()
+  const byMonth = range === 'all'
+  for (const order of orders) {
+    const date = getRecordDate(order, ORDER_DATE_KEYS)
+    if (!date) continue
+    const key = byMonth ? monthKey(date) : dayKey(date)
+    totals.set(key, (totals.get(key) ?? 0) + Number(order.total_amount ?? order.amount ?? 0))
+  }
+
+  const points: RevenuePoint[] = []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  if (!byMonth && rangeStart) {
+    for (let time = rangeStart.getTime(); time <= today.getTime(); time += DAY_MS) {
+      const date = new Date(time)
+      const key = dayKey(date)
+      points.push({ key, label: date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), revenue: totals.get(key) ?? 0 })
+    }
+    return points
+  }
+
+  const keys = Array.from(totals.keys()).sort()
+  if (keys.length === 0) return points
+  const [firstYear, firstMonth] = keys[0].split('-').map(Number)
+  const cursor = new Date(firstYear, firstMonth - 1, 1)
+  while (cursor <= today) {
+    const key = monthKey(cursor)
+    points.push({ key, label: cursor.toLocaleDateString(undefined, { month: 'short', year: '2-digit' }), revenue: totals.get(key) ?? 0 })
+    cursor.setMonth(cursor.getMonth() + 1)
+  }
+  return points
+}
+
+interface DashboardData {
+  summary: any
+  orders: any[]
+  deliveries: any[]
+  payments: any[]
+  customerCount: number
+  products: Product[]
+}
 
 interface DashboardProps {
   user?: any
   token?: string
+  onNavigate?: (page: string) => void
 }
 
-export default function Dashboard({ user, token }: DashboardProps) {
+export default function Dashboard({ user, token, onNavigate }: DashboardProps) {
   const activeToken = token ?? (typeof window !== 'undefined' ? localStorage.getItem('access') ?? '' : '')
 
-  const [stats, setStats] = useState({
-    revenue: 0,
-    orders: 0,
-    pending: 0,
-    lowStock: 0,
-    customers: 0,
-    payments: 0,
-    inventoryCount: 0,
-  })
-  const [recentOrders, setRecentOrders] = useState<Order[]>([])
-  const [inventory, setInventory] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [refreshing, setRefreshing] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [range, setRange] = useState<RangeKey>(readDashboardRangeFromUrl)
-  const [isMobileView, setIsMobileView] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
-  const dateRangeLabel = useMemo(() => {
-    switch (range) {
-      case '7d': return 'Last 7 days'
-      case '30d': return 'Last 30 days'
-      case '90d': return 'Last 90 days'
-      default: return 'All time'
-    }
-  }, [range])
-
+  // Load everything once and refresh in the background; changing the range
+  // only re-filters what is already loaded instead of refetching it.
   useEffect(() => {
     let active = true
 
     const loadDashboard = async () => {
       try {
-        setLoading(true)
+        setRefreshing(true)
         setError(null)
 
         const [dashboardData, productsData, ordersData, deliveriesData, customersData, paymentsData] = await Promise.all([
@@ -90,96 +146,12 @@ export default function Dashboard({ user, token }: DashboardProps) {
           fetchCustomers(activeToken),
           fetchPayments(activeToken),
         ])
-        if (!active) {
-          return
-        }
+        if (!active) return
 
         const summary = dashboardData?.summary ?? {}
-        const productList = Array.isArray(productsData?.results)
-          ? productsData.results
-          : Array.isArray(productsData)
-            ? productsData
-            : []
-        const orderList = Array.isArray(ordersData?.results)
-          ? ordersData.results
-          : Array.isArray(ordersData)
-            ? ordersData
-            : []
-        const deliveryList = Array.isArray(deliveriesData?.results)
-          ? deliveriesData.results
-          : Array.isArray(deliveriesData)
-            ? deliveriesData
-            : []
-        const customerList = Array.isArray(customersData?.results)
-          ? customersData.results
-          : Array.isArray(customersData)
-            ? customersData
-            : []
-        const paymentList = Array.isArray(paymentsData?.results)
-          ? paymentsData.results
-          : Array.isArray(paymentsData)
-            ? paymentsData
-            : []
+        const customerList = toList(customersData)
 
-        const rangeStart = getRangeStartDate(range)
-        const isInSelectedRange = (record: any, dateKeys: string[]) => {
-          if (!rangeStart) return true
-          const dateValue = dateKeys.map((key) => record?.[key]).find(Boolean) ?? ''
-          const recordDate = new Date(dateValue)
-          return !Number.isNaN(recordDate.getTime()) && recordDate >= rangeStart
-        }
-        const filteredOrdersForRange = orderList.filter((order: any) => isInSelectedRange(order, ['created_at', 'date', 'order_date']))
-        const filteredDeliveriesForRange = deliveryList.filter((delivery: any) => isInSelectedRange(delivery, ['created_at', 'date', 'delivery_date']))
-        const filteredPaymentsForRange = paymentList.filter((payment: any) => isInSelectedRange(payment, ['created_at', 'date', 'payment_date', 'paid_at']))
-        const revenueFromOrders = filteredOrdersForRange.reduce((sum: number, order: any) => sum + Number(order.total_amount ?? order.amount ?? 0), 0)
-        const lowStockFromProducts = productList.filter((product: any) => {
-          const stock = Number(product.stock ?? product.quantity_in_stock ?? 0)
-          const reorderLevel = Number(product.reorder_level ?? product.reorderLevel ?? 0)
-          return stock <= reorderLevel || stock <= 0
-        }).length
-        const pendingDeliveriesFromData = filteredDeliveriesForRange.filter((delivery: any) => {
-          const status = String(delivery.delivery_status ?? delivery.status ?? '').toLowerCase()
-          return status === 'preparing' || status === 'pending' || status === 'in progress'
-        }).length
-        const pendingOrdersFromData = filteredOrdersForRange.filter((order: any) => String(order.order_status ?? order.status ?? '').toLowerCase() === 'pending').length
-
-        const revenue = revenueFromOrders
-        const pending = pendingDeliveriesFromData || pendingOrdersFromData
-        const lowStock = summary.low_stock_products != null
-          ? Number(summary.low_stock_products)
-          : lowStockFromProducts
-        const customers = customerList.length || Number(summary.total_customers ?? 0)
-        const inventoryCount = productList.length
-        const payments = filteredPaymentsForRange.reduce((sum: number, payment: any) => sum + Number(payment.amount ?? payment.total_amount ?? payment.value ?? 0), 0)
-
-        setStats({
-          revenue,
-          orders: filteredOrdersForRange.length,
-          pending,
-          lowStock,
-          customers,
-          payments,
-          inventoryCount,
-        })
-
-        const recentOrdersRaw = dashboardData?.recent_activity?.recent_orders
-        const normalizedOrders = (Array.isArray(recentOrdersRaw) ? recentOrdersRaw : []).map((order: any) => ({
-          id: order.order_number ?? order.id ?? 'N/A',
-          customer: order.customer ?? '—',
-          amount: Number(order.total_amount ?? order.amount ?? 0),
-          status: (order.order_status ?? order.status ?? 'pending').toLowerCase(),
-          date: order.created_at?.slice(0, 10) ?? order.date ?? '',
-        }))
-        const filteredRecentOrders = rangeStart
-          ? normalizedOrders.filter((order: any) => {
-              const dateValue = order.date
-              const orderDate = new Date(dateValue)
-              return !Number.isNaN(orderDate.getTime()) && orderDate >= rangeStart
-            })
-          : normalizedOrders
-        setRecentOrders(filteredRecentOrders)
-
-        const normalizedProducts = productList.map((product: any) => {
+        const products: Product[] = toList(productsData).map((product: any) => {
           const categoryString = product.category?.category_name ?? product.category?.name ?? (typeof product.category === 'string' ? product.category : '')
           return {
             id: String(product.id ?? product.product_id ?? product.sku ?? ''),
@@ -191,16 +163,22 @@ export default function Dashboard({ user, token }: DashboardProps) {
             reorderLevel: Number(product.reorder_level ?? product.reorderLevel ?? 0),
           }
         })
-        setInventory(normalizedProducts)
+
+        setData({
+          summary,
+          orders: toList(ordersData),
+          deliveries: toList(deliveriesData),
+          payments: toList(paymentsData),
+          customerCount: customerList.length || Number(summary.total_customers ?? 0),
+          products,
+        })
         setLastUpdated(new Date())
       } catch (err) {
         if (active) {
           setError(err instanceof Error ? err.message : 'Unable to load dashboard data.')
         }
       } finally {
-        if (active) {
-          setLoading(false)
-        }
+        if (active) setRefreshing(false)
       }
     }
 
@@ -225,7 +203,7 @@ export default function Dashboard({ user, token }: DashboardProps) {
       window.removeEventListener('focus', handleVisibilityChange)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [range])
+  }, [activeToken])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -234,68 +212,116 @@ export default function Dashboard({ user, token }: DashboardProps) {
     window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`)
   }, [range])
 
-  useEffect(() => {
-    const updateIsMobileView = () => {
-      setIsMobileView(window.innerWidth < 1024)
+  const view = useMemo(() => {
+    if (!data) return null
+    const rangeStart = getRangeStartDate(range)
+    const inRange = (record: any, dateKeys: string[]) => {
+      if (!rangeStart) return true
+      const date = getRecordDate(record, dateKeys)
+      return date !== null && date >= rangeStart
     }
 
-    updateIsMobileView()
-    window.addEventListener('resize', updateIsMobileView)
+    const orders = data.orders.filter((order) => inRange(order, ORDER_DATE_KEYS))
+    const deliveries = data.deliveries.filter((delivery) => inRange(delivery, DELIVERY_DATE_KEYS))
+    const payments = data.payments.filter((payment) => inRange(payment, PAYMENT_DATE_KEYS))
 
-    return () => {
-      window.removeEventListener('resize', updateIsMobileView)
+    const revenue = orders.reduce((sum, order) => sum + Number(order.total_amount ?? order.amount ?? 0), 0)
+    const paymentsTotal = payments.reduce((sum, payment) => sum + Number(payment.amount ?? payment.total_amount ?? payment.value ?? 0), 0)
+    const pendingOrders = orders.filter((order) => String(order.order_status ?? order.status ?? '').toLowerCase() === 'pending').length
+    const pendingDeliveries = deliveries.filter((delivery) => {
+      const status = String(delivery.delivery_status ?? delivery.status ?? '').toLowerCase()
+      return status === 'preparing' || status === 'pending' || status === 'in progress'
+    }).length
+    const lowStock = data.summary.low_stock_products != null
+      ? Number(data.summary.low_stock_products)
+      : data.products.filter(isLowStock).length
+
+    // The dashboard endpoint only returns a small activity preview, so recent
+    // orders come from the full order list for the selected period.
+    const recentOrders: Order[] = [...orders]
+      .sort((a, b) => (getRecordDate(b, ORDER_DATE_KEYS)?.getTime() ?? 0) - (getRecordDate(a, ORDER_DATE_KEYS)?.getTime() ?? 0))
+      .slice(0, RECENT_ORDERS_LIMIT)
+      .map((order: any) => ({
+        id: order.order_number ?? order.id ?? 'N/A',
+        customer: order.customer ?? order.customer_name ?? '—',
+        amount: Number(order.total_amount ?? order.amount ?? 0),
+        status: (order.order_status ?? order.status ?? 'pending').toLowerCase(),
+        date: order.created_at?.slice(0, 10) ?? order.order_date?.slice(0, 10) ?? order.date ?? '',
+      }))
+
+    return {
+      revenue,
+      orderCount: orders.length,
+      averageOrder: orders.length ? revenue / orders.length : 0,
+      paymentsTotal,
+      pendingOrders,
+      pendingDeliveries,
+      lowStock,
+      recentOrders,
+      revenueSeries: buildRevenueSeries(orders, range, rangeStart),
     }
-  }, [])
+  }, [data, range])
 
   const firstName = user?.first_name || user?.email?.split('@')[0] || 'there'
-  const rangeRevenue = stats.revenue
-  const averageOrder = stats.orders ? rangeRevenue / stats.orders : 0
+  const rangeLabel = RANGE_LABELS[range]
+  const greeting = (() => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  })()
+
+  const attentionItems = view && data ? [
+    { label: 'Pending orders', value: view.pendingOrders, hint: rangeLabel, icon: Clock, tone: 'bg-amber-50 text-amber-600', page: 'orders' },
+    { label: 'Deliveries in preparation', value: view.pendingDeliveries, hint: rangeLabel, icon: Truck, tone: 'bg-blue-50 text-blue-700', page: 'deliveries' },
+    { label: 'Low stock products', value: view.lowStock, hint: 'At or below reorder level', icon: AlertTriangle, tone: 'bg-rose-50 text-rose-600', page: 'products' },
+    { label: 'Customers', value: data.customerCount, hint: 'All time', icon: Users, tone: 'bg-emerald-50 text-emerald-600', page: 'customers' },
+    { label: 'Products in catalog', value: data.products.length, hint: 'All time', icon: Package, tone: 'bg-slate-100 text-slate-600', page: 'products' },
+  ] : []
 
   return (
     <div className="page-container">
-      {/* Page header */}
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0 max-w-2xl">
-          <p className="eyebrow">Overview</p>
-          <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Welcome back, {firstName}
-          </h2>
-          <p className="mt-1.5 text-sm text-slate-500">
-            Here is what is happening with your store right now.
-          </p>
-        </div>
+      {/* Hero */}
+      <section className="hero-panel mb-6 px-5 py-6 sm:px-7 sm:py-7">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent-400">Store overview</p>
+            <p className="mt-1.5 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              {greeting}, {firstName}
+            </p>
+            <p className="mt-1.5 text-sm text-slate-300">
+              Sales, fulfilment and inventory for <span className="font-semibold text-white">{rangeLabel.toLowerCase()}</span>.
+            </p>
+          </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          {lastUpdated && (
-            <span className="hidden items-center gap-1.5 text-xs font-medium text-slate-500 sm:inline-flex">
-              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-              Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-            {validRanges.map((option) => {
-              const isActive = range === option
-              const label = option === '7d' ? '7d' : option === '30d' ? '30d' : option === '90d' ? '90d' : 'All'
-
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setRange(option)}
-                  aria-pressed={isActive}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
-                      : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-                >
-                  {label}
-                </button>
-              )
-            })}
+          <div className="flex flex-wrap items-center gap-3">
+            {lastUpdated && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-300">
+                <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+                Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+            <div className="flex items-center gap-1 rounded-xl bg-white/10 p-1 ring-1 ring-white/15 backdrop-blur" role="group" aria-label="Date range">
+              {validRanges.map((option) => {
+                const isActive = range === option
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setRange(option)}
+                    aria-pressed={isActive}
+                    className={`min-h-0 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors duration-150 ${
+                      isActive ? 'bg-white text-[#001c44] shadow-sm' : 'text-slate-200 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    {option === 'all' ? 'All' : option}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {error && (
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -304,108 +330,97 @@ export default function Dashboard({ user, token }: DashboardProps) {
         </div>
       )}
 
-      {loading ? (
-        <>
-          <div className="mb-6">
-            <SkeletonStats />
-          </div>
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-            <div className="xl:col-span-2">
-              <div className="card p-5">
-                <Skeleton height={20} width="40%" className="mb-4" />
-                <SkeletonTable rows={5} columns={4} />
-              </div>
+      {!view || !data ? (
+        refreshing ? (
+          <>
+            <div className="mb-6">
+              <SkeletonStats />
             </div>
-            <div className="xl:col-span-1">
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+              <div className="xl:col-span-2">
+                <div className="card p-5">
+                  <Skeleton height={20} width="40%" className="mb-4" />
+                  <SkeletonTable rows={5} columns={4} />
+                </div>
+              </div>
               <div className="card p-5">
                 <Skeleton height={20} width="60%" className="mb-4" />
                 <SkeletonTable rows={5} columns={2} />
               </div>
             </div>
-          </div>
-        </>
+          </>
+        ) : null
       ) : (
         <>
-          {/* Primary KPIs */}
+          {/* Sales KPIs for the selected range */}
           <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              title="Total Revenue"
-              value={formatCurrency(stats.revenue)}
-              icon={<DollarSign size={20} />}
-              change={dateRangeLabel}
-              trend="up"
-              color="blue"
-            />
-            <StatCard
-              title="Total Orders"
-              value={stats.orders.toLocaleString()}
-              icon={<ShoppingCart size={20} />}
-              change={dateRangeLabel}
-              trend="up"
-              color="emerald"
-            />
-            <StatCard
-              title="Pending Deliveries"
-              value={stats.pending.toLocaleString()}
-              icon={<Truck size={20} />}
-              change={dateRangeLabel}
-              trend="down"
-              color="amber"
-            />
-            <StatCard
-              title="Low Stock Items"
-              value={stats.lowStock.toLocaleString()}
-              icon={<AlertCircle size={20} />}
-              change="Needs attention"
-              color="rose"
-            />
+            <StatCard title="Revenue" value={formatCurrency(view.revenue)} icon={<Wallet size={19} />} change="From orders placed" color="blue" />
+            <StatCard title="Orders" value={view.orderCount.toLocaleString()} icon={<ShoppingCart size={19} />} change="Placed in this period" color="orange" onClick={onNavigate ? () => onNavigate('orders') : undefined} />
+            <StatCard title="Average order" value={formatCurrency(view.averageOrder)} icon={<Receipt size={19} />} change="Revenue ÷ orders" color="emerald" />
+            <StatCard title="Payments received" value={formatCurrency(view.paymentsTotal)} icon={<Banknote size={19} />} change="Recorded payments" color="slate" />
           </div>
 
-          {/* Range summary */}
-          <div className="card mb-6 overflow-hidden">
-            <div className="card-header">
-              <div className="min-w-0">
-                <p className="card-title">Performance summary</p>
-                <p className="card-subtitle">Metrics calculated for the selected period</p>
-              </div>
-              <span className="badge badge-info flex-shrink-0">{dateRangeLabel}</span>
+          {/* Trend + operational status */}
+          <div className="mb-5 grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <div className="xl:col-span-2">
+              <RevenueTrend points={view.revenueSeries} rangeLabel={rangeLabel} />
             </div>
-            <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-3">
-              {[
-                { label: 'Orders in range', value: stats.orders.toLocaleString(), icon: ShoppingCart },
-                { label: 'Range revenue', value: formatCurrency(rangeRevenue), icon: TrendingUp },
-                { label: 'Average order', value: formatCurrency(averageOrder), icon: Receipt },
-                { label: 'Customers', value: stats.customers.toLocaleString(), icon: CalendarDays },
-                { label: 'Payments', value: formatCurrency(stats.payments), icon: DollarSign },
-                { label: 'Tracked stock', value: stats.inventoryCount.toLocaleString(), icon: AlertCircle },
-              ].map((metric) => {
-                const Icon = metric.icon
-                return (
-                  <div key={metric.label} className="flex items-center gap-3 px-5 py-4">
-                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-                      <Icon size={17} />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-medium text-slate-500">{metric.label}</p>
-                      <p className="tabular mt-0.5 truncate text-lg font-bold text-slate-900">{metric.value}</p>
-                    </div>
-                  </div>
-                )
-              })}
+
+            <div className="card overflow-hidden">
+              <div className="card-header">
+                <div className="min-w-0">
+                  <p className="card-title">Store at a glance</p>
+                  <p className="card-subtitle">What needs your attention</p>
+                </div>
+              </div>
+              <ul className="divide-y divide-slate-100">
+                {attentionItems.map((item) => {
+                  const Icon = item.icon
+                  const content = (
+                    <>
+                      <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${item.tone}`}>
+                        <Icon size={17} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-slate-800">{item.label}</span>
+                        <span className="block truncate text-xs text-slate-500">{item.hint}</span>
+                      </span>
+                      <span className="tabular text-lg font-bold text-slate-900">{item.value.toLocaleString()}</span>
+                      {onNavigate && <ChevronRight size={16} className="flex-shrink-0 text-slate-300" />}
+                    </>
+                  )
+                  return (
+                    <li key={item.label}>
+                      {onNavigate ? (
+                        <button
+                          type="button"
+                          onClick={() => onNavigate(item.page)}
+                          className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-slate-50"
+                        >
+                          {content}
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-3 px-5 py-3">{content}</div>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
             </div>
           </div>
 
           {/* Detail panels */}
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
             <div className="xl:col-span-2">
-              <RecentOrders orders={recentOrders} loading={loading} />
+              <RecentOrders
+                orders={view.recentOrders}
+                onViewAll={onNavigate ? () => onNavigate('orders') : undefined}
+              />
             </div>
-
-            {isMobileView && (
-              <div className="xl:col-span-1">
-                <InventoryStatus inventory={inventory} loading={loading} />
-              </div>
-            )}
+            <InventoryStatus
+              inventory={data.products}
+              onViewAll={onNavigate ? () => onNavigate('products') : undefined}
+            />
           </div>
         </>
       )}

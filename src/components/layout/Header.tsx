@@ -1,4 +1,4 @@
-import { Menu, Bell, User, LogOut, ChevronDown } from 'lucide-react'
+import { Menu, Bell, User, LogOut, ArrowLeft, ChevronDown } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchNotifications, markNotificationRead, sendNewArrivalNotification } from '@/lib/api'
 
@@ -16,7 +16,7 @@ interface HeaderProps {
   pageTitle?: string
 }
 
-export default function Header({ onMenuClick, onBack, user, token, onLogout, onProfileClick, notifications: initialNotifications = [], onClearAllNotifications }: HeaderProps) {
+export default function Header({ onMenuClick, onBack, user, token, onLogout, onProfileClick, notifications: initialNotifications = [], onClearAllNotifications, pageTitle }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState<any[]>(Array.isArray(initialNotifications) ? initialNotifications : [])
@@ -153,48 +153,33 @@ export default function Header({ onMenuClick, onBack, user, token, onLogout, onP
     .toUpperCase()
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
-        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-          <div className="relative flex items-center gap-2">
-            <button
-              onClick={onMenuClick}
-              className="rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden"
-              aria-label="Open menu"
-            >
-              <Menu size={22} />
-            </button>
-            {/* Back menu: quick choices to go back 1..5 pages */}
-            <div className="relative">
-              <button
-                onClick={() => onBack?.(1)}
-                title="Go back (1)"
-                className="rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
-              >
-                <ChevronDown size={18} />
-              </button>
-              <div className="absolute left-0 mt-10 hidden w-40 rounded-xl border border-slate-200 bg-white shadow-lg group-hover:block" />
-            </div>
-          </div>
-
-          <div className="flex flex-1 items-center justify-center sm:justify-start">
-            <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-indigo-200/80 bg-gradient-to-br from-indigo-100 via-white to-violet-100 sm:h-16 sm:w-16">
-              <img
-                src="https://res.cloudinary.com/h78tlu47/image/upload/v1784708343/icon_sotujz.jpg"
-                alt="Seller Admin logo"
-                className="h-full w-full object-contain p-1.5"
-              />
-              <span
-                aria-hidden
-                className="absolute inset-0 rounded-xl"
-                style={{
-                  boxShadow: '0 14px 32px -14px rgba(99,102,241,0.4), 0 0 48px rgba(168,85,247,0.18)',
-                  pointerEvents: 'none',
-                }}
-              />
-              <span className="absolute inset-0 rounded-xl ring-1 ring-indigo-200/70 ring-offset-2 ring-offset-white" />
-            </div>
-          </div>
+    <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-3 px-3 py-2 sm:px-6">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+          <button
+            onClick={onMenuClick}
+            className="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+            aria-label="Open menu"
+          >
+            <Menu size={22} />
+          </button>
+          <button
+            onClick={() => onBack?.(1)}
+            title="Go back"
+            aria-label="Go back"
+            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          {/* The sidebar carries the logo on desktop; show it here only when the sidebar is hidden. */}
+          <img
+            src="https://res.cloudinary.com/h78tlu47/image/upload/v1784708343/icon_sotujz.jpg"
+            alt="Glow logo"
+            className="h-9 w-9 flex-shrink-0 rounded-lg bg-white object-contain p-0.5 ring-1 ring-slate-200 lg:hidden"
+          />
+          {pageTitle && (
+            <p className="ml-1 truncate text-base font-semibold tracking-tight text-slate-900 sm:text-lg">{pageTitle}</p>
+          )}
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -260,6 +245,7 @@ export default function Header({ onMenuClick, onBack, user, token, onLogout, onP
                 )}
               </div>
               <span className="hidden text-sm font-medium text-slate-700 md:inline">{displayName}</span>
+              <ChevronDown size={15} className="hidden text-slate-400 md:block" />
             </button>
 
             {showUserMenu && (

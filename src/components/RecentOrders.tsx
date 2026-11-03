@@ -1,21 +1,25 @@
-import { Inbox } from 'lucide-react'
+import { Inbox, ArrowRight } from 'lucide-react'
 import { Order } from '@/types'
 
 interface RecentOrdersProps {
   orders: Order[]
   loading?: boolean
+  onViewAll?: () => void
 }
 
 const statusStyles: Record<string, string> = {
   delivered: 'badge badge-success',
   completed: 'badge badge-success',
   pending: 'badge badge-warning',
+  confirmed: 'badge badge-info',
   processing: 'badge badge-info',
+  packed: 'badge badge-info',
+  'out for delivery': 'badge badge-info',
   shipped: 'badge badge-info',
   cancelled: 'badge badge-danger',
 }
 
-export default function RecentOrders({ orders, loading }: RecentOrdersProps) {
+export default function RecentOrders({ orders, loading, onViewAll }: RecentOrdersProps) {
   if (loading) {
     return (
       <div className="card">
@@ -35,12 +39,19 @@ export default function RecentOrders({ orders, loading }: RecentOrdersProps) {
     <div className="card overflow-hidden">
       <div className="card-header">
         <div className="min-w-0">
-          <p className="card-title">Recent Orders</p>
+          <p className="card-title">Recent orders</p>
           <p className="card-subtitle">Latest activity from your storefront</p>
         </div>
-        <span className="badge badge-neutral flex-shrink-0">
-          {orders.length} {orders.length === 1 ? 'order' : 'orders'}
-        </span>
+        {onViewAll && (
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="inline-flex min-h-0 flex-shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-50"
+          >
+            View all
+            <ArrowRight size={15} />
+          </button>
+        )}
       </div>
 
       {orders.length === 0 ? (
@@ -75,7 +86,7 @@ export default function RecentOrders({ orders, loading }: RecentOrdersProps) {
                     {order.customer}
                   </td>
                   <td data-label="Amount" className="tabular px-4 py-3.5 text-sm font-semibold text-slate-900 sm:px-5 md:text-right">
-                    UGX {order.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    UGX {Math.round(order.amount).toLocaleString()}
                   </td>
                   <td data-label="Status" className="px-4 py-3.5 text-sm sm:px-5">
                     <span className={statusStyles[order.status] || 'badge badge-neutral'}>
